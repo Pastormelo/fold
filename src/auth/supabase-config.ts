@@ -23,8 +23,30 @@ export const PUBLIC_ENV_PREFIX = 'NEXT_PUBLIC_'
 export const SUPABASE_URL_VAR = 'NEXT_PUBLIC_SUPABASE_URL'
 export const SUPABASE_ANON_KEY_VAR = 'NEXT_PUBLIC_SUPABASE_ANON_KEY'
 
-/** Server only. Note the absence of the public prefix — that is the point. */
-export const SUPABASE_SERVICE_ROLE_KEY_VAR = 'SUPABASE_SERVICE_ROLE_KEY'
+/**
+ * Server only. Note the absence of the public prefix — that is the point.
+ *
+ * Supabase now issues `sb_secret_…` keys alongside the legacy JWT `service_role`
+ * key, so both variable names are accepted and the newer one is preferred. A new
+ * secret key is the better choice: Supabase makes it answer 401 if it is ever
+ * used from a browser, which is a second safety net under the naming rule here.
+ */
+export const SUPABASE_SECRET_KEY_VARS = [
+  'SUPABASE_SECRET_KEY',
+  'SUPABASE_SERVICE_ROLE_KEY',
+] as const
+
+/** Kept for the error messages and the test that guards the naming rule. */
+export const SUPABASE_SERVICE_ROLE_KEY_VAR = 'SUPABASE_SECRET_KEY'
+
+/** The secret key from whichever variable holds it, or `undefined`. */
+export function supabaseSecretKey(): string | undefined {
+  for (const name of SUPABASE_SECRET_KEY_VARS) {
+    const value = process.env[name]
+    if (value) return value
+  }
+  return undefined
+}
 
 /**
  * Guards the naming rule as a value rather than a comment, so the test suite can

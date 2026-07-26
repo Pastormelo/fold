@@ -3,9 +3,10 @@ import 'server-only'
 import { createClient } from '@supabase/supabase-js'
 
 import {
-  SUPABASE_SERVICE_ROLE_KEY_VAR,
+  SUPABASE_SECRET_KEY_VARS,
   SUPABASE_URL_VAR,
   supabasePublicConfig,
+  supabaseSecretKey,
 } from './supabase-config'
 
 /**
@@ -20,8 +21,9 @@ import {
  * So it is constrained three ways:
  *
  * 1. `server-only`, so importing it from a Client Component is a build error.
- * 2. Read from `SUPABASE_SERVICE_ROLE_KEY`, with no `NEXT_PUBLIC_` prefix, so
- *    Next cannot inline it into a browser bundle.
+ * 2. Read from `SUPABASE_SECRET_KEY` (or the legacy `SUPABASE_SERVICE_ROLE_KEY`),
+ *    with no `NEXT_PUBLIC_` prefix, so Next cannot inline it into a browser
+ *    bundle.
  * 3. Never used to serve a request. Request paths use
  *    `createSupabaseServerClient`, which acts as the signed-in person.
  *
@@ -32,20 +34,20 @@ import {
  */
 export function createSupabaseAdminClient() {
   const config = supabasePublicConfig()
-  const serviceRoleKey = process.env[SUPABASE_SERVICE_ROLE_KEY_VAR]
+  const secretKey = supabaseSecretKey()
 
   if (!config) {
     throw new Error(
       `Supabase is not configured. Set ${SUPABASE_URL_VAR} before using the admin client.`
     )
   }
-  if (!serviceRoleKey) {
+  if (!secretKey) {
     throw new Error(
-      `${SUPABASE_SERVICE_ROLE_KEY_VAR} is not set. It is required only for administrative work with no signed-in person, and must never be given a ${'NEXT_PUBLIC_'} prefix.`
+      `Set one of ${SUPABASE_SECRET_KEY_VARS.join(' or ')}. It is required only for administrative work with no signed-in person, and must never be given a NEXT_PUBLIC_ prefix.`
     )
   }
 
-  return createClient(config.url, serviceRoleKey, {
+  return createClient(config.url, secretKey, {
     auth: {
       // No session to persist or refresh: this client is nobody, deliberately.
       persistSession: false,

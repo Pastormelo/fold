@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   PUBLIC_ENV_PREFIX,
   SUPABASE_ANON_KEY_VAR,
+  SUPABASE_SECRET_KEY_VARS,
   SUPABASE_SERVICE_ROLE_KEY_VAR,
   SUPABASE_URL_VAR,
   isPubliclyExposed,
@@ -13,21 +14,25 @@ describe('the service-role key is never publicly exposed', () => {
   // reads every restoration case in the database. Next inlines anything prefixed
   // NEXT_PUBLIC_ into the browser bundle, so the naming rule is the safeguard,
   // and this test is what stops a rename quietly undoing it.
-  it('has no NEXT_PUBLIC prefix', () => {
-    expect(isPubliclyExposed(SUPABASE_SERVICE_ROLE_KEY_VAR)).toBe(false)
-    expect(SUPABASE_SERVICE_ROLE_KEY_VAR.startsWith(PUBLIC_ENV_PREFIX)).toBe(
-      false
-    )
+  it('has no NEXT_PUBLIC prefix, under any accepted name', () => {
+    // Supabase issues sb_secret_ keys alongside the legacy service_role JWT, so
+    // both names are accepted — and neither may ever be publicly exposed.
+    for (const name of SUPABASE_SECRET_KEY_VARS) {
+      expect(isPubliclyExposed(name), name).toBe(false)
+      expect(name.startsWith(PUBLIC_ENV_PREFIX), name).toBe(false)
+    }
   })
 
   it('is a different variable from the anon key', () => {
     expect(SUPABASE_SERVICE_ROLE_KEY_VAR).not.toBe(SUPABASE_ANON_KEY_VAR)
   })
 
-  it('does not mention "public" or "anon" in its name', () => {
+  it('does not mention "public" or "anon" in any accepted name', () => {
     // Guards against a future rename that looks harmless and is not.
-    expect(SUPABASE_SERVICE_ROLE_KEY_VAR.toLowerCase()).not.toContain('public')
-    expect(SUPABASE_SERVICE_ROLE_KEY_VAR.toLowerCase()).not.toContain('anon')
+    for (const name of SUPABASE_SECRET_KEY_VARS) {
+      expect(name.toLowerCase(), name).not.toContain('public')
+      expect(name.toLowerCase(), name).not.toContain('anon')
+    }
   })
 })
 
