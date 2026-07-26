@@ -13,16 +13,19 @@ import type {
 } from '@/domain/roles'
 
 /**
- * SAMPLE DATA — not product configuration.
+ * SAMPLE DATA — invented, and not product configuration.
  *
- * Names and situations are drawn from the design prototype's One Family Church
- * examples so the screens read the way they were designed to read. Every church
- * answers these questions differently, so nothing here is a default: it exists
- * to exercise the confidentiality model before a database is attached.
+ * Every person, note, and case below is fictional. The note bodies deliberately
+ * describe *which tier they sit at* rather than imitating real pastoral writing:
+ * the job of this data is to show that redaction works, and text that reads like
+ * a genuine care record would be both unnecessary for that and easy to mistake
+ * for one.
  *
- * The repository seam in `./repository` is what a real Postgres query replaces.
- * The redaction in `@/domain/access` is identical either way — that is the
- * point of putting the rules in pure functions.
+ * Nothing here is a default. Stage counts, follow-up windows, and capacity
+ * figures are per-church, so this exists only to exercise the confidentiality
+ * model before a database is attached. Swapping these reads for Drizzle queries
+ * changes the fetch and nothing else — the redaction lives in
+ * `@/domain/access`, which is where the tests are.
  */
 
 export type SamplePerson = {
@@ -199,7 +202,7 @@ export const SAMPLE_CLEARANCE_GRANTS: Record<string, ClearanceGrant[]> = {
       grantedByName: 'Avery Nkemdirim',
       grantedAt: new Date('2026-07-06T00:00:00Z'),
       reason:
-        'Coordinating elder reviews while the care pastor role is vacant. Revisit in September.',
+        'Sample reason. A real grant requires one, and it is not nullable.',
       revokedAt: null,
       revokedById: null,
     },
@@ -211,7 +214,8 @@ export const SAMPLE_CLEARANCE_GRANTS: Record<string, ClearanceGrant[]> = {
       grantedById: 'p-avery',
       grantedByName: 'Avery Nkemdirim',
       grantedAt: new Date('2026-07-20T00:00:00Z'),
-      reason: 'Verifying the Planning Center import against real records.',
+      reason:
+        'Sample reason for a self-granted exception, which the review list flags.',
       revokedAt: null,
       revokedById: null,
     },
@@ -226,7 +230,7 @@ export const SAMPLE_PERMISSION_GRANTS: Record<string, PermissionGrant[]> = {
       grantedById: 'p-avery',
       grantedByName: 'Avery Nkemdirim',
       grantedAt: new Date('2026-07-06T00:00:00Z'),
-      reason: 'Builds the monthly elder report.',
+      reason: 'Sample reason for a granted permission.',
       revokedAt: null,
       revokedById: null,
     },
@@ -260,8 +264,8 @@ export function sampleViewers(): Viewer[] {
 }
 
 /**
- * Care notes on Lena Whitcomb, deliberately spanning all three tiers so one
- * screen shows what each reader is and is not shown.
+ * Notes on one person, spanning all three tiers, so a single screen shows what
+ * each reader is and is not shown.
  */
 export const SAMPLE_CARE_NOTES: CareNoteRecord[] = [
   {
@@ -271,7 +275,7 @@ export const SAMPLE_CARE_NOTES: CareNoteRecord[] = [
     authorName: 'Ben Ortiz',
     occurredAt: new Date('2026-07-19T16:00:00Z'),
     visibilityTier: 'all_leaders',
-    body: 'Coffee after second service. Iris started at a new school and it has been a hard month. Asked to be prayed for by name on Sunday.',
+    body: 'Sample ordinary-care note. Every leader can read this tier: visits, calls, grief, hospital, new believers, milestones.',
     restorationCaseId: null,
   },
   {
@@ -281,7 +285,7 @@ export const SAMPLE_CARE_NOTES: CareNoteRecord[] = [
     authorName: 'Dean Lowry',
     occurredAt: new Date('2026-07-08T14:30:00Z'),
     visibilityTier: 'all_leaders',
-    body: 'Hospital visit with Cal after the surgery. Sat with the family about an hour. Meals covered through the end of the week.',
+    body: 'Second sample note at the same tier, so the timeline shows more than one visible row.',
     restorationCaseId: null,
   },
   {
@@ -291,7 +295,7 @@ export const SAMPLE_CARE_NOTES: CareNoteRecord[] = [
     authorName: 'Dean Lowry',
     occurredAt: new Date('2026-06-22T11:00:00Z'),
     visibilityTier: 'staff_and_elders',
-    body: 'Benevolence: two months of rent covered while Cal is out of work. Approved by the elder board on Jun 20. Lena asked that the group not be told.',
+    body: 'Sample staff-tier note. Stands in for a benevolence record or a marriage-crisis conversation. A group leader must not see this text.',
     restorationCaseId: null,
   },
   {
@@ -301,7 +305,7 @@ export const SAMPLE_CARE_NOTES: CareNoteRecord[] = [
     authorName: 'Marcus Reid',
     occurredAt: new Date('2026-05-30T19:00:00Z'),
     visibilityTier: 'elders_only',
-    body: 'Marriage strain she raised herself. Counseling referral made. Nothing here goes to the group; she knows this note exists.',
+    body: 'Sample elder-tier note. Stands in for the most restricted pastoral content. Only an elder should see this text.',
     restorationCaseId: null,
   },
 ]
@@ -327,14 +331,12 @@ export const SAMPLE_RESTORATION_CASES: RestorationCaseRecord[] = [
     closedAt: null,
     outcome: null,
     plan: [
-      'Written plan agreed and signed by all three.',
-      'Counseling booked, church covering half.',
-      'Stepped back from serving until the elders revisit in September.',
+      'Sample plan line one. A real case would hold the written agreement here.',
+      'Sample plan line two.',
     ],
-    knows: ['Marcus Reid', 'Tanya Jules', 'Priya Grant'],
-    doesNotKnow: ['Thursday men’s group', 'Serving team', 'Wider staff'],
-    decisionQuestion:
-      'Does he return to serving in September, or do the elders extend the pause?',
+    knows: ['Sample name A', 'Sample name B'],
+    doesNotKnow: ['Sample group A', 'Sample group B'],
+    decisionQuestion: 'Sample decision the elders are carrying.',
   },
   {
     id: 'r-2',
@@ -353,13 +355,10 @@ export const SAMPLE_RESTORATION_CASES: RestorationCaseRecord[] = [
     stepLabel: 'Step 5 of 5 · Restored',
     status: 'Restored',
     closedAt: new Date('2026-06-15T00:00:00Z'),
-    outcome: 'Restored to full participation after five months.',
-    plan: [
-      'Written plan agreed and signed by all three.',
-      'Five months away from all serving, revisited monthly.',
-      'Returned in June with the elder board’s agreement.',
-    ],
-    knows: ['Tanya Jules', 'Tomás Iglesias'],
+    outcome:
+      'Sample outcome. Readable even by leaders who cannot open the case.',
+    plan: ['Sample plan line, retained after the case closed.'],
+    knows: ['Sample name B', 'Sample name C'],
     doesNotKnow: ['Everyone else, by the elders’ decision'],
     decisionQuestion: null,
   },
@@ -374,7 +373,7 @@ export const SAMPLE_RESTORATION_NOTES: CareNoteRecord[] = [
     authorName: 'Marcus Reid',
     occurredAt: new Date('2026-05-12T20:00:00Z'),
     visibilityTier: 'elders_only',
-    body: 'He came to us. Never one elder alone, never by text. Plan drafted the same week.',
+    body: 'Sample restoration-case note. Filed at elders_only, which the database enforces for any note attached to a case.',
     restorationCaseId: 'r-1',
   },
 ]
