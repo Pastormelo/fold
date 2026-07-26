@@ -1,0 +1,170 @@
+@import "tailwindcss";
+
+/* ── One Family Church design tokens ──────────────────────────
+   Ported from the design system shipped with the Fold handoff
+   (_ds/ofc-design-system). Brand values are sourced from the
+   church's RGB color sheet; semantic aliases map them to roles.
+   Always reach for a semantic alias in components. */
+
+/* Font files are loaded by next/font in layout.tsx, which sets
+   --font-display-loaded and --font-body-loaded. The aliases below keep the
+   design system's token names as the thing components reference. */
+
+:root {
+  /* Brand core */
+  --ofc-orange: #ff953e;
+  --ofc-orange-light: #ffb76b;
+  --ofc-ink: #20242a;
+  --ofc-charcoal: #2b3139;
+  --ofc-slate: #39424c;
+  --ofc-slate-gray: #5e6c7a;
+  --ofc-paper: #f4fbfe;
+
+  /* Neutral scale, harmonised with the slate */
+  --ofc-white: #ffffff;
+  --ofc-n-50: #f7f9fb;
+  --ofc-n-100: #eef1f5;
+  --ofc-n-200: #e0e5eb;
+  --ofc-n-300: #c9d0d9;
+  --ofc-n-400: #a7b1bd;
+  --ofc-n-500: #7e8995;
+  --ofc-n-600: #5e6c7a;
+  --ofc-n-700: #434e59;
+  --ofc-n-800: #2b3139;
+  --ofc-n-900: #20242a;
+
+  /* Orange ramp */
+  --ofc-orange-50: #fff4ea;
+  --ofc-orange-100: #ffe6cf;
+  --ofc-orange-200: #ffd2a8;
+  --ofc-orange-300: #ffb76b;
+  --ofc-orange-400: #ff953e;
+  --ofc-orange-500: #f47f22;
+  --ofc-orange-600: #dc6a12;
+  --ofc-orange-700: #b0530d;
+
+  /* Status */
+  --ofc-success: #3fa66b;
+  --ofc-warning: #e8a53c;
+  --ofc-danger: #d9534f;
+  --ofc-info: #5bc2d6;
+
+  /* Text */
+  --text-primary: var(--ofc-ink);
+  --text-secondary: var(--ofc-slate);
+  --text-muted: var(--ofc-slate-gray);
+  --text-inverse: var(--ofc-paper);
+  --text-brand: var(--ofc-orange-600);
+
+  /* Surfaces */
+  --surface-page: var(--ofc-paper);
+  --surface-card: var(--ofc-white);
+  --surface-sunken: var(--ofc-n-50);
+  --surface-inverse: var(--ofc-ink);
+  --surface-inverse-2: var(--ofc-charcoal);
+
+  /* Borders */
+  --border-subtle: var(--ofc-n-100);
+  --border-default: var(--ofc-n-200);
+  --border-strong: var(--ofc-n-300);
+  --border-inverse: rgba(255, 255, 255, 0.14);
+
+  /* Brand roles */
+  --brand: var(--ofc-orange);
+  --brand-hover: var(--ofc-orange-500);
+  --brand-active: var(--ofc-orange-600);
+  --brand-soft: var(--ofc-orange-50);
+  --brand-soft-border: var(--ofc-orange-200);
+  --on-brand: var(--ofc-ink);
+  --focus-ring: 0 0 0 3px rgba(255, 149, 62, 0.45);
+
+  /* Confidentiality tier accents. Ordered, like the tiers themselves. */
+  --tier-all-leaders: #2c7a50;
+  --tier-staff-and-elders: #8a6520;
+  --tier-elders-only: #b0530d;
+
+  /* Type. The loaded-font variables come from next/font in layout.tsx. */
+  --font-display: var(--font-display-loaded), 'Segoe UI', system-ui, sans-serif;
+  --font-body: var(--font-body-loaded), 'Segoe UI', system-ui, sans-serif;
+
+  /* Radius */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* Shadows — cool slate tint, never neutral gray or black */
+  --shadow-xs: 0 1px 2px rgba(32, 36, 42, 0.06);
+  --shadow-sm: 0 1px 2px rgba(32, 36, 42, 0.06), 0 2px 6px rgba(32, 36, 42, 0.06);
+  --shadow-md: 0 2px 4px rgba(32, 36, 42, 0.05), 0 8px 20px rgba(32, 36, 42, 0.08);
+  --shadow-lg: 0 4px 8px rgba(32, 36, 42, 0.06), 0 18px 40px rgba(32, 36, 42, 0.12);
+  --shadow-brand: 0 8px 24px rgba(255, 149, 62, 0.32);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 0.14s;
+  --dur-base: 0.22s;
+}
+
+@theme inline {
+  --color-ink: var(--ofc-ink);
+  --color-paper: var(--ofc-paper);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-slate-gray: var(--ofc-slate-gray);
+  --color-n-50: var(--ofc-n-50);
+  --color-n-100: var(--ofc-n-100);
+  --color-n-200: var(--ofc-n-200);
+  --color-n-300: var(--ofc-n-300);
+  --color-n-500: var(--ofc-n-500);
+  --color-n-600: var(--ofc-n-600);
+  --color-n-700: var(--ofc-n-700);
+  --color-tier-all-leaders: var(--tier-all-leaders);
+  --color-tier-staff-and-elders: var(--tier-staff-and-elders);
+  --color-tier-elders-only: var(--tier-elders-only);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --radius-card: var(--radius-lg);
+  --radius-control: var(--radius-sm);
+  --shadow-card: var(--shadow-sm);
+}
+
+body {
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+/* Tracked uppercase label, echoing the "ONE FAMILY / CHURCH" lockup. */
+.overline {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
