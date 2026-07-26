@@ -1,6 +1,7 @@
 import { CareTimeline } from '@/components/care-timeline'
 import {
   getGrantedExceptions,
+  getJourneys,
   getPersonRecord,
   getRestorationCases,
   getTierOverview,
@@ -26,11 +27,14 @@ const TIER_ACCENT = {
  * chooses to render. Content above the viewer's tier never reaches the client.
  */
 export default async function Home() {
-  const [viewer, person, tiers, cases, unfolded, exceptions] =
+  const [viewer, person, tiers, journeys, cases, unfolded, exceptions] =
     await Promise.all([
       getViewerSummary(),
       getPersonRecord('p-lena'),
       getTierOverview(),
+      // Fixed date so the demo's overdue states are stable to look at rather
+      // than drifting with the clock.
+      getJourneys(new Date('2026-07-26T00:00:00Z')),
       getRestorationCases(),
       getUnfoldedMembers(),
       getGrantedExceptions(),
@@ -239,7 +243,109 @@ export default async function Home() {
         </section>
       )}
 
-      {/* ── Restoration cases: access by assignment, not by title ── */}
+      {/* ── Running care journeys ── */}
+      <section className="flex flex-col gap-4">
+        <h2 style={{ fontSize: '1.375rem' }}>Journeys</h2>
+        <p
+          className="max-w-[62ch] text-[0.9375rem]"
+          style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}
+        >
+          A journey&rsquo;s last step is its stopping rule, so follow-up always
+          ends — visibly, rather than by being forgotten. Due dates are computed
+          from the current step&rsquo;s window, never stored.
+        </p>
+        <div className="flex flex-col gap-3">
+          {journeys.map((journey) => (
+            <article
+              key={journey.instanceId}
+              style={{
+                background:
+                  journey.access === 'visible'
+                    ? 'var(--surface-card)'
+                    : 'var(--surface-sunken)',
+                borderTop: '1px solid var(--border-subtle)',
+                borderRight: '1px solid var(--border-subtle)',
+                borderBottom: '1px solid var(--border-subtle)',
+                borderLeft: `3px solid ${
+                  journey.access === 'visible' && journey.isOverdue
+                    ? 'var(--ofc-danger)'
+                    : 'var(--border-strong)'
+                }`,
+                borderRadius: 'var(--radius-md)',
+                padding: '16px 18px',
+              }}
+            >
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="font-semibold">{journey.personName}</span>
+                {journey.access === 'visible' && (
+                  <span
+                    className="text-[0.9375rem]"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    {journey.templateName} · {journey.stepLabel}
+                  </span>
+                )}
+                <span
+                  className="overline"
+                  style={{ fontSize: '0.5625rem', letterSpacing: '0.1em' }}
+                >
+                  {journey.tierLabel}
+                </span>
+                {journey.access === 'visible' && journey.isOverdue && (
+                  <span
+                    className="overline"
+                    style={{
+                      fontSize: '0.5625rem',
+                      color: 'var(--ofc-paper)',
+                      background: 'var(--ofc-danger)',
+                      borderRadius: 'var(--radius-pill)',
+                      padding: '3px 8px',
+                    }}
+                  >
+                    Overdue
+                  </span>
+                )}
+              </div>
+
+              {journey.access === 'visible' ? (
+                <>
+                  <p
+                    className="mt-2 text-[0.9375rem]"
+                    style={{
+                      color: journey.isOverdue
+                        ? 'var(--text-primary)'
+                        : 'var(--text-secondary)',
+                      textWrap: 'pretty',
+                    }}
+                  >
+                    {journey.summary}
+                  </p>
+                  {journey.guidanceNote && (
+                    <p
+                      className="mt-2 text-[0.875rem] italic"
+                      style={{
+                        color: 'var(--text-muted)',
+                        textWrap: 'pretty',
+                      }}
+                    >
+                      {journey.guidanceNote}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p
+                  className="mt-2 text-[0.9375rem] italic"
+                  style={{ color: 'var(--text-muted)', textWrap: 'pretty' }}
+                >
+                  {journey.disclosure}
+                </p>
+              )}
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Restoration cases ── */}
       <section className="flex flex-col gap-4">
         <h2 style={{ fontSize: '1.375rem' }}>Restoration</h2>
         <p

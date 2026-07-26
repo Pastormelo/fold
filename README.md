@@ -20,6 +20,7 @@ the two that are painful to retrofit.
 | Individual grants over role defaults | Built, audited, with a review list |
 | Pathway lifecycle state machine (§4) | Rules built and tested; persistence pending a database |
 | Draft diff and publish gate (§4, §8.6–8.8) | Built, with field coverage enforced by the compiler |
+| Care journeys (§11 step 5) | Built and tested; schema + migration generated |
 | People, households, folds, leaders (§2) | Schema + migration generated |
 | Restoration cases, care notes, change log | Schema + access rules |
 | One screen exercising the tier model | Built, checked per viewer |
@@ -160,6 +161,42 @@ the reviewer also approved, stated rather than inferred from absence.
 
 The permanent version record is what someone relies on years later in an
 elder-governance dispute. It must not overclaim.
+
+## Care journeys
+
+`src/domain/journeys.ts`. A template for a situation — grief, hospital, a new
+believer, benevolence — running on one person a step at a time.
+
+**A journey's last step is its stopping rule.** That is what makes it answer the
+product's premise: follow-up ends, and it ends visibly rather than by being
+forgotten.
+
+**Windows are an ordered scale**, like tiers: same day → within 48 hours → week 1
+→ week 2 → month 1 → month 3 → month 6. `dueDateFor` turns a window plus the
+journey's start into a date.
+
+**Nothing about progress is stored.** The handoff describes an instance as
+tracking current step, due date, and last contact. All three are computed by
+`journeyProgress` from the step completions plus the template, because a stored
+due date survives the step it described being finished early. `asOf` is a
+parameter rather than a call to `new Date()`, so overdue is testable and two
+parts of one request cannot disagree about the time.
+
+**A step ends in a logged outcome or a documented skip**, never silently. The
+database holds that rule as a check constraint, so a skip without a reason is
+rejected rather than merely discouraged — the same rule §2 puts on a follow-up
+touch, and what stops a journey being abandoned a step at a time.
+
+**A journey is visible at its template's tier.** A benevolence journey is
+invisible to a group leader for exactly the same reason a benevolence note is.
+The person's name stays visible either way: hiding that someone is receiving care
+would defeat the point of the product.
+
+**System defaults can be edited, never deleted** (§2). The refusal says why in
+terms of the situation: grief does not stop happening because the journey was
+deleted. Enforced in the domain rather than the schema, since a check constraint
+cannot refuse a DELETE — a trigger could, and would be worth adding if templates
+ever get a delete path that bypasses the domain.
 
 ## Derive, never mirror
 

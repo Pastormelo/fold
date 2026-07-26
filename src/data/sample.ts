@@ -5,6 +5,7 @@ import type {
   RestorationCaseRecord,
   Viewer,
 } from '@/domain/access'
+import type { JourneyInstance, JourneyTemplate } from '@/domain/journeys'
 import type {
   ClearanceGrant,
   PermissionGrant,
@@ -377,3 +378,120 @@ export const SAMPLE_RESTORATION_NOTES: CareNoteRecord[] = [
     restorationCaseId: 'r-1',
   },
 ]
+
+/* ──────────────────────────── Care journeys ──────────────────────────── */
+
+/**
+ * Two system-default templates at different tiers, so one screen shows a
+ * journey being withheld for the same reason a note is.
+ */
+export const SAMPLE_JOURNEY_TEMPLATES: JourneyTemplate[] = [
+  {
+    id: 'jt-grief',
+    name: 'Grief',
+    trigger: 'A death in the household',
+    visibilityTier: 'all_leaders',
+    isSystemDefault: true,
+    steps: [
+      {
+        id: 'jt-grief-1',
+        title: 'Call the same day',
+        window: 'same_day',
+        ownerRole: 'pastoral_staff',
+        guidanceNote:
+          'Do not problem-solve. Ask what happened, and listen longer than is comfortable.',
+      },
+      {
+        id: 'jt-grief-2',
+        title: 'Visit in person',
+        window: 'within_48_hours',
+        ownerRole: 'pastor_elder',
+        guidanceNote: 'Bring nothing that needs answering.',
+      },
+      {
+        id: 'jt-grief-3',
+        title: 'Check in after the arrangements',
+        window: 'week_2',
+        ownerRole: 'care_volunteer',
+        guidanceNote:
+          'The week everyone else stops calling is the week this matters.',
+      },
+      {
+        id: 'jt-grief-4',
+        title: 'Mark the first month',
+        window: 'month_1',
+        ownerRole: 'care_volunteer',
+        guidanceNote: 'Say the name of the person who died.',
+      },
+    ],
+  },
+  {
+    id: 'jt-benevolence',
+    name: 'Benevolence',
+    trigger: 'A request for financial help',
+    visibilityTier: 'staff_and_elders',
+    isSystemDefault: true,
+    steps: [
+      {
+        id: 'jt-benevolence-1',
+        title: 'Meet and understand the need',
+        window: 'within_48_hours',
+        ownerRole: 'pastoral_staff',
+        guidanceNote: 'Sample guidance note.',
+      },
+      {
+        id: 'jt-benevolence-2',
+        title: 'Bring it to the elders',
+        window: 'week_1',
+        ownerRole: 'pastor_elder',
+        guidanceNote: 'Sample guidance note.',
+      },
+      {
+        id: 'jt-benevolence-3',
+        title: 'Follow up on how things stand',
+        window: 'month_1',
+        ownerRole: 'pastoral_staff',
+        guidanceNote: 'Sample guidance note.',
+      },
+    ],
+  },
+]
+
+/** One overdue journey and one on track, so the derived states are both visible. */
+export const SAMPLE_JOURNEY_INSTANCES: JourneyInstance[] = [
+  {
+    id: 'ji-1',
+    templateId: 'jt-grief',
+    personId: 'p-lena',
+    startedAt: new Date('2026-07-08T00:00:00Z'),
+    ownerId: 'p-dean',
+    ownerName: 'Dean Lowry',
+    completions: [
+      {
+        stepId: 'jt-grief-1',
+        completedAt: new Date('2026-07-08T18:00:00Z'),
+        byId: 'p-dean',
+        byName: 'Dean Lowry',
+        kind: 'done',
+        outcome: 'Sample logged outcome for a completed step.',
+      },
+    ],
+    closedAt: null,
+    closedReason: null,
+  },
+  {
+    id: 'ji-2',
+    templateId: 'jt-benevolence',
+    personId: 'p-trent',
+    startedAt: new Date('2026-07-24T00:00:00Z'),
+    ownerId: 'p-dean',
+    ownerName: 'Dean Lowry',
+    completions: [],
+    closedAt: null,
+    closedReason: null,
+  },
+]
+
+export function sampleJourneyTemplate(id: string): JourneyTemplate | undefined {
+  return SAMPLE_JOURNEY_TEMPLATES.find((template) => template.id === id)
+}

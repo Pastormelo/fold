@@ -25,6 +25,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 
+import { CARE_WINDOWS } from '@/domain/journeys'
 import { ROLES } from '@/domain/roles'
 import { TIER_ORDER } from '@/domain/tiers'
 
@@ -44,6 +45,14 @@ export const provenance = pgEnum('provenance', [
   'imported',
   'inferred',
 ])
+
+/**
+ * Declared from `CARE_WINDOWS`, so the database and `dueDateFor` agree on which
+ * windows exist and in what order.
+ */
+export const careWindow = pgEnum('care_window', CARE_WINDOWS)
+
+export const completionKind = pgEnum('completion_kind', ['done', 'skipped'])
 
 /* ─────────────────────────────── Church ─────────────────────────────── */
 
@@ -191,6 +200,142 @@ export const leaderRoles = pgTable(
   (table) => [
     uniqueIndex('leader_roles_person_role_idx').on(table.personId, table.role),
     index('leader_roles_church_idx').on(table.churchId),
+  ]
+)
+
+/* ──────────────────────────── Care journeys ──────────────────────────── */
+
+/**
+ * A template for a situation, and the steps it asks for.
+ *
+ * `isSystemDefault` marks the journeys that ship with the product. §2 says those
+ * can be edited but never deleted; that is enforced in `@/domain/journeys`
+ * (`canDeleteTemplate`) rather than here, since a check constraint cannot refuse
+ * a DELETE. A trigger could, and would be worth adding if templates ever get a
+ * delete path that does not go through the domain.
+ */
+export const journeyTemplates = pgTable(
+  'journey_templates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id, { onDelete: 'restrict' }),
+    name: text('name').notNull(),
+    /** The life event that starts this journey. */
+    trigger: text('trigger').notNull(),
+    /**
+     * The tier every note on this journey is written at. A benevolence journey
+     * sits at `staff_and_elders`; a restoration one at `elders_only`. No
+     * default: the church has to say, because guessing wrong here is the whole
+     * failure §3 is about.
+     */
+    visibilityTier: confidentialityTier('visibility_tier').notNull(),
+    isSystemDefault: boolean('is_system_default').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index('journey_templates_church_idx').on(table.churchId)]
+)
+
+export const journeySteps = pgTable(
+  'journey_steps',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    templateId: uuid('template_id')
+      .notNull()
+      .references(() => journeyTemplates.id, { onDelete: 'cascade' }),
+    /** Order within the template. The window says *when*; this says *which*. */
+    position: integer('position').notNull(),
+    title: text('title').notNull(),
+    window: careWindow('window').notNull(),
+    ownerRole: roleName('owner_role').notNull(),
+    guidanceNote: text('guidance_note').notNull().default(''),
+  },
+  (table) => [
+    uniqueIndex('journey_steps_order_idx').on(table.templateId, table.position),
+  ]
+)
+
+/**
+ * A template running on a person.
+ *
+ * No `current_step`, no `due_at`, no `last_contact_at` — the handoff describes an
+ * instance as tracking those, and `journeyProgress` computes all three from the
+ * completions below. Storing them would let a due date survive the step it
+ * described being finished early (§8.1).
+ */
+export const journeyInstances = pgTable(
+  'journey_instances',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id, { onDelete: 'restrict' }),
+    templateId: uuid('template_id')
+      .notNull()
+      .references(() => journeyTemplates.id, { onDelete: 'restrict' }),
+    personId: uuid('person_id')
+      .notNull()
+      .references(() => people.id, { onDelete: 'restrict' }),
+    startedAt: timestamp('started_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** The leader carrying it. A person, never a role. */
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => people.id, { onDelete: 'restrict' }),
+    closedAt: timestamp('closed_at', { withTimezone: true }),
+    closedReason: text('closed_reason'),
+  },
+  (table) => [
+    index('journey_instances_person_idx').on(table.personId),
+    index('journey_instances_owner_idx').on(table.ownerId),
+    index('journey_instances_church_idx').on(table.churchId),
+    /** Ending a journey early is a decision, so it comes with a reason. */
+    check(
+      'journey_closed_has_reason',
+      sql`${table.closedAt} is null or ${table.closedReason} is not null`
+    ),
+  ]
+)
+
+/**
+ * One step, finished.
+ *
+ * The check constraint is the point: a step ends in a logged outcome or a
+ * documented skip, and the database will not accept either one empty. §2 puts
+ * the same rule on a follow-up touch, and it is what stops a journey being
+ * quietly abandoned a step at a time.
+ */
+export const journeyStepCompletions = pgTable(
+  'journey_step_completions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    instanceId: uuid('instance_id')
+      .notNull()
+      .references(() => journeyInstances.id, { onDelete: 'cascade' }),
+    stepId: uuid('step_id')
+      .notNull()
+      .references(() => journeySteps.id, { onDelete: 'restrict' }),
+    completedAt: timestamp('completed_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    byId: uuid('by_id')
+      .notNull()
+      .references(() => people.id, { onDelete: 'restrict' }),
+    kind: completionKind('kind').notNull(),
+    outcome: text('outcome'),
+    skipReason: text('skip_reason'),
+  },
+  (table) => [
+    uniqueIndex('journey_step_once_idx').on(table.instanceId, table.stepId),
+    check(
+      'completion_is_documented',
+      sql`(${table.kind} = 'done' and ${table.outcome} is not null and ${table.outcome} <> '')
+        or (${table.kind} = 'skipped' and ${table.skipReason} is not null and ${table.skipReason} <> '')`
+    ),
   ]
 )
 

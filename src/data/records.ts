@@ -8,6 +8,12 @@ import {
   writableTiers,
 } from '@/domain/access'
 import {
+  JOURNEY_WITHHELD_DISCLOSURE,
+  WINDOW_LABELS,
+  canReadJourney,
+  journeyProgress,
+} from '@/domain/journeys'
+import {
   type ConfidentialityTier,
   TIER_DESCRIPTIONS,
   TIER_ORDER,
@@ -26,9 +32,11 @@ import {
 import { getViewer } from './viewer'
 import {
   SAMPLE_CARE_NOTES,
+  SAMPLE_JOURNEY_INSTANCES,
   SAMPLE_PEOPLE,
   SAMPLE_RESTORATION_CASES,
   SAMPLE_RESTORATION_NOTES,
+  sampleJourneyTemplate,
   samplePerson,
   samplePrincipals,
 } from './sample'
@@ -254,4 +262,87 @@ export function listPeople(): { id: string; fullName: string }[] {
     id: person.id,
     fullName: `${person.firstName} ${person.lastName}`,
   }))
+}
+
+export type JourneyRow =
+  | {
+      access: 'visible'
+      instanceId: string
+      personName: string
+      templateName: string
+      trigger: string
+      tierLabel: string
+      stepLabel: string
+      nextStepTitle: string | null
+      guidanceNote: string | null
+      dueLabel: string | null
+      isOverdue: boolean
+      ownerName: string
+      summary: string
+    }
+  | {
+      access: 'withheld'
+      instanceId: string
+      personName: string
+      tierLabel: string
+      disclosure: string
+    }
+
+/**
+ * Running care journeys, redacted for this viewer.
+ *
+ * A journey above the reader's tier is withheld the same way a note is: they can
+ * see someone is being cared for without seeing what for. The person's name
+ * stays visible, because the point of the product is that nobody disappears
+ * quietly — hiding that a person is receiving care would defeat it.
+ */
+export async function getJourneys(
+  asOf: Date = new Date()
+): Promise<JourneyRow[]> {
+  const viewer = await getViewer()
+  const clearance = clearanceFor(viewer)
+
+  return SAMPLE_JOURNEY_INSTANCES.flatMap((instance): JourneyRow[] => {
+    const template = sampleJourneyTemplate(instance.templateId)
+    if (!template) return []
+
+    const person = samplePerson(instance.personId)
+    const personName = person
+      ? `${person.firstName} ${person.lastName}`
+      : 'Unknown person'
+    const tierLabel = tierName(template.visibilityTier)
+
+    if (!canReadJourney(clearance, template)) {
+      return [
+        {
+          access: 'withheld' as const,
+          instanceId: instance.id,
+          personName,
+          tierLabel,
+          disclosure: JOURNEY_WITHHELD_DISCLOSURE,
+        },
+      ]
+    }
+
+    const progress = journeyProgress(template, instance, asOf)
+    return [
+      {
+        access: 'visible' as const,
+        instanceId: instance.id,
+        personName,
+        templateName: template.name,
+        trigger: template.trigger,
+        tierLabel,
+        stepLabel: progress.stepLabel,
+        nextStepTitle: progress.currentStep?.title ?? null,
+        guidanceNote: progress.currentStep?.guidanceNote ?? null,
+        dueLabel: progress.currentStep
+          ? WINDOW_LABELS[progress.currentStep.window]
+          : null,
+        isOverdue: progress.isOverdue,
+        ownerName: instance.ownerName,
+        summary: progress.summary,
+      },
+    ]
+  })
 }
