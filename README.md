@@ -28,7 +28,7 @@ the two that are painful to retrofit.
 | One screen exercising the tier model | Built, checked per viewer |
 | Identity-change transport (sign-out safety) | Built and tested |
 | Pathways, journeys, Planning Center, AI | Not started (§11 steps 3–9) |
-| Real authentication | Not started — see "The auth gap" below |
+| Authentication (Supabase Auth) | Built: password, Google, magic link, reset |
 
 ## Getting started
 
@@ -306,114 +306,86 @@ its own words is one they have no way to check.
   records that copy and behavior drifted apart twice in the prototype; there is
   no separate table of permission copy to drift from.
 
-## The auth gap
+## Authentication
 
-`src/data/viewer.ts` **throws when no session is configured**. There is no
-fallback viewer, because a fallback viewer is a silent authorization bypass. What
-exists is a cookie-based viewer switch over sample data, labelled as such in the
-UI.
+Supabase Auth, with all four ways in: **email and password, Google OAuth, magic
+link, and password reset.** `src/auth/`.
 
-### Deploying it
+### The proxy, not middleware
 
-Locally the switch is always on. Anywhere else it takes an explicit opt-in:
+Session refresh lives in **`src/proxy.ts`**. Next 16 renamed Middleware to Proxy,
+and every Supabase guide still says `middleware.ts` — which Next 16 ignores
+silently. No error, no warning, just sessions that stop refreshing until people
+are logged out mid-visit. The build output naming `ƒ Proxy (Middleware)` is the
+confirmation it is wired.
 
-```bash
-FOLD_DEMO_MODE=1
-```
+The proxy refreshes tokens and **authorizes nothing**. The Next.js auth guide is
+explicit that Proxy runs on every route including prefetches, so security checks
+belong "as close as possible to your data source" — which for Fold is the Data
+Access Layer, where they already are.
 
-Gating on that rather than on `NODE_ENV` is deliberate — a deployment gets demo
-behaviour because someone asked for it, not because of which build command ran.
-Left unset, a deployed instance refuses to serve people records and renders
-`src/app/global-error.tsx`, which explains what to set. That is the correct
-default for an app whose subject is confidential pastoral care, and it is why a
-fresh Vercel deploy returns 500 until you opt in.
+### Two keys, and the difference matters
 
-With it set, the top of every page carries a banner saying the data is fictional
-and there is no authentication. **The deployment is readable by anyone with the
-URL** — use Vercel's deployment protection, or keep the URL private.
+| Key | Prefix | Who reads it |
+| --- | --- | --- |
+| Anon | `NEXT_PUBLIC_` | Browser and every request path |
+| Service role | **none** | `src/auth/supabase-admin.ts` only, `server-only` |
 
-That module only ever *reads* a session. The write side — sign-in, sign-out,
-account switch — goes through `src/auth/identity-change.ts`, and the reason is a
-measured defect rather than a preference:
+The anon key is public by design: on its own it grants nothing, because row-level
+security plus the session decide what a request may read.
 
-**An identity change must replace the document, not patch it.** Redaction is
-delivered as RSC payload embedded in the document that served it. A Server
-Function that writes the session cookie re-renders in place, leaving the
-previous reader's flight chunks in the live document — measured on the dev
-switch, where moving from an elder to an administrator left `elders_only` note
-bodies in `document.documentElement.outerHTML` that a fresh request for the
-administrator correctly omitted. For a dev switch that is untidy; for a real
-sign-out it means the next person at the keyboard can read the last one's care
-notes out of the DOM, and the Back button can restore the whole document.
+The service-role key **bypasses row-level security completely** — one query with it
+reads every restoration case in the database. It has no `NEXT_PUBLIC_` prefix
+because Next inlines anything so prefixed into the browser bundle, and
+`supabase-config.test.ts` asserts that naming rule so a rename cannot quietly undo
+it. No request path uses it; request handling uses the anon key and acts as the
+signed-in person, so RLS still applies.
 
-So identity changes are a plain form POST to a Route Handler answering `303`,
-which forces a top-level GET and discards the old document, its router cache,
-and its payload. `Clear-Site-Data` and `no-store` harden it further. Whatever
-real authentication looks like, its sign-in and sign-out controls submit the
-same way — and never from a Server Function.
+### Session reading
 
-The route verifies its own preconditions, since a POST endpoint that clears
-sessions is worth forging: refused in production, refused cross-origin, refused
-when `Origin` is absent, and the requested id must name a known viewer and is
-never echoed back.
+`getSupabaseUser` calls `getUser()`, not `getSession()`. `getSession()` reads the
+cookie and trusts it; `getUser()` verifies the token with Supabase. For deciding
+who may read a restoration case, a forged cookie should not be able to answer.
 
-## Roles are defaults; grants are exceptions
+### Three layers, in order
 
-Roles supply a starting position. An **administrator can give any individual any
-permission, and any clearance tier** — polity and staffing differ per church, and
-the handoff warns against hardening one church's answers into the schema.
+`getViewer` resolves, in this order:
 
-What the design insists on is that every exception is answerable:
+1. **A real Supabase session**, mapped to a `people` row by `auth_user_id`, with
+   roles and grants read from the database — so clearance is derived from live
+   rows, not from the auth provider. A Supabase user is an identity, not a
+   permission.
+2. **The sample-data switch**, only under `FOLD_DEMO_MODE=1`.
+3. **A refusal.**
 
-- A grant names the **person** who made it, not their role — a role cannot be
-  held accountable (§4).
-- A written **reason** is required, `not null` in the schema.
-- Revoking stamps the row rather than removing it, so "who gave them that, and
-  when did it end?" stays answerable.
-- A grant only ever **raises** access. Lowering someone is a role change, so two
-  mechanisms never disagree with the permissive one winning by accident.
-- `permissionCheck` reports whether an allowance came from a `role` or a
-  `grant`, and the note tells the holder who granted it and why.
-- Every exception appears on one review list, `getGrantedExceptions`, rendered as
-  "Access beyond role". **Self-grants are flagged** — an administrator raising
-  their own clearance is legitimate (covering a vacancy, verifying an import) and
-  also the obvious abuse path, so it is called out rather than blended in.
+A signed-in account with no linked person raises `NoPersonForAccountError` rather
+than getting a default identity — that is an administrative gap, and the answer is
+to link them, never to guess. Signing in successfully and falling through to a demo
+identity would be the worst of the available bugs, so layer 1 never falls back to
+layer 2.
 
-### One administrator is enough — decided
+Role names the database holds that this build does not recognise are dropped
+rather than trusted: a role Fold cannot evaluate must not become access.
 
-A grant of `elders_only` clearance needs **one** administrator, not two.
-Requiring a second to countersign, by analogy with §3's "never one elder alone",
-was raised and declined by the lead pastor on 2026-07-26. The safeguard is
-visibility rather than a second gate.
+### Deliberate vagueness
 
-This is recorded rather than merely absent. §8.8 says a considered omission must
-be distinguishable from an oversight, and that applies to governance as much as
-to a stage with no stopping rule — so the test
-`a single administrator can grant elders_only` holds the decision open. Adding a
-countersign requirement later will fail that test, which is the point: it should
-take a decision, not a quiet tightening.
+A failed password sign-in says "that email and password do not match" without
+distinguishing a wrong password from an unknown address. Telling them apart
+confirms which addresses belong to people at this church. Magic-link and reset
+replies are non-committal for the same reason, and `shouldCreateUser: false` means
+a stranger's address cannot bring an account into existence — people come from the
+directory and from Planning Center.
 
-## The lead pastor holds the highest authority — decided
+### Signing out
 
-Confirmed 2026-07-26. `lead_pastor` is the only role in `UNRESTRICTED_ROLES`: it
-carries **every** permission, can grant and revoke access for anyone, can change
-any setting, and reaches `elders_only`.
+`POST /auth/sign-out` calls Supabase's `signOut` (ending the session server-side,
+so a stolen refresh token stops working) and answers `303` through
+`identity-change.ts`, forcing a new document. A Server Action would leave the
+previous reader's RSC payload in the page.
 
-It is written as a short-circuit rather than by listing `lead_pastor` in all
-fifteen `PERMISSION_HOLDERS` entries — §8.1 again. A permission added six months
-from now is included automatically, where a hand-maintained list would silently
-omit it and quietly narrow the role. The test
-`a lead pastor holds every permission` iterates `PERMISSIONS` to keep that true.
-
-`lead_pastor` and `pastor_elder` both reach `elders_only`, so both read every
-restoration case. The app does not model the difference between the two — a lead
-pastor is an elder, and which roles a person holds is something an administrator
-assigns rather than something the code decides.
-
-An earlier version made this far more complicated than it needed to be: per-case
-assignment as an access rule, plus a lead-pastor bypass to get around it, plus an
-`AccessBasis` recording which of the two applied. Once every elder reads every
-case, all of that is redundant. It was removed.
+The callback route validates its `next` parameter against a fixed allow-list
+rather than a prefix check — a path is easy to smuggle past `startsWith('/')`, and
+this is the redirect an attacker would most like to influence.
 
 ## The default role is care volunteer
 

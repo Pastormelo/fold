@@ -1,0 +1,2 @@
+ALTER TABLE "people" ADD COLUMN "auth_user_id" uuid;--> statement-breakpoint
+CREATE UNIQUE INDEX "people_auth_user_idx" ON "people" USING btree ("auth_user_id") WHERE "people"."auth_user_id" is not null;

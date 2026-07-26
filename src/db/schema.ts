@@ -172,6 +172,13 @@ export const people = pgTable(
     }),
     isMember: boolean('is_member').notNull().default(false),
     planningCenterId: text('planning_center_id'),
+    /**
+     * The Supabase Auth user this person signs in as, when they can sign in at
+     * all. Most people in a church directory never will, so it is nullable —
+     * and a sign-in whose id matches no person is refused rather than given a
+     * default identity, which is why this is looked up rather than trusted.
+     */
+    authUserId: uuid('auth_user_id'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -186,6 +193,10 @@ export const people = pgTable(
     uniqueIndex('people_pc_id_idx')
       .on(table.churchId, table.planningCenterId)
       .where(sql`${table.planningCenterId} is not null`),
+    /** One auth account maps to one person, globally rather than per church. */
+    uniqueIndex('people_auth_user_idx')
+      .on(table.authUserId)
+      .where(sql`${table.authUserId} is not null`),
   ]
 )
 

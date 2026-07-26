@@ -18,6 +18,8 @@ import { availableDevViewers, isDeployedDemo } from '@/data/viewer'
  */
 export async function ViewerSwitch() {
   const viewers = availableDevViewers()
+  // Empty once a real session is in use, so this whole bar disappears the moment
+  // Supabase is configured. It is scaffolding, not a feature.
   if (viewers.length === 0) return null
 
   const current = await getViewerSummary()

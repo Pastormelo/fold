@@ -17,6 +17,8 @@
     "db:seed": "node --experimental-strip-types src/db/seed.ts"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.3",
+    "@supabase/supabase-js": "^2.110.8",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.27.0",
     "next": "16.2.12",
