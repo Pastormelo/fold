@@ -3,7 +3,7 @@ import {
   isSameOriginSubmission,
 } from '@/auth/identity-change'
 import { sampleViewers } from '@/data/sample'
-import { VIEWER_COOKIE, devViewerSwitchEnabled } from '@/data/viewer'
+import { VIEWER_COOKIE, demoAuthEnabled } from '@/data/viewer'
 
 /**
  * The development viewer switch, and the stand-in for sign-out.
@@ -24,7 +24,7 @@ import { VIEWER_COOKIE, devViewerSwitchEnabled } from '@/data/viewer'
 const plainText = { 'content-type': 'text/plain; charset=utf-8' } as const
 
 export async function POST(request: Request): Promise<Response> {
-  if (!devViewerSwitchEnabled()) {
+  if (!demoAuthEnabled()) {
     // Not "403": in production this route does not exist.
     return new Response('Not found', { status: 404, headers: plainText })
   }

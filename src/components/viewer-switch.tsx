@@ -1,5 +1,5 @@
 import { getViewerSummary } from '@/data/records'
-import { availableDevViewers } from '@/data/viewer'
+import { availableDevViewers, isDeployedDemo } from '@/data/viewer'
 
 /**
  * The development viewer switch, ported from the prototype's role-based tier
@@ -21,6 +21,7 @@ export async function ViewerSwitch() {
   if (viewers.length === 0) return null
 
   const current = await getViewerSummary()
+  const deployed = isDeployedDemo()
 
   return (
     <div
@@ -29,12 +30,31 @@ export async function ViewerSwitch() {
         borderBottom: '1px solid var(--border-inverse)',
       }}
     >
+      {/* On a deployed demo the URL may reach people with no idea the records
+          are invented and the app has no sign-in. Say both, above the fold. */}
+      {deployed && (
+        <div
+          style={{
+            background: 'var(--ofc-warning)',
+            color: 'var(--ofc-ink)',
+            padding: '8px 24px',
+            fontSize: '0.8125rem',
+            fontWeight: 600,
+            textAlign: 'center',
+            textWrap: 'pretty',
+          }}
+        >
+          Demo over fictional sample data. No authentication — anyone with this
+          link can read and switch between every person below.
+        </div>
+      )}
+
       <div className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-x-5 gap-y-3 px-6 py-3">
         <span
           className="overline"
           style={{ color: 'var(--ofc-n-400)', fontSize: '0.6875rem' }}
         >
-          Viewing as · dev only
+          Viewing as · {deployed ? 'demo' : 'dev only'}
         </span>
 
         <form

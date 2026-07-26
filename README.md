@@ -167,10 +167,29 @@ elder-governance dispute. It must not overclaim.
 
 ## The auth gap
 
-`src/data/viewer.ts` **throws in production**. There is no fallback viewer,
-because a fallback viewer is a silent authorization bypass. What exists is a
-development-only cookie switch so the tiers can be reviewed, and it is labelled
-as such in the UI.
+`src/data/viewer.ts` **throws when no session is configured**. There is no
+fallback viewer, because a fallback viewer is a silent authorization bypass. What
+exists is a cookie-based viewer switch over sample data, labelled as such in the
+UI.
+
+### Deploying it
+
+Locally the switch is always on. Anywhere else it takes an explicit opt-in:
+
+```bash
+FOLD_DEMO_MODE=1
+```
+
+Gating on that rather than on `NODE_ENV` is deliberate — a deployment gets demo
+behaviour because someone asked for it, not because of which build command ran.
+Left unset, a deployed instance refuses to serve people records and renders
+`src/app/global-error.tsx`, which explains what to set. That is the correct
+default for an app whose subject is confidential pastoral care, and it is why a
+fresh Vercel deploy returns 500 until you opt in.
+
+With it set, the top of every page carries a banner saying the data is fictional
+and there is no authentication. **The deployment is readable by anyone with the
+URL** — use Vercel's deployment protection, or keep the URL private.
 
 That module only ever *reads* a session. The write side — sign-in, sign-out,
 account switch — goes through `src/auth/identity-change.ts`, and the reason is a
