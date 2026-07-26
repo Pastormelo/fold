@@ -8,6 +8,12 @@ import {
   writableTiers,
 } from '@/domain/access'
 import {
+  DIRECTION_LABELS,
+  SYNC_CATEGORIES,
+  categoryRule,
+  isCategoryEnabled,
+} from '@/domain/planning-center'
+import {
   JOURNEY_WITHHELD_DISCLOSURE,
   WINDOW_LABELS,
   canReadJourney,
@@ -344,5 +350,44 @@ export async function getJourneys(
         summary: progress.summary,
       },
     ]
+  })
+}
+
+export type SyncCategoryRow = {
+  label: string
+  directionLabel: string
+  enabled: boolean
+  switchable: boolean
+  /** Present only when §6 fixes the category, shown instead of a control. */
+  fixedReason: string | null
+  conflictNote: string | null
+}
+
+/**
+ * The sync matrix, as §6 defines it.
+ *
+ * Rendered from the rules rather than a hand-written table, so the screen cannot
+ * claim a direction the sync would not honour. `switchable: false` rows carry
+ * their reason, which is what the UI shows where a toggle would otherwise be.
+ */
+export async function getSyncCategories(): Promise<SyncCategoryRow[]> {
+  await getViewer()
+  const settings = {}
+
+  return SYNC_CATEGORIES.map((category) => {
+    const rule = categoryRule(category)
+    return {
+      label: rule.label,
+      directionLabel: DIRECTION_LABELS[rule.direction],
+      enabled: isCategoryEnabled(settings, category),
+      switchable: rule.switchable,
+      fixedReason: rule.fixedReason,
+      conflictNote:
+        rule.conflictWinner === 'planning_center'
+          ? 'Planning Center wins on conflict'
+          : rule.conflictWinner === 'fold'
+            ? 'Fold wins on conflict'
+            : null,
+    }
   })
 }

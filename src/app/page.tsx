@@ -3,6 +3,7 @@ import {
   getGrantedExceptions,
   getJourneys,
   getPersonRecord,
+  getSyncCategories,
   getRestorationCases,
   getTierOverview,
   getUnfoldedMembers,
@@ -27,18 +28,27 @@ const TIER_ACCENT = {
  * chooses to render. Content above the viewer's tier never reaches the client.
  */
 export default async function Home() {
-  const [viewer, person, tiers, journeys, cases, unfolded, exceptions] =
-    await Promise.all([
-      getViewerSummary(),
-      getPersonRecord('p-lena'),
-      getTierOverview(),
-      // Fixed date so the demo's overdue states are stable to look at rather
-      // than drifting with the clock.
-      getJourneys(new Date('2026-07-26T00:00:00Z')),
-      getRestorationCases(),
-      getUnfoldedMembers(),
-      getGrantedExceptions(),
-    ])
+  const [
+    viewer,
+    person,
+    tiers,
+    journeys,
+    cases,
+    unfolded,
+    exceptions,
+    syncCategories,
+  ] = await Promise.all([
+    getViewerSummary(),
+    getPersonRecord('p-lena'),
+    getTierOverview(),
+    // Fixed date so the demo's overdue states are stable to look at rather
+    // than drifting with the clock.
+    getJourneys(new Date('2026-07-26T00:00:00Z')),
+    getRestorationCases(),
+    getUnfoldedMembers(),
+    getGrantedExceptions(),
+    getSyncCategories(),
+  ])
 
   return (
     <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-12 px-6 py-12">
@@ -587,6 +597,63 @@ export default async function Home() {
           </ul>
         </section>
       )}
+
+      {/* ── Planning Center sync scope ── */}
+      <section className="flex flex-col gap-4">
+        <h2 style={{ fontSize: '1.375rem' }}>Planning Center</h2>
+        <p
+          className="max-w-[62ch] text-[0.9375rem]"
+          style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}
+        >
+          Planning Center is the system of record for people. Fold is the system
+          of work for pathways and care. Not everything syncs because it can —
+          each category is a decision with a direction.
+        </p>
+        <div className="flex flex-col gap-2">
+          {syncCategories.map((category) => (
+            <div
+              key={category.label}
+              className="flex flex-wrap items-baseline gap-x-3 gap-y-1"
+              style={{
+                borderTop: '1px solid var(--border-subtle)',
+                paddingTop: 10,
+              }}
+            >
+              <span className="font-semibold" style={{ minWidth: '15rem' }}>
+                {category.label}
+              </span>
+              <span
+                className="overline"
+                style={{
+                  fontSize: '0.5625rem',
+                  letterSpacing: '0.1em',
+                  color: category.switchable
+                    ? 'var(--text-muted)'
+                    : 'var(--ofc-danger)',
+                }}
+              >
+                {category.directionLabel}
+              </span>
+              {category.switchable ? (
+                <span
+                  className="text-[0.8125rem]"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  {category.enabled ? 'On' : 'Off by default'}
+                  {category.conflictNote ? ` · ${category.conflictNote}` : ''}
+                </span>
+              ) : (
+                <span
+                  className="text-[0.8125rem]"
+                  style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}
+                >
+                  {category.fixedReason}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* ── The practices ── */}
       <section className="flex flex-col gap-4">

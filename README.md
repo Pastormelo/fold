@@ -21,6 +21,7 @@ the two that are painful to retrofit.
 | Pathway lifecycle state machine (§4) | Rules built and tested; persistence pending a database |
 | Draft diff and publish gate (§4, §8.6–8.8) | Built, with field coverage enforced by the compiler |
 | Care journeys (§11 step 5) | Built and tested; schema + migration generated |
+| Planning Center constraints (§11 step 6) | Built and tested; no API client yet |
 | People, households, folds, leaders (§2) | Schema + migration generated |
 | Restoration cases, care notes, change log | Schema + access rules |
 | One screen exercising the tier model | Built, checked per viewer |
@@ -197,6 +198,52 @@ terms of the situation: grief does not stop happening because the journey was
 deleted. Enforced in the domain rather than the schema, since a check constraint
 cannot refuse a DELETE — a trigger could, and would be worth adding if templates
 ever get a delete path that bypasses the domain.
+
+## Planning Center
+
+`src/domain/planning-center.ts`. **Planning Center is the system of record for
+people and ministry data; Fold is the system of work for pathways and care.**
+
+§11 says to build the mapping constraints first, so this is all constraint and no
+API client — what a sync client may attempt has to be settled before anything
+attempts it.
+
+**Fold never creates anything in Planning Center.** Not a field, list, category,
+or *status value*. There is no function here that produces an `ExternalField`,
+only functions that filter the ones already there — the constraint expressed as
+code rather than as a comment. When nothing fits, the two honest options are
+keeping the milestone in Fold or creating it in Planning Center first, and the
+second is guidance rather than a button.
+
+The value half matters as much as the field half. §6's example: if the membership
+status has no "Pending elder review" option, Fold cannot invent one. Mapping to a
+status field with an unknown value is refused, and the refusal lists what
+Planning Center does accept.
+
+**Some content never crosses, and it is not a setting.** `setCategoryEnabled`
+*refuses* to enable confidential pastoral notes rather than accepting the change
+and ignoring it — a setting that appears to save and does nothing is worse than
+one never offered. `isCategoryEnabled` also returns false for it even if a stored
+row says otherwise, and a check constraint stops such a row existing.
+
+An escalation is the interesting case: the flag syncs so leaders know care is
+happening, the reason does not. `escalationPayload` is one function handling both
+halves, so they cannot be handled in two places that drift.
+
+**Near matches are never merged.** Matching tries Planning Center id, then email,
+then phone, stopping at the first hit — an ordered list, not a score, so a strong
+field beats several weak ones. Two hits produce `possible_duplicates` for a person
+to resolve. There is no `merge` function in the module.
+
+Phone comparison uses the last ten digits, so `+1 (555) 000-2222` matches
+`555-000-2222`. That is a North American assumption which will occasionally match
+two different international numbers sharing a suffix — acceptable only because the
+result is a surfaced duplicate rather than a merge.
+
+**Deliberate absence, again.** A mapping is `mapped`, `fold_only` with a reason, or
+`unmapped`. The last two are both "not in Planning Center", kept apart because
+§8.8 needs a decision to be distinguishable from an oversight;
+`undecidedMappings` lists only the oversights.
 
 ## Derive, never mirror
 

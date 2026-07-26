@@ -26,6 +26,7 @@ import {
 } from 'drizzle-orm/pg-core'
 
 import { CARE_WINDOWS } from '@/domain/journeys'
+import { FOLD_LISTS, SYNC_CATEGORIES } from '@/domain/planning-center'
 import { ROLES } from '@/domain/roles'
 import { TIER_ORDER } from '@/domain/tiers'
 
@@ -53,6 +54,24 @@ export const provenance = pgEnum('provenance', [
 export const careWindow = pgEnum('care_window', CARE_WINDOWS)
 
 export const completionKind = pgEnum('completion_kind', ['done', 'skipped'])
+
+/** Declared from the domain, so the database knows the same categories §6 does. */
+export const syncCategory = pgEnum('sync_category', SYNC_CATEGORIES)
+
+export const foldList = pgEnum('fold_list', FOLD_LISTS)
+
+/**
+ * `unmapped` and `fold_only` are both "not in Planning Center", kept apart
+ * because §8.8 needs a considered omission to be distinguishable from an
+ * oversight.
+ */
+export const mappingState = pgEnum('mapping_state', [
+  'mapped',
+  'fold_only',
+  'unmapped',
+])
+
+export const owningSystem = pgEnum('owning_system', ['fold', 'planning_center'])
 
 /* ─────────────────────────────── Church ─────────────────────────────── */
 
@@ -590,6 +609,167 @@ export const changeLog = pgTable(
   (table) => [
     index('change_log_entity_idx').on(table.entity, table.entityId),
     index('change_log_church_idx').on(table.churchId, table.occurredAt),
+  ]
+)
+
+/* ─────────────────────── Planning Center integration ─────────────────────── */
+
+/**
+ * The church's per-category sync choices (§6).
+ *
+ * The check constraint is the interesting line. §6 says confidential pastoral
+ * notes are "not syncable and not switchable", and the domain enforces that — but
+ * a row saying otherwise should not be *storable* either, so a future write path
+ * that skips `setCategoryEnabled` still cannot record one.
+ */
+export const syncSettings = pgTable(
+  'sync_settings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id, { onDelete: 'restrict' }),
+    category: syncCategory('category').notNull(),
+    enabled: boolean('enabled').notNull(),
+    changedById: uuid('changed_by_id')
+      .notNull()
+      .references(() => people.id, { onDelete: 'restrict' }),
+    changedAt: timestamp('changed_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('sync_settings_category_idx').on(
+      table.churchId,
+      table.category
+    ),
+    check(
+      'confidential_notes_never_sync',
+      sql`${table.category} <> 'confidential_pastoral_notes' or ${table.enabled} = false`
+    ),
+  ]
+)
+
+/**
+ * A milestone's mapping to something that already exists in Planning Center
+ * (§2's `integration_mapping`, §6's constraints).
+ *
+ * Three states, and the difference between the last two is §8.8: `fold_only`
+ * carries a reason and is a decision; `unmapped` is nobody having looked yet.
+ * The check constraints make each state carry what it needs, so a "mapped" row
+ * with no field or a "fold_only" row with no reason cannot exist.
+ */
+export const integrationMappings = pgTable(
+  'integration_mappings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id, { onDelete: 'restrict' }),
+    /** The Fold-side thing being mapped, e.g. a milestone key. */
+    milestoneKey: text('milestone_key').notNull(),
+    state: mappingState('state').notNull(),
+    /** An id Planning Center already issued. Fold never invents one. */
+    externalFieldId: text('external_field_id'),
+    /** For a status field, a value Planning Center already accepts. */
+    externalValue: text('external_value'),
+    owningSystem: owningSystem('owning_system'),
+    /** Required when the church chose to keep this in Fold. */
+    foldOnlyReason: text('fold_only_reason'),
+    decidedById: uuid('decided_by_id').references(() => people.id, {
+      onDelete: 'set null',
+    }),
+    decidedAt: timestamp('decided_at', { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex('integration_mappings_key_idx').on(
+      table.churchId,
+      table.milestoneKey
+    ),
+    check(
+      'mapped_has_a_target',
+      sql`${table.state} <> 'mapped' or (${table.externalFieldId} is not null and ${table.owningSystem} is not null)`
+    ),
+    check(
+      'fold_only_has_a_reason',
+      sql`${table.state} <> 'fold_only' or (${table.foldOnlyReason} is not null and ${table.foldOnlyReason} <> '')`
+    ),
+  ]
+)
+
+/**
+ * Where Fold's Family and Guest lists land in Planning Center (§6).
+ *
+ * Either can be kept Fold-only, which is why `fold_only` is a state here as much
+ * as it is for a milestone.
+ */
+export const foldListMappings = pgTable(
+  'fold_list_mappings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id, { onDelete: 'restrict' }),
+    list: foldList('list').notNull(),
+    state: mappingState('state').notNull(),
+    externalFieldId: text('external_field_id'),
+    foldOnlyReason: text('fold_only_reason'),
+  },
+  (table) => [
+    uniqueIndex('fold_list_mappings_list_idx').on(table.churchId, table.list),
+    check(
+      'list_mapped_has_a_target',
+      sql`${table.state} <> 'mapped' or ${table.externalFieldId} is not null`
+    ),
+    check(
+      'list_fold_only_has_a_reason',
+      sql`${table.state} <> 'fold_only' or (${table.foldOnlyReason} is not null and ${table.foldOnlyReason} <> '')`
+    ),
+  ]
+)
+
+/**
+ * Near matches for a human to resolve (§6).
+ *
+ * A row here is the whole point of "never merged automatically": the duplicate
+ * is recorded and visible, and stays that way until a person decides. There is
+ * no automatic resolution path, and `resolvedAt` is only ever set by one.
+ */
+export const possibleDuplicates = pgTable(
+  'possible_duplicates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id, { onDelete: 'restrict' }),
+    personId: uuid('person_id')
+      .notNull()
+      .references(() => people.id, { onDelete: 'cascade' }),
+    otherPersonId: uuid('other_person_id')
+      .notNull()
+      .references(() => people.id, { onDelete: 'cascade' }),
+    matchedOn: text('matched_on').notNull(),
+    surfacedAt: timestamp('surfaced_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    resolvedById: uuid('resolved_by_id').references(() => people.id, {
+      onDelete: 'set null',
+    }),
+    resolution: text('resolution'),
+  },
+  (table) => [
+    check(
+      'duplicate_is_two_people',
+      sql`${table.personId} <> ${table.otherPersonId}`
+    ),
+    check(
+      'resolution_is_attributed',
+      sql`${table.resolvedAt} is null or (${table.resolvedById} is not null and ${table.resolution} is not null)`
+    ),
+    index('possible_duplicates_open_idx')
+      .on(table.churchId)
+      .where(sql`${table.resolvedAt} is null`),
   ]
 )
 
