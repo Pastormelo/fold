@@ -89,12 +89,17 @@ no pastoral care access, and `null` is returned rather than defaulting to the
 lowest tier — a default would silently grant every administrator access to
 ordinary care.
 
-### Access to restoration cases is by case, not by title
+### Restoration cases are elder-tier content
 
-Checked *before* clearance. An elder with full `elders_only` clearance who is
-not named on a case is refused, and sees only that the case exists and how it
-ended. This is the handoff's §3 rule 2 and the product's hardest case; it has
-its own tests.
+Nothing more complicated than that. Every elder reads every case; a reader below
+that tier reads none of them, and sees only that a case exists and how it ended.
+
+The handoff's §3 rule 2 proposed a second mechanism — access by per-case
+assignment, so that being an elder did not open every case. That is deliberately
+**not** implemented. Who carries a case is recorded on the case and shown to
+those who can read it, but it is not an access rule. A database check keeps
+restoration notes at `elders_only` so they cannot be filed at a tier staff can
+reach.
 
 A blocked reader always gets a sentence, never a blank. `CareNoteView` is a
 discriminated union, so the withheld variant has no `body` field at all — the
@@ -238,18 +243,6 @@ What the design insists on is that every exception is answerable:
   their own clearance is legitimate (covering a vacancy, verifying an import) and
   also the obvious abuse path, so it is called out rather than blended in.
 
-### The one thing a grant cannot do
-
-**A granted clearance does not open a restoration case.** §3 rule 2 says access is
-by case. The case check runs before clearance is consulted, so the source of the
-clearance makes no difference. Checked by requesting the page as an administrator
-holding a self-granted top clearance: still `restoration_case_not_carried`, with no
-case content in the payload.
-
-So an administrator can raise anyone's clearance without that reaching case
-content. The exception is the lead pastor, whose office grants it directly — see
-below.
-
 ### One administrator is enough — decided
 
 A grant of `elders_only` clearance needs **one** administrator, not two.
@@ -276,32 +269,15 @@ from now is included automatically, where a hand-maintained list would silently
 omit it and quietly narrow the role. The test
 `a lead pastor holds every permission` iterates `PERMISSIONS` to keep that true.
 
-An earlier default capped the role at `staff_and_elders`, on the theory that
-elder-board membership rather than the title should open the top tier. That was
-the wrong default for a polity that puts final authority in the role.
+`lead_pastor` and `pastor_elder` both reach `elders_only`, so both read every
+restoration case. The app does not model the difference between the two — a lead
+pastor is an elder, and which roles a person holds is something an administrator
+assigns rather than something the code decides.
 
-### Including every restoration case
-
-Confirmed 2026-07-26: the lead pastor reads **every** restoration case, named on
-it or not. This is the one place Fold departs from §3 rule 2's "access is by case,
-not by title", and it is a deliberate polity decision rather than an oversight.
-
-It is scoped as narrowly as the decision allows:
-
-- **`UNRESTRICTED_ROLES` only.** Every other route to top clearance still stops at
-  the case boundary — another elder, an administrator, and a *granted*
-  `elders_only` clearance are all still refused. Tests cover each.
-- **The basis is recorded.** Every view carries a `basis` of `named_on_case` or
-  `office`, available for an audit trail rather than reconstructed later. Nothing
-  in the UI displays it.
-- **Clearance is still checked**, not bypassed. Office is additional to the tier
-  rather than a substitute for it.
-
-`restoration.assign_elders` — the power to name who carries a case — is held by
-elders and the lead pastor, and deliberately **not** by `administrator`. §3 rule 2
-only retains meaning for everyone else if the power to change who carries a case
-is itself limited; an administrator who could add themselves to a case would have
-routed around the whole tier model.
+An earlier version made this far more complicated than it needed to be: per-case
+assignment as an access rule, plus a lead-pastor bypass to get around it, plus an
+`AccessBasis` recording which of the two applied. Once every elder reads every
+case, all of that is redundant. It was removed.
 
 ## Judgment calls still to confirm
 

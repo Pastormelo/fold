@@ -299,10 +299,7 @@ describe('the lead pastor holds the highest authority', () => {
     expect(grantedExceptions([leadPastor])).toHaveLength(0)
   })
 
-  it('can name the elders on a restoration case', () => {
-    // The lead pastor's route into a case: naming who carries it, which is a
-    // recorded act, rather than ambient read access to every case.
-    expect(can(leadPastor, 'restoration.assign_elders')).toBe(true)
+  it('can be named as an elder on a restoration case', () => {
     expect(can(leadPastor, 'restoration.be_assigned')).toBe(true)
   })
 
@@ -314,24 +311,6 @@ describe('the lead pastor holds the highest authority', () => {
       )
       expect(holdsAll, `${role} holds every permission`).toBe(false)
     }
-  })
-})
-
-describe('naming the elders on a case is not an administrator’s power', () => {
-  // §3 rule 2 only means something if the power to change who carries a case is
-  // itself limited. An administrator who could add themselves to a case would
-  // have found a way around the whole tier model.
-  it('refuses an administrator', () => {
-    expect(can(p('administrator'), 'restoration.assign_elders')).toBe(false)
-  })
-
-  it('refuses a pathway designer and a reviewer', () => {
-    expect(can(p('pathway_designer'), 'restoration.assign_elders')).toBe(false)
-    expect(can(p('reviewer_approver'), 'restoration.assign_elders')).toBe(false)
-  })
-
-  it('allows an elder', () => {
-    expect(can(p('pastor_elder'), 'restoration.assign_elders')).toBe(true)
   })
 })
 

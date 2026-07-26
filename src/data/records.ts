@@ -4,7 +4,6 @@ import {
   type CareTimeline,
   type RestorationCaseView,
   buildCareTimeline,
-  carriedCaseIds,
   viewRestorationCase,
   writableTiers,
 } from '@/domain/access'
@@ -116,11 +115,7 @@ export async function getPersonRecord(
     household: person.household,
     serving: person.serving.join(' · ') || 'Not serving right now',
     groups: person.groups.join(' · ') || 'No group',
-    care: buildCareTimeline(
-      viewer,
-      notes,
-      carriedCaseIds(viewer, SAMPLE_RESTORATION_CASES)
-    ),
+    care: buildCareTimeline(viewer, notes),
     writableTiers: writableTiers(viewer).map((tier) => ({
       tier,
       label: tierName(tier),

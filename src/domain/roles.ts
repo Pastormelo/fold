@@ -73,13 +73,9 @@ export const PERMISSIONS = [
   // Care.
   'care.log_note',
   'care.view_people',
-  // Restoration cases are never granted by permission alone — access is by
-  // case assignment (§3). This permission only means "may be named on a case".
+  // Whether this person can be named as one of the two elders carrying a case.
+  // Reading a case is governed by the elders_only tier, not by this.
   'restoration.be_assigned',
-  // Who may name the elders on a case. Deliberately not held by
-  // `administrator`: someone who configures the software should not be able to
-  // add themselves to a pastoral case.
-  'restoration.assign_elders',
   // Administration.
   'admin.manage_roles',
   // Distinct from managing roles: this is the power to give one individual an
@@ -128,7 +124,6 @@ const PERMISSION_HOLDERS: Record<Permission, readonly Role[]> = {
     'executive_assistant',
   ],
   'restoration.be_assigned': ['pastor_elder', 'lead_pastor'],
-  'restoration.assign_elders': ['pastor_elder', 'lead_pastor'],
   'admin.manage_roles': ['administrator'],
   'admin.grant_permissions': ['administrator'],
   'admin.manage_integrations': ['administrator'],
@@ -166,9 +161,7 @@ const REFUSAL_REASONS: Record<Permission, string> = {
   'care.log_note': 'Logging care is for leaders who carry people.',
   'care.view_people': 'You do not have access to people records.',
   'restoration.be_assigned':
-    'Restoration cases are carried by elders, and only the elders named on the case.',
-  'restoration.assign_elders':
-    'Naming the elders on a restoration case is for the elders and the lead pastor.',
+    'Restoration cases are carried by elders, so only an elder can be named on one.',
   'admin.manage_roles':
     'Only an administrator can change who holds which role.',
   'admin.grant_permissions':
@@ -185,23 +178,13 @@ const REFUSAL_REASONS: Record<Permission, string> = {
 /**
  * Roles that carry every permission in the app.
  *
- * `lead_pastor` holds the highest authority in Fold: it can grant and revoke
- * any permission, change any setting, and reaches the top confidentiality tier.
- * §5 gives the role "vision, doctrine, culture, final direction" without
- * enumerating powers; One Family's polity puts final authority there, and the
- * lead pastor is an elder.
+ * `lead_pastor` holds the highest authority in Fold: it can grant and revoke any
+ * permission, change any setting, and reaches the top confidentiality tier.
  *
- * Written as a short-circuit rather than by listing `lead_pastor` in all
- * fourteen entries of `PERMISSION_HOLDERS`, which is the §8.1 point: a permission
- * added six months from now is automatically included, where a hand-maintained
- * list would silently omit it and quietly narrow the role. `a lead pastor holds
- * every permission` in the tests iterates `PERMISSIONS` to hold that true.
- *
- * Restoration case content is handled separately, in `@/domain/access`: the lead
- * pastor reads every case, named on it or not, by decision of the lead pastor on
- * 2026-07-26. That is a deliberate departure from §3 rule 2 for this role only —
- * every other route to top clearance, including a granted one, still stops at the
- * case boundary.
+ * Written as a short-circuit rather than by listing `lead_pastor` in every entry
+ * of `PERMISSION_HOLDERS`, which is the §8.1 point: a permission added later is
+ * included automatically, where a hand-maintained list would silently omit it
+ * and quietly narrow the role.
  */
 export const UNRESTRICTED_ROLES: readonly Role[] = ['lead_pastor']
 
@@ -409,13 +392,9 @@ export function can(principal: Principal, permission: Permission): boolean {
  *   begins at `staff_and_elders`. The word "automatic" implies it can be
  *   granted, which happens here by also holding another role.
  *
- * `lead_pastor` reaches `elders_only`. Confirmed by the lead pastor on
- * 2026-07-26: the role holds the highest authority in the app and is an elder.
- * An earlier version capped it at `staff_and_elders` on the theory that
- * elder-board membership rather than the title should open the top tier; that
- * was the wrong default for a church whose polity puts final authority in the
- * role. Reaching the top tier is still not the same as reading every
- * restoration case — see `UNRESTRICTED_ROLES`.
+ * `lead_pastor` and `pastor_elder` both reach `elders_only`. A lead pastor is an
+ * elder; the app does not model the distinction, because who holds which role is
+ * something an administrator assigns rather than something the code decides.
  */
 const ROLE_CLEARANCE: Record<Role, ConfidentialityTier | null> = {
   administrator: null,

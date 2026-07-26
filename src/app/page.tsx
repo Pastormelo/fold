@@ -256,11 +256,11 @@ export default async function Home() {
               key={restorationCase.id}
               style={{
                 background:
-                  restorationCase.access === 'carried'
+                  restorationCase.access === 'visible'
                     ? 'var(--surface-card)'
                     : 'var(--surface-sunken)',
                 border:
-                  restorationCase.access === 'carried'
+                  restorationCase.access === 'visible'
                     ? '1px solid var(--border-subtle)'
                     : '1px dashed var(--border-strong)',
                 borderRadius: 'var(--radius-lg)',
@@ -269,7 +269,7 @@ export default async function Home() {
             >
               <div className="flex flex-wrap items-center gap-3">
                 <h3 style={{ fontSize: '1.0625rem' }}>
-                  {restorationCase.access === 'carried'
+                  {restorationCase.access === 'visible'
                     ? restorationCase.personName
                     : restorationCase.kind}
                 </h3>
@@ -295,7 +295,7 @@ export default async function Home() {
                 </span>
               </div>
 
-              {restorationCase.access === 'carried' ? (
+              {restorationCase.access === 'visible' ? (
                 <div className="mt-3 flex flex-col gap-3">
                   <p
                     className="text-[0.9375rem]"

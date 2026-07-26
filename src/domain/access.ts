@@ -14,21 +14,20 @@
 
 import {
   type ConfidentialityTier,
-  HIGHEST_TIER,
   TIER_ORDER,
   clearanceReaches,
   tierName,
 } from './tiers'
-import { type Principal, clearanceFor, hasUnrestrictedRole } from './roles'
+import { type Principal, clearanceFor } from './roles'
 
 /* ───────────────────────────── The viewer ───────────────────────────── */
 
 /**
- * Who is asking. `personId` matters: restoration access is by case
- * assignment, and a case names people, not roles (§3 rule 2, §4 attribution).
+ * Who is asking.
  *
  * A `Principal`, so any individual grants an administrator has made travel with
- * the viewer into every decision below. Nothing here reads roles directly.
+ * the viewer into every decision below. Nothing here reads roles directly — it
+ * asks for the resolved clearance and compares tiers.
  */
 export type Viewer = Principal & {
   displayName: string
@@ -61,20 +60,7 @@ export type CareNoteRecord = {
   restorationCaseId: string | null
 }
 
-export type WithheldReason = 'above_your_tier' | 'restoration_case_not_carried'
-
-/**
- * Why a reader is allowed to see case-scoped content.
- *
- * `named_on_case` is §3 rule 2's path. `office` is the lead pastor, who by
- * decision of the lead pastor on 2026-07-26 reads every restoration case whether
- * or not they are named on it.
- *
- * Recorded rather than collapsed into a single "allowed", so the reason someone
- * could read a case is available to an audit trail rather than reconstructed
- * later. Nothing in the UI currently displays it.
- */
-export type AccessBasis = 'named_on_case' | 'office'
+export type WithheldReason = 'above_your_tier'
 
 /**
  * What a reader gets for one note. A discriminated union so that a `visible`
@@ -90,11 +76,6 @@ export type CareNoteView =
       authorName: string
       visibilityTier: ConfidentialityTier
       body: string
-      /**
-       * How a case-scoped note was reached. `null` for ordinary care, which is
-       * governed by clearance alone.
-       */
-      basis: AccessBasis | null
     }
   | {
       access: 'withheld'
@@ -109,26 +90,18 @@ export type CareNoteView =
 const WITHHELD_DISCLOSURES: Record<WithheldReason, string> = {
   above_your_tier:
     'This note is above your tier. You can see that care happened, not what was said.',
-  restoration_case_not_carried:
-    'This note belongs to a restoration case you do not carry. You can see that care happened, not what was said.',
 }
 
 /**
  * Decide one note.
  *
- * Case-scoped notes are reached two ways: by being named on the case (§3 rule 2)
- * or by the lead pastor's office. Everything else — a granted `elders_only`
- * clearance, an administrator, any other elder — is refused, so raising someone's
- * clearance does not reach case content.
- *
- * Clearance is checked as well as the case, not instead of it, so office is
- * additional to the tier rather than a substitute for it.
+ * One rule: does the reader's clearance reach the tier the note was written at.
+ * Restoration notes sit at `elders_only`, so every elder reads them and nobody
+ * below that tier does.
  */
 export function viewCareNote(
   viewer: Viewer,
-  note: CareNoteRecord,
-  /** Case ids this viewer is named on. Empty for most readers. */
-  carriedCaseIds: readonly string[] = []
+  note: CareNoteRecord
 ): CareNoteView {
   const withhold = (reason: WithheldReason): CareNoteView => ({
     access: 'withheld',
@@ -138,17 +111,6 @@ export function viewCareNote(
     reason,
     disclosure: WITHHELD_DISCLOSURES[reason],
   })
-
-  let basis: AccessBasis | null = null
-  if (note.restorationCaseId !== null) {
-    if (carriedCaseIds.includes(note.restorationCaseId)) {
-      basis = 'named_on_case'
-    } else if (hasUnrestrictedRole(viewer)) {
-      basis = 'office'
-    } else {
-      return withhold('restoration_case_not_carried')
-    }
-  }
 
   const clearance = viewerClearance(viewer)
   if (clearance === null || !clearanceReaches(clearance, note.visibilityTier)) {
@@ -162,7 +124,6 @@ export function viewCareNote(
     authorName: note.authorName,
     visibilityTier: note.visibilityTier,
     body: note.body,
-    basis,
   }
 }
 
@@ -183,10 +144,9 @@ export type CareTimeline = {
 
 export function buildCareTimeline(
   viewer: Viewer,
-  notes: readonly CareNoteRecord[],
-  carriedCaseIds: readonly string[] = []
+  notes: readonly CareNoteRecord[]
 ): CareTimeline {
-  const views = notes.map((note) => viewCareNote(viewer, note, carriedCaseIds))
+  const views = notes.map((note) => viewCareNote(viewer, note))
   const hidden = views.filter((view) => view.access === 'withheld')
 
   return {
@@ -231,7 +191,7 @@ export type RestorationCaseRecord = {
   personName: string
   foldName: string
   openedAt: Date
-  /** The two elders carrying the case. Access is by this list, not by role. */
+  /** The two elders carrying the case. Recorded and displayed, not an access rule. */
   leadElderId: string
   secondElderId: string
   leadElderName: string
@@ -251,9 +211,7 @@ export type RestorationCaseRecord = {
 
 export type RestorationCaseView =
   | {
-      access: 'carried'
-      /** `office` when the reader is the lead pastor and not named on the case. */
-      basis: AccessBasis
+      access: 'visible'
       id: string
       personName: string
       foldName: string
@@ -282,45 +240,26 @@ export type RestorationCaseView =
       disclosure: string
     }
 
-/**
- * Ported verbatim from the prototype's `sealNote`.
- *
- * Note the last clause. It is the whole point of §3 rule 2, and it is why this
- * function takes a viewer's person id and not their role list.
- */
 export const SEALED_CASE_DISCLOSURE =
-  'This case is closed and sealed. You can see that it existed and how it ended, never what was said inside it. That holds even for elders who were not named on it.'
+  'This case is closed and sealed. You can see that it existed and how it ended, never what was said inside it.'
 
 export const OPEN_CASE_WITHHELD_DISCLOSURE =
-  'This is an open case you do not carry. You can see that it exists, never what was said inside it. Access is by case, not by title.'
+  'This is an open restoration case. You can see that it exists, never what was said inside it.'
 
-/** Whether this viewer is one of the two elders named on the case. */
-export function carriesCase(
-  viewer: Viewer,
-  restorationCase: RestorationCaseRecord
-): boolean {
-  return (
-    viewer.personId === restorationCase.leadElderId ||
-    viewer.personId === restorationCase.secondElderId
-  )
-}
-
+/**
+ * Restoration cases are elder-tier content, and nothing more complicated than
+ * that: an elder reads every case, and a reader below that tier reads none of
+ * them. Who is *assigned* to a case is recorded on the case and shown to those
+ * who can read it — it is not an access rule.
+ */
 export function viewRestorationCase(
   viewer: Viewer,
   restorationCase: RestorationCaseRecord
 ): RestorationCaseView {
   const sealed = restorationCase.closedAt !== null
-  const named = carriesCase(viewer, restorationCase)
-  const byOffice = !named && hasUnrestrictedRole(viewer)
-
-  // Office access still requires the clearance the content sits behind. The
-  // lead pastor holds `elders_only`, so this passes; it is checked rather than
-  // assumed so that office alone can never substitute for tier.
   const clearance = viewerClearance(viewer)
-  const reachesTier =
-    clearance !== null && clearanceReaches(clearance, HIGHEST_TIER)
 
-  if (!named && !(byOffice && reachesTier)) {
+  if (clearance === null || !clearanceReaches(clearance, 'elders_only')) {
     return {
       access: 'withheld',
       id: restorationCase.id,
@@ -338,8 +277,7 @@ export function viewRestorationCase(
   }
 
   return {
-    access: 'carried',
-    basis: named ? 'named_on_case' : 'office',
+    access: 'visible',
     id: restorationCase.id,
     personName: restorationCase.personName,
     foldName: restorationCase.foldName,
@@ -355,16 +293,6 @@ export function viewRestorationCase(
     doesNotKnow: restorationCase.doesNotKnow,
     decisionQuestion: restorationCase.decisionQuestion,
   }
-}
-
-/** Case ids this viewer carries, for passing to `viewCareNote`. */
-export function carriedCaseIds(
-  viewer: Viewer,
-  cases: readonly RestorationCaseRecord[]
-): string[] {
-  return cases
-    .filter((restorationCase) => carriesCase(viewer, restorationCase))
-    .map((restorationCase) => restorationCase.id)
 }
 
 /* ──────────────────────── Writing, not just reading ──────────────────────── */
