@@ -108,14 +108,14 @@ const TRANSITIONS: Record<PathwayAction, TransitionRule> = {
     to: 'scheduled',
     permission: 'pathway.publish',
     inferred:
-      '§4 lists `scheduled` as a state but gives no transition to it. Assumed: an approver may set a future date, and publishing still requires the same gate.',
+      '§4 lists `scheduled` as a state but gives no transition to it. Assumed: an approver may set a future date. Publishing still requires the same gate, including a recorded approval.',
   },
   publish: {
     from: ['approved', 'scheduled'],
     to: 'active',
     permission: 'pathway.publish',
     inferred:
-      '§4 gives publish as approved → active. `scheduled` is included as a source so a scheduled version can go live without a second approval.',
+      '§4 gives publish as approved → active. `scheduled` is included as a source, but going live still requires a recorded approval — see the `not_approved` blocker in ./pathway-publish. Confirmed by the lead pastor on 2026-07-26.',
   },
   edit_stage: {
     from: ['active', 'archived'],

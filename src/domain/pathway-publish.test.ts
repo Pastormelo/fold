@@ -73,6 +73,12 @@ const changedPathway = pathway([
   },
 ])
 
+const approver = review({
+  reviewerId: 'p-tanya',
+  reviewerName: 'Tanya Jules',
+  approval: { at: APPROVED_AT },
+})
+
 const noChangeDiff = diffPathway({
   draft: emptyPathway,
   published: emptyPathway,
@@ -231,13 +237,13 @@ describe('unaddressed objections block', () => {
 describe('the publish gate', () => {
   const ready = {
     findings: [] as HealthFinding[],
-    reviews: [] as Review[],
+    reviews: [approver] as Review[],
     migrationChoice: 'existing_stay' as const,
     diff: realDiff,
     peopleInFlight: 12,
   }
 
-  it('is ready when all three conditions are met', () => {
+  it('is ready when every condition is met', () => {
     const readiness = publishReadiness(ready)
     expect(readiness.ready).toBe(true)
     expect(readiness.blockers).toHaveLength(0)
@@ -287,7 +293,7 @@ describe('the publish gate', () => {
     ).toMatch(/people already in the pathway/)
   })
 
-  it('reports all three blockers at once rather than the first', () => {
+  it('reports every blocker at once rather than the first', () => {
     const readiness = publishReadiness({
       findings: [finding()],
       reviews: [
@@ -304,9 +310,15 @@ describe('the publish gate', () => {
       diff: realDiff,
       peopleInFlight: 0,
     })
-    expect(readiness.blockers).toHaveLength(3)
+    // Not approved, a blocking finding, an unaddressed objection, no migration.
+    expect(readiness.blockers.map((blocker) => blocker.code)).toEqual([
+      'not_approved',
+      'blocking_findings',
+      'unaddressed_objection',
+      'no_migration_choice',
+    ])
     expect(readiness.summary).toBe(
-      '3 things are unresolved before this can be published.'
+      '4 things are unresolved before this can be published.'
     )
   })
 
@@ -315,6 +327,40 @@ describe('the publish gate', () => {
     expect(readiness.summary).toBe(
       'One thing is unresolved before this can be published.'
     )
+  })
+
+  it('blocks a version nobody has approved', () => {
+    // Confirmed by the lead pastor on 2026-07-26: a scheduled version cannot go
+    // live unless it was already approved.
+    const readiness = publishReadiness({ ...ready, reviews: [] })
+    expect(readiness.ready).toBe(false)
+    expect(readiness.blockers.map((blocker) => blocker.code)).toContain(
+      'not_approved'
+    )
+  })
+
+  it('does not accept an addressed objection in place of an approval', () => {
+    // §4's attribution rule reaching the publish gate: a version can sit in the
+    // `approved` state with nobody having actually approved it, if all that
+    // happened was somebody else resolving an objection.
+    const readiness = publishReadiness({
+      ...ready,
+      reviews: [
+        review({
+          objection: {
+            raisedAt: RAISED_AT,
+            note: 'The membership stage skips the elder interview.',
+            addressedAt: APPROVED_AT,
+            addressedById: 'p-avery',
+          },
+        }),
+      ],
+    })
+    expect(readiness.ready).toBe(false)
+    expect(readiness.blockers.map((blocker) => blocker.code)).toContain(
+      'not_approved'
+    )
+    expect(readiness.approvals).toHaveLength(0)
   })
 
   it('reads the changed stage count off the diff rather than recounting', () => {
@@ -359,7 +405,7 @@ describe('publishing an identical version is a no-op worth saying', () => {
   // §8.5: an action that reports success must have done something.
   const identical = publishReadiness({
     findings: [],
-    reviews: [],
+    reviews: [approver],
     migrationChoice: 'existing_stay',
     diff: noChangeDiff,
     peopleInFlight: 0,
@@ -376,7 +422,7 @@ describe('publishing an identical version is a no-op worth saying', () => {
   it('is not a no-op when something actually changed', () => {
     const changed = publishReadiness({
       findings: [],
-      reviews: [],
+      reviews: [approver],
       migrationChoice: 'existing_stay',
       diff: realDiff,
       peopleInFlight: 3,
@@ -387,7 +433,7 @@ describe('publishing an identical version is a no-op worth saying', () => {
   it('is not called a no-op while it is still blocked', () => {
     const blocked = publishReadiness({
       findings: [],
-      reviews: [],
+      reviews: [approver],
       migrationChoice: null,
       diff: noChangeDiff,
       peopleInFlight: 0,

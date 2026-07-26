@@ -20,9 +20,10 @@ import {
 /**
  * Roles a person can hold. A person holds one or more.
  *
- * The first seven are the product roles named in §5. The rest are the
- * care-structure roles named in §3's tier table, which §5 does not enumerate
- * but the confidentiality model depends on.
+ * The first seven are the product roles named in §5. Then the care-structure
+ * roles from §3's tier table, which §5 does not enumerate but the
+ * confidentiality model depends on. Last is `care_volunteer`, the default a new
+ * person holds until an administrator changes it.
  */
 export const ROLES = [
   'administrator',
@@ -36,9 +37,21 @@ export const ROLES = [
   'staff',
   'deacon',
   'group_leader',
+  'care_volunteer',
 ] as const
 
 export type Role = (typeof ROLES)[number]
+
+/**
+ * What a person holds before anyone decides otherwise.
+ *
+ * A care volunteer reaches ordinary care and nothing above it. New people start
+ * here rather than with no role at all, because someone helping with care needs
+ * to see visits and calls on day one, and rather than with something broader,
+ * because an administrator should have to *widen* access deliberately instead of
+ * narrowing it after the fact.
+ */
+export const DEFAULT_ROLE: Role = 'care_volunteer'
 
 export const ROLE_LABELS: Record<Role, string> = {
   administrator: 'Administrator',
@@ -52,6 +65,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   staff: 'Staff',
   deacon: 'Deacon',
   group_leader: 'Group leader',
+  care_volunteer: 'Care volunteer',
 }
 
 export function isRole(value: unknown): value is Role {
@@ -105,6 +119,7 @@ const PERMISSION_HOLDERS: Record<Permission, readonly Role[]> = {
   'pathway.publish': ['administrator', 'reviewer_approver'],
   'pathway.view': [...ROLES],
   'care.log_note': [
+    'care_volunteer',
     'pastor_elder',
     'lead_pastor',
     'pastoral_staff',
@@ -114,6 +129,7 @@ const PERMISSION_HOLDERS: Record<Permission, readonly Role[]> = {
     'connection_team_leader',
   ],
   'care.view_people': [
+    'care_volunteer',
     'pastor_elder',
     'lead_pastor',
     'pastoral_staff',
@@ -402,6 +418,7 @@ const ROLE_CLEARANCE: Record<Role, ConfidentialityTier | null> = {
   reviewer_approver: null,
   connection_team_leader: 'all_leaders',
   group_leader: 'all_leaders',
+  care_volunteer: 'all_leaders',
   deacon: 'all_leaders',
   staff: 'all_leaders',
   executive_assistant: 'all_leaders',

@@ -9,6 +9,7 @@ import {
   ROLES,
   type Role,
   UNRESTRICTED_ROLES,
+  DEFAULT_ROLE,
   can,
   clearanceFor,
   countLeadersByClearance,
@@ -60,6 +61,46 @@ function clearanceGrant(
     ...overrides,
   }
 }
+
+describe('the default role', () => {
+  // Confirmed by the lead pastor on 2026-07-26: a new person is a care
+  // volunteer until an administrator changes it.
+  const volunteer = p(DEFAULT_ROLE)
+
+  it('is care volunteer', () => {
+    expect(DEFAULT_ROLE).toBe('care_volunteer')
+  })
+
+  it('reaches ordinary care and nothing above it', () => {
+    expect(clearanceFor(volunteer)).toBe('all_leaders')
+    expect(principalReaches(volunteer, 'all_leaders')).toBe(true)
+    expect(principalReaches(volunteer, 'staff_and_elders')).toBe(false)
+    expect(principalReaches(volunteer, 'elders_only')).toBe(false)
+  })
+
+  it('can log care and see people, which is the point of the role', () => {
+    expect(can(volunteer, 'care.log_note')).toBe(true)
+    expect(can(volunteer, 'care.view_people')).toBe(true)
+  })
+
+  it('carries nothing administrative', () => {
+    // The default has to be the floor, so widening access is a deliberate act
+    // rather than something an administrator has to remember to undo.
+    expect(can(volunteer, 'admin.manage_roles')).toBe(false)
+    expect(can(volunteer, 'admin.grant_permissions')).toBe(false)
+    expect(can(volunteer, 'pathway.edit')).toBe(false)
+    expect(can(volunteer, 'pathway.publish')).toBe(false)
+    expect(can(volunteer, 'restoration.be_assigned')).toBe(false)
+  })
+
+  it('can be widened by a grant like any other role', () => {
+    const raised: Principal = {
+      ...volunteer,
+      clearanceGrants: [clearanceGrant('staff_and_elders')],
+    }
+    expect(clearanceFor(raised)).toBe('staff_and_elders')
+  })
+})
 
 describe('pathway.publish is a distinct permission from pathway.edit', () => {
   // §5: "`pathway.publish` must be a distinct permission from `pathway.edit`."

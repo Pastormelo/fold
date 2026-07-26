@@ -139,7 +139,11 @@ export function objectionsAddressedByOthers(reviews: readonly Review[]): {
 /* ───────────────────────────── The publish gate ───────────────────────────── */
 
 export type PublishBlocker = {
-  code: 'blocking_findings' | 'unaddressed_objection' | 'no_migration_choice'
+  code:
+    | 'not_approved'
+    | 'blocking_findings'
+    | 'unaddressed_objection'
+    | 'no_migration_choice'
   reason: string
 }
 
@@ -180,6 +184,20 @@ export function publishReadiness({
 }): PublishReadiness {
   const blockers: PublishBlocker[] = []
 
+  // A version goes live only if somebody actually approved it. Checked against
+  // the review records rather than against the state name, because `approved`
+  // and `scheduled` are labels a transition set, and because §4's attribution
+  // rule means an approval is a narrower thing than it looks: a reviewer whose
+  // objection someone else resolved is not an approver, so a version can sit in
+  // `approved` with nobody having approved it.
+  const approvals = approvedBy(reviews)
+  if (approvals.length === 0) {
+    blockers.push({
+      code: 'not_approved',
+      reason: 'nobody has approved this version',
+    })
+  }
+
   const blocking = unresolvedBlockingFindings(findings)
   if (blocking.length > 0) {
     blockers.push({
@@ -218,7 +236,7 @@ export function publishReadiness({
     // Read off the diff rather than counted again, so the two cannot disagree.
     changedStageCount: diff.changedStageCount,
     peopleInFlight,
-    approvals: approvedBy(reviews),
+    approvals,
     summary: summarise(blockers, diff, peopleInFlight),
   }
 }

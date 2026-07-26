@@ -173,6 +173,12 @@ export const leaderRoles = pgTable(
     personId: uuid('person_id')
       .notNull()
       .references(() => people.id, { onDelete: 'cascade' }),
+    /**
+     * No database default. A person's roles are rows, so "the default role" is
+     * a fact about how a person is created rather than about this column —
+     * `DEFAULT_ROLE` in @/domain/roles is the one place that decides it, and a
+     * column default here would be a second place able to disagree.
+     */
     role: roleName('role').notNull(),
     /** Who granted it, and when. A role change is an accountable act. */
     grantedById: uuid('granted_by_id').references(() => people.id, {

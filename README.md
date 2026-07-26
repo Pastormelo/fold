@@ -121,10 +121,17 @@ that was active becomes archived because a new one displaced it. Offering it as 
 is what let the prototype claim a live pathway was archived, so `publish` returns the
 displaced version in `archives` and nothing else can produce that state.
 
+**Publishing requires a recorded approval.** Confirmed 2026-07-26: a scheduled
+version cannot go live unless it was already approved. The `not_approved` blocker
+checks the review records rather than the state name, which matters because §4's
+attribution rule makes an approval narrower than it looks — a version can sit in
+`approved` with nobody having actually approved it, if all that happened was
+somebody else resolving an objection.
+
 **Three transitions are marked `inferred`.** §4 lists `discovery` and `scheduled` among
 the states but gives no transition reaching either. Rather than quietly invent policy,
 those are implemented the obvious way and flagged — the same instinct as the handoff's
-`provenance` field. Worth confirming.
+`provenance` field.
 
 **Publishing cannot skip its gate.** `attemptTransition` throws if a caller tries to
 publish without supplying `publishBlockers`, even empty. An omitted gate that defaulted
@@ -279,21 +286,22 @@ assignment as an access rule, plus a lead-pastor bypass to get around it, plus a
 `AccessBasis` recording which of the two applied. Once every elder reads every
 case, all of that is redundant. It was removed.
 
-## Judgment calls still to confirm
+## The default role is care volunteer
 
-Two role decisions remain defensible readings of §5 rather than facts from it.
-They set the **defaults** — each can be overridden per person by a recorded
-grant. Both are in `ROLE_CLEARANCE` (`src/domain/roles.ts`).
+Confirmed 2026-07-26. A new person holds `care_volunteer` until an administrator
+changes it — `DEFAULT_ROLE` in `src/domain/roles.ts` is the single place that
+decides this, which is why `leader_roles.role` has no column default that could
+disagree with it.
 
-1. **Administrator has no pastoral care clearance at all.** §5 scopes the role
-   to settings, integrations, templates, roles, publishing, and reporting.
-   Letting whoever configures the software read every restoration case would
-   defeat §3. (`pathway_designer` and `reviewer_approver` likewise — they are
-   workflow roles over configuration, not people.)
-2. **Executive Assistant caps at `all_leaders`.** §5 says no *automatic* access
-   to confidential pastoral content, and "confidential" begins at
-   `staff_and_elders` in §3's table. "Automatic" implies it can be granted,
-   which here happens by also holding another role.
+A care volunteer reaches `all_leaders` and can log care and view people. Nothing
+administrative, no pathway editing, and no elder tier. The default is the floor
+on purpose: widening someone's access should be a deliberate act, not something
+an administrator has to remember to undo.
+
+The remaining clearance defaults — administrator and the pathway workflow roles
+reaching nothing, executive assistant capping at `all_leaders` — matter only when
+one of those roles is deliberately assigned, and any of them can be widened per
+person by a recorded grant.
 
 ## Sample data is not configuration
 
