@@ -25,6 +25,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 
+import { AUDITED_AI_EVENTS, VERDICTS } from '@/domain/ai'
 import { CARE_WINDOWS } from '@/domain/journeys'
 import { FOLD_LISTS, SYNC_CATEGORIES } from '@/domain/planning-center'
 import { ROLES } from '@/domain/roles'
@@ -72,6 +73,10 @@ export const mappingState = pgEnum('mapping_state', [
 ])
 
 export const owningSystem = pgEnum('owning_system', ['fold', 'planning_center'])
+
+export const verdictKind = pgEnum('verdict_kind', VERDICTS)
+
+export const aiAuditEvent = pgEnum('ai_audit_event', AUDITED_AI_EVENTS)
 
 /* ─────────────────────────────── Church ─────────────────────────────── */
 
@@ -771,6 +776,108 @@ export const possibleDuplicates = pgTable(
       .on(table.churchId)
       .where(sql`${table.resolvedAt} is null`),
   ]
+)
+
+/* ──────────────────────── AI recommendations ──────────────────────── */
+
+/**
+ * A recommendation the AI made, with §7's five parts as five not-null columns.
+ *
+ * `human_judgment` being `notNull` is the point: §7 says the fifth part is not
+ * optional, and a nullable column would make it optional in the one place that
+ * outlives the code. `cited_answer_ids` is likewise non-empty by check, since a
+ * recommendation resting on general best practice rather than the church's own
+ * answers is not usable here.
+ */
+export const aiRecommendations = pgTable(
+  'ai_recommendations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id, { onDelete: 'restrict' }),
+    noticed: text('noticed').notNull(),
+    whyItMatters: text('why_it_matters').notNull(),
+    consequence: text('consequence').notNull(),
+    options: text('options').array().notNull(),
+    /** §7: the fifth part, and not optional. */
+    humanJudgment: text('human_judgment').notNull(),
+    citedAnswerIds: text('cited_answer_ids').array().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('ai_recommendations_church_idx').on(table.churchId),
+    check(
+      'recommendation_offers_an_option',
+      sql`array_length(${table.options}, 1) >= 1`
+    ),
+    check(
+      'recommendation_cites_the_church',
+      sql`array_length(${table.citedAnswerIds}, 1) >= 1`
+    ),
+    check(
+      'human_judgment_is_not_blank',
+      sql`btrim(${table.humanJudgment}) <> ''`
+    ),
+  ]
+)
+
+/**
+ * A verdict on a recommendation.
+ *
+ * Every verdict carries a reason, including an acceptance — a decision recorded
+ * without one tells a future reader that something happened but not why. Rows
+ * are never deleted: §7 says rejections stay visible so a later leader can see a
+ * finding was considered rather than missed.
+ */
+export const recommendationVerdicts = pgTable(
+  'recommendation_verdicts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    recommendationId: uuid('recommendation_id')
+      .notNull()
+      .references(() => aiRecommendations.id, { onDelete: 'restrict' }),
+    verdict: verdictKind('verdict').notNull(),
+    reason: text('reason').notNull(),
+    decidedById: uuid('decided_by_id')
+      .notNull()
+      .references(() => people.id, { onDelete: 'restrict' }),
+    decidedAt: timestamp('decided_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('recommendation_verdict_idx').on(table.recommendationId),
+    check('verdict_has_a_reason', sql`btrim(${table.reason}) <> ''`),
+  ]
+)
+
+/**
+ * §7's audit trail: prompts, recommendations, verdicts, manual edits, and
+ * publication decisions.
+ *
+ * `actor_id` is a person even for a model-generated event — the person on whose
+ * behalf it ran. A row attributed to "the AI" answers nobody's question later.
+ */
+export const aiAuditLog = pgTable(
+  'ai_audit_log',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id, { onDelete: 'restrict' }),
+    event: aiAuditEvent('event').notNull(),
+    actorId: uuid('actor_id')
+      .notNull()
+      .references(() => people.id, { onDelete: 'restrict' }),
+    detail: text('detail').notNull(),
+    occurredAt: timestamp('occurred_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index('ai_audit_church_idx').on(table.churchId, table.occurredAt)]
 )
 
 /* ─────────────────────────── Church profile ─────────────────────────── */

@@ -22,6 +22,7 @@ the two that are painful to retrofit.
 | Draft diff and publish gate (§4, §8.6–8.8) | Built, with field coverage enforced by the compiler |
 | Care journeys (§11 step 5) | Built and tested; schema + migration generated |
 | Planning Center constraints (§11 step 6) | Built and tested; no API client yet |
+| AI guardrails and schemas (§11 step 7) | Built and tested; no model calls yet |
 | People, households, folds, leaders (§2) | Schema + migration generated |
 | Restoration cases, care notes, change log | Schema + access rules |
 | One screen exercising the tier model | Built, checked per viewer |
@@ -244,6 +245,50 @@ result is a surfaced duplicate rather than a merge.
 `unmapped`. The last two are both "not in Planning Center", kept apart because
 §8.8 needs a decision to be distinguishable from an oversight;
 `undecidedMappings` lists only the oversights.
+
+## AI guardrails
+
+`src/domain/ai.ts`. Schemas and refusals, with no model calls — what the AI may
+produce has to be settled before anything produces it.
+
+**Malformed output never reaches configuration.** Every AI-produced shape has a
+Zod schema, and the only way to obtain one of these types is a parser returning
+`{ ok: false, errors }` rather than throwing. A bad model response cannot become
+an exception halfway through a write. There is no cast in the module.
+
+**The fifth part is not optional.** A recommendation carries what it noticed, why
+it matters, the consequence, the options, and *which part is the church's judgment
+rather than the AI's*. `humanJudgment` is a required non-empty string, so omitting
+it fails to parse — and `human_judgment` is `not null` with a blank check in the
+schema, because a nullable column would make it optional in the one place that
+outlives the code.
+
+**Reasoning cites the church's own answers.** §7's contrast is between "add a
+membership interview" and "because your polity requires elder approval…".
+`citedAnswerIds` must be non-empty, and `validateRecommendationAgainstSession`
+catches a citation naming an answer the church never gave. That second check
+matters more than the first: a dangling citation produces a recommendation that
+*looks* grounded.
+
+**Refusals are specific.** §7's must-not list is eight entries with eight distinct
+reasons, and a test asserts they are distinct — a generic denial teaches a reader
+nothing about where the boundary sits. An action nobody has classified is refused
+too, since the safe default for something writing to pastoral records is no.
+
+**Rejections stay visible.** `recommendationsWithVerdicts` returns every
+recommendation annotated with its verdict; there is no filter that hides rejected
+ones, which is why it is shaped as "all of them, annotated" rather than "the open
+ones". Every verdict needs a reason, including an acceptance, and "saved for
+later" still counts as open.
+
+**An inference is never policy.** A profile entry marked `inferred` must say what
+it was inferred from, or it fails to parse — an inference nobody can trace is read
+as fact by the next person. `inferenceWarning` counts them for any conclusion that
+rests on one.
+
+**Import analysis quotes the document.** `quotedLine` is required, so an
+unquotable observation is unrepresentable: a finding a church cannot trace back to
+its own words is one they have no way to check.
 
 ## Derive, never mirror
 
