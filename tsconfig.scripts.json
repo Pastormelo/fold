@@ -1,0 +1,20 @@
+{
+  // For the db:* scripts, which run under tsx rather than Next.
+  //
+  // `server-only` is a Next bundler shim, not a real package: Next maps it to an
+  // empty module server-side and a throwing one client-side. A script running
+  // outside Next has to be told the same thing, or importing anything that
+  // guards itself with it fails to resolve.
+  //
+  // Kept in a separate file so the alias never reaches the Next build, where
+  // Next's own resolution should win.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "server-only": [
+        "./node_modules/next/dist/compiled/server-only/empty.js"
+      ]
+    }
+  }
+}
