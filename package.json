@@ -14,7 +14,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "node --experimental-strip-types src/db/seed.ts"
+    "db:seed": "node --experimental-strip-types --env-file=.env.local src/db/seed.ts",
+    "db:link-account": "node --experimental-strip-types --env-file=.env.local src/db/link-account.ts",
+    "db:check": "./scripts/check-db.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",

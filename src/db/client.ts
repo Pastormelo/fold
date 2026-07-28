@@ -16,6 +16,11 @@ declare global {
   var __foldSql: ReturnType<typeof postgres> | undefined
 }
 
+/** Serverless gives each invocation its own process, so pools must not be big. */
+function isServerless(): boolean {
+  return process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined
+}
+
 function connection() {
   const url = process.env.DATABASE_URL
   if (!url) {
@@ -23,9 +28,28 @@ function connection() {
       'DATABASE_URL is not set. Copy .env.example to .env.local and point it at a Postgres database.'
     )
   }
+
   // Reused across hot reloads in development so a dev session does not exhaust
   // the connection pool.
-  globalThis.__foldSql ??= postgres(url, { max: 10 })
+  globalThis.__foldSql ??= postgres(url, {
+    /**
+     * Supabase's transaction pooler (port 6543) does not support prepared
+     * statements, and postgres.js uses them by default — the failure is an
+     * opaque error on the *second* query with the same shape, which is a
+     * miserable thing to debug. Disabling them costs a little planning time and
+     * is harmless on a direct connection, so it is unconditional rather than
+     * guessed from the host.
+     */
+    prepare: false,
+    /**
+     * One connection per invocation in serverless: every lambda would otherwise
+     * open its own pool of ten and exhaust the database's limit under any real
+     * load. Locally a larger pool is useful.
+     */
+    max: isServerless() ? 1 : 10,
+    /** Supabase requires TLS; this is the setting its own guides use. */
+    ssl: 'require',
+  })
   return globalThis.__foldSql
 }
 
