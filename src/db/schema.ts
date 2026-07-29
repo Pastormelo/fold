@@ -27,6 +27,11 @@ import {
 
 import { AUDITED_AI_EVENTS, VERDICTS } from '@/domain/ai'
 import { CARE_WINDOWS } from '@/domain/journeys'
+import {
+  MIGRATION_CHOICES,
+  PATHWAY_ACTIONS,
+  PATHWAY_STATES,
+} from '@/domain/pathway'
 import { FOLD_LISTS, SYNC_CATEGORIES } from '@/domain/planning-center'
 import { ROLES } from '@/domain/roles'
 import { TIER_ORDER } from '@/domain/tiers'
@@ -916,5 +921,266 @@ export const churchProfileEntries = pgTable(
   },
   (table) => [
     uniqueIndex('church_profile_field_idx').on(table.churchId, table.field),
+  ]
+)
+
+/* ─────────────────────────────── Pathway ─────────────────────────────── */
+
+/**
+ * Declared from the domain so the database cannot hold a state or an action
+ * `attemptTransition` has never heard of. Note `pathway_action` has no
+ * `archive` member, for the reason ./domain/pathway.ts gives: archiving is a
+ * consequence of publishing, not something anyone does.
+ */
+export const pathwayState = pgEnum('pathway_state', PATHWAY_STATES)
+export const pathwayAction = pgEnum('pathway_action', PATHWAY_ACTIONS)
+export const migrationChoice = pgEnum('migration_choice', MIGRATION_CHOICES)
+
+/**
+ * One row per version, not one row per church.
+ *
+ * §4: "Only one version is `active` per church. Previous versions are
+ * `archived`." A church therefore has a stack of these — the archived ones it
+ * used to run, at most one active, and at most one being worked on. That is
+ * enforced below by a partial unique index rather than by hoping.
+ *
+ * There is no `is_dirty` and no `has_changes`. §8.6 is explicit that draft state
+ * is derived by diffing the working version against the published one, and a
+ * stored flag is exactly what let the prototype get stuck reporting changes that
+ * were not there. `diffPathways` answers that question from the rows.
+ */
+export const pathways = pgTable(
+  'pathways',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id, { onDelete: 'restrict' }),
+    /** 1, 2, 3… as published. A working version claims the next number. */
+    versionNumber: integer('version_number').notNull(),
+    state: pathwayState('state').notNull(),
+    internalName: text('internal_name').notNull().default(''),
+    publicName: text('public_name').notNull().default(''),
+    philosophy: text('philosophy').notNull().default(''),
+    discipleDefinition: text('disciple_definition').notNull().default(''),
+    /**
+     * Nullable with no default, because §4 requires the publisher to choose and
+     * "existing participants are never migrated automatically". A default here
+     * would be the app deciding what happens to people mid-pathway, which is the
+     * one thing the handoff says it must not do. `null` blocks publishing — see
+     * the `no_migration_choice` blocker.
+     */
+    migrationChoice: migrationChoice('migration_choice'),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    publishedById: uuid('published_by_id').references(
+      (): AnyPgColumn => people.id,
+      { onDelete: 'restrict' }
+    ),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('pathways_version_idx').on(table.churchId, table.versionNumber),
+    /**
+     * At most one active version per church, in the database rather than in
+     * application code. Two live pathways would mean two answers to "what
+     * happens to a guest next", and nobody would know which one was running.
+     */
+    uniqueIndex('pathways_one_active_idx')
+      .on(table.churchId)
+      .where(sql`${table.state} = 'active'`),
+    /** A published version must say when and by whom, or neither. */
+    check(
+      'pathways_published_attribution',
+      sql`(${table.publishedAt} IS NULL) = (${table.publishedById} IS NULL)`
+    ),
+  ]
+)
+
+/**
+ * A stage of one version.
+ *
+ * Every field in `EditableStage` appears here, because §8.7 requires the diff to
+ * cover all of them and a field that is not stored cannot be diffed. The two
+ * `_json` columns hold string arrays; they are text rather than a Postgres array
+ * so ordering is preserved exactly as the church entered it.
+ */
+export const pathwayStages = pgTable(
+  'pathway_stages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    pathwayId: uuid('pathway_id')
+      .notNull()
+      .references(() => pathways.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    name: text('name').notNull(),
+    /** What the church calls this stage in front of guests. Often gentler. */
+    publicName: text('public_name').notNull().default(''),
+    subtitle: text('subtitle').notNull().default(''),
+    purpose: text('purpose').notNull().default(''),
+    outcome: text('outcome').notNull().default(''),
+    entryCondition: text('entry_condition').notNull().default(''),
+    requiredActions: text('required_actions').array().notNull().default([]),
+    optionalActions: text('optional_actions').array().notNull().default([]),
+    /** Free text, not `role_name`: churches name these jobs their own way. */
+    ownerRole: text('owner_role').notNull().default(''),
+    completionCondition: text('completion_condition').notNull().default(''),
+    /** §8: without this, follow-up either never ends or ends arbitrarily. */
+    stoppingRule: text('stopping_rule').notNull().default(''),
+    reactivationRule: text('reactivation_rule').notNull().default(''),
+    escalationRule: text('escalation_rule').notNull().default(''),
+    milestones: text('milestones').array().notNull().default([]),
+    /**
+     * §8.8: a stage left empty *on purpose* must be distinguishable from one
+     * where somebody forgot. Naming the field here is how a church says "we
+     * decided not to have a stopping rule" and stops the health check nagging.
+     */
+    intentionallyAbsent: text('intentionally_absent')
+      .array()
+      .notNull()
+      .default([]),
+  },
+  (table) => [
+    uniqueIndex('pathway_stages_order_idx').on(table.pathwayId, table.position),
+  ]
+)
+
+/**
+ * Every state change, with the person who made it — §4.
+ *
+ * An append-only log, and the reason `attemptTransition` returns the record it
+ * would write rather than mutating anything: the history is the evidence that a
+ * pathway was reviewed, and it has to be as trustworthy as the version record.
+ * Not a role string. A role cannot be held accountable.
+ */
+export const pathwayTransitions = pgTable(
+  'pathway_transitions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    pathwayId: uuid('pathway_id')
+      .notNull()
+      .references(() => pathways.id, { onDelete: 'cascade' }),
+    action: pathwayAction('action').notNull(),
+    fromState: pathwayState('from_state').notNull(),
+    toState: pathwayState('to_state').notNull(),
+    actorId: uuid('actor_id')
+      .notNull()
+      .references((): AnyPgColumn => people.id, { onDelete: 'restrict' }),
+    occurredAt: timestamp('occurred_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** The change summary on a publish, the note on a request for changes. */
+    detail: text('detail'),
+  },
+  (table) => [
+    index('pathway_transitions_pathway_idx').on(
+      table.pathwayId,
+      table.occurredAt
+    ),
+  ]
+)
+
+/**
+ * One reviewer's position on one version.
+ *
+ * Approval and objection are separate columns, and that separation is the point.
+ * §4 singles out the case where a reviewer objected, somebody *else* marked the
+ * objection addressed, and the reviewer never approved anything. Collapsing
+ * these into one status column is what makes a version record claim an approval
+ * that never happened — and an elder will be reading that record in ten years.
+ */
+export const pathwayReviews = pgTable(
+  'pathway_reviews',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    pathwayId: uuid('pathway_id')
+      .notNull()
+      .references(() => pathways.id, { onDelete: 'cascade' }),
+    reviewerId: uuid('reviewer_id')
+      .notNull()
+      .references((): AnyPgColumn => people.id, { onDelete: 'restrict' }),
+    /** Set only when this reviewer actually approved. */
+    approvedAt: timestamp('approved_at', { withTimezone: true }),
+    objectionRaisedAt: timestamp('objection_raised_at', { withTimezone: true }),
+    objectionNote: text('objection_note'),
+    objectionAddressedAt: timestamp('objection_addressed_at', {
+      withTimezone: true,
+    }),
+    /** Often not the reviewer, which is exactly why it is recorded. */
+    objectionAddressedById: uuid('objection_addressed_by_id').references(
+      (): AnyPgColumn => people.id,
+      { onDelete: 'restrict' }
+    ),
+  },
+  (table) => [
+    uniqueIndex('pathway_reviews_reviewer_idx').on(
+      table.pathwayId,
+      table.reviewerId
+    ),
+    /** An objection needs a time and a note together; half of one is noise. */
+    check(
+      'pathway_reviews_objection_shape',
+      sql`(${table.objectionRaisedAt} IS NULL) = (${table.objectionNote} IS NULL)`
+    ),
+    /** Addressed by somebody, at some time — or not addressed. */
+    check(
+      'pathway_reviews_addressed_shape',
+      sql`(${table.objectionAddressedAt} IS NULL) = (${table.objectionAddressedById} IS NULL)`
+    ),
+    /** Nothing can be addressed that was never raised. */
+    check(
+      'pathway_reviews_addressed_needs_objection',
+      sql`${table.objectionAddressedAt} IS NULL OR ${table.objectionRaisedAt} IS NOT NULL`
+    ),
+  ]
+)
+
+/**
+ * A health-check finding against a version.
+ *
+ * `blocks_publishing` is a property of the finding; whether the gate is clear is
+ * computed from these rows by `unresolvedBlockingFindings`. There is deliberately
+ * no `health_check_passed` column anywhere — the prototype had one, and it could
+ * disagree with the findings it claimed to summarise.
+ */
+export const pathwayHealthFindings = pgTable(
+  'pathway_health_findings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    pathwayId: uuid('pathway_id')
+      .notNull()
+      .references(() => pathways.id, { onDelete: 'cascade' }),
+    category: text('category').notNull(),
+    severity: text('severity').notNull(),
+    /** Cites the pathway, never general best practice (§7). */
+    evidence: text('evidence').notNull(),
+    why: text('why').notNull(),
+    options: text('options').array().notNull().default([]),
+    blocksPublishing: boolean('blocks_publishing').notNull(),
+    dismissedById: uuid('dismissed_by_id').references(
+      (): AnyPgColumn => people.id,
+      { onDelete: 'restrict' }
+    ),
+    dismissalReason: text('dismissal_reason'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('pathway_findings_pathway_idx').on(table.pathwayId),
+    /**
+     * §4: a blocking finding may be published past, "or they are explicitly
+     * acknowledged with a reason". Both parts or neither — a dismissal with no
+     * reason is not an acknowledgement, it is a click.
+     */
+    check(
+      'pathway_findings_dismissal_shape',
+      sql`(${table.dismissedById} IS NULL) = (${table.dismissalReason} IS NULL)`
+    ),
+    check(
+      'pathway_findings_severity',
+      sql`${table.severity} IN ('low', 'medium', 'high')`
+    ),
   ]
 )

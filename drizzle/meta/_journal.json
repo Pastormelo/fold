@@ -43,6 +43,13 @@
       "when": 1785105801965,
       "tag": "0005_brave_amphibian",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785291139034,
+      "tag": "0008_pathway_versions",
+      "breakpoints": true
     }
   ]
 }
