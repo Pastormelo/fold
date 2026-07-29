@@ -53,6 +53,33 @@ function connection() {
   return globalThis.__foldSql
 }
 
-export const db = drizzle(connection(), { schema })
+/**
+ * The database handle, connected lazily on first use.
+ *
+ * An earlier version called `connection()` at module scope, which meant merely
+ * *importing* this file opened a connection — and `next build` imports every
+ * route to collect page data. The build therefore required a reachable database
+ * and a `DATABASE_URL`, and failed on Vercel where neither exists at build time.
+ *
+ * A build should never need a live database. The proxy defers everything to the
+ * first actual query, so importing stays free and a missing `DATABASE_URL` is
+ * reported when something tries to read, not when something tries to compile.
+ */
+let instance: ReturnType<typeof drizzle<typeof schema>> | null = null
+
+function database() {
+  instance ??= drizzle(connection(), { schema })
+  return instance
+}
+
+export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
+  get(_target, property) {
+    const real = database()
+    const value = Reflect.get(real, property) as unknown
+    // Bound, because Drizzle's methods rely on `this` and would otherwise be
+    // called against the empty proxy target.
+    return typeof value === 'function' ? value.bind(real) : value
+  },
+})
 
 export { schema }
