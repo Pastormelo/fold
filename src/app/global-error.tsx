@@ -57,19 +57,44 @@ export default function GlobalError({
               margin: '0 0 1rem',
             }}
           >
-            This instance has no session configured
+            This deployment is not configured
           </h1>
 
           <p style={{ margin: '0 0 1rem', textWrap: 'pretty' }}>
-            Fold will not serve people records without a real session. Real
-            authentication is not built yet, so a deployment refuses rather than
-            inventing a default reader — a default reader is a silent
-            authorization bypass, and this application exists to protect
-            confidential pastoral notes.
+            No Supabase project is configured here, so there is no way to sign
+            in — and Fold will not serve people records without a real session.
+            It refuses rather than inventing a default reader, because a default
+            reader is a silent authorization bypass and this application exists
+            to protect confidential pastoral notes.
           </p>
 
           <p style={{ margin: '0 0 1.5rem', textWrap: 'pretty' }}>
-            If you deployed this and want to look around: set{' '}
+            If you are setting this up, add{' '}
+            <code
+              style={{
+                background: '#eef1f5',
+                borderRadius: 4,
+                padding: '0.1rem 0.35rem',
+                fontFamily: 'ui-monospace, Menlo, monospace',
+                fontSize: '0.9em',
+              }}
+            >
+              NEXT_PUBLIC_SUPABASE_URL
+            </code>{' '}
+            and{' '}
+            <code
+              style={{
+                background: '#eef1f5',
+                borderRadius: 4,
+                padding: '0.1rem 0.35rem',
+                fontFamily: 'ui-monospace, Menlo, monospace',
+                fontSize: '0.9em',
+              }}
+            >
+              NEXT_PUBLIC_SUPABASE_ANON_KEY
+            </code>{' '}
+            to the environment and redeploy. Only to look around over sample
+            data instead, set{' '}
             <code
               style={{
                 background: '#eef1f5',

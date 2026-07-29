@@ -2,6 +2,7 @@ import 'server-only'
 
 import { cache } from 'react'
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { and, eq, isNull } from 'drizzle-orm'
 
 import type { Viewer } from '@/domain/access'
@@ -34,9 +35,8 @@ export const VIEWER_COOKIE = 'fold_dev_viewer'
 export class AuthNotConfiguredError extends Error {
   constructor() {
     super(
-      'Authentication is not configured, so Fold will not serve people records. ' +
-        'Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, or set FOLD_DEMO_MODE=1 to run over sample data. ' +
-        'See the README section "The auth gap".'
+      'This deployment has no Supabase project configured, so there is no way to sign in and Fold will not serve people records. ' +
+        'Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, or set FOLD_DEMO_MODE=1 to run over sample data.'
     )
     this.name = 'AuthNotConfiguredError'
   }
@@ -81,9 +81,15 @@ export const getViewer = cache(async (): Promise<Viewer> => {
   if (isSupabaseConfigured()) {
     const account = await getSupabaseUser()
     if (account) return resolveViewerForAccount(account)
-    // Configured but nobody signed in. Falling through to the demo switch here
-    // would hand a signed-out visitor somebody else's identity.
-    if (!demoAuthEnabled()) throw new AuthNotConfiguredError()
+
+    // Configured, but nobody is signed in. That is not an error — it is the
+    // ordinary state of a visitor who has not logged in yet, so send them to do
+    // that. Showing a failure page here told people authentication was missing
+    // when it was working exactly as intended.
+    //
+    // Not falling through to the demo switch: handing a signed-out visitor
+    // somebody else's identity is the one outcome worth avoiding entirely.
+    if (!demoAuthEnabled()) redirect('/sign-in')
   }
 
   if (!demoAuthEnabled()) throw new AuthNotConfiguredError()
