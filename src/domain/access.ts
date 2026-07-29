@@ -326,3 +326,28 @@ export function canWriteAtTier(
 export function writableTiers(viewer: Viewer): ConfidentialityTier[] {
   return TIER_ORDER.filter((tier) => canWriteAtTier(viewer, tier))
 }
+
+/**
+ * Whether this reader reaches a tier at all, independent of any particular note.
+ *
+ * `viewCareNote` answers the question for a note that exists. A screen that says
+ * "you read at these tiers" needs the answer without one — and computing it from
+ * whether any visible note happens to sit at that tier gets it wrong for a tier
+ * that is simply empty, which is how a reader ends up told they cannot read
+ * something they can.
+ *
+ * Reading and writing use the same comparison, because §3 rule 1 fixes the tier
+ * at write time: a writer who could file above their clearance would create a
+ * record they could not then read.
+ */
+export function canReadTier(
+  viewer: Viewer,
+  tier: ConfidentialityTier
+): boolean {
+  const clearance = viewerClearance(viewer)
+  return clearance !== null && clearanceReaches(clearance, tier)
+}
+
+export function readableTiers(viewer: Viewer): ConfidentialityTier[] {
+  return TIER_ORDER.filter((tier) => canReadTier(viewer, tier))
+}

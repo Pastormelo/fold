@@ -8,6 +8,8 @@ import {
   canWriteAtTier,
   viewCareNote,
   viewRestorationCase,
+  canReadTier,
+  readableTiers,
   writableTiers,
 } from './access'
 import type { Role } from './roles'
@@ -330,5 +332,42 @@ describe('the tier a note can be written at', () => {
   it('refuses a tier above the writer’s clearance', () => {
     expect(canWriteAtTier(groupLeader, 'elders_only')).toBe(false)
     expect(canWriteAtTier(pastoralStaff, 'elders_only')).toBe(false)
+  })
+})
+
+/* ──────────────────────────── Reading a tier ──────────────────────────── */
+
+describe('which tiers a reader reaches, without reference to any note', () => {
+  // A screen that says "you read at these tiers" cannot derive the answer from
+  // whichever notes happen to exist: an empty tier would come back as
+  // unreadable, which is a different and wrong claim.
+  it('answers for a tier with no notes in it at all', () => {
+    expect(canReadTier(elder, 'elders_only')).toBe(true)
+    expect(canReadTier(groupLeader, 'elders_only')).toBe(false)
+  })
+
+  it('gives a group leader the lowest tier only', () => {
+    expect(readableTiers(groupLeader)).toEqual(['all_leaders'])
+  })
+
+  it('gives an elder all three', () => {
+    expect(readableTiers(elder)).toEqual([
+      'all_leaders',
+      'staff_and_elders',
+      'elders_only',
+    ])
+  })
+
+  it('gives an administrator none, clearance being null rather than lowest', () => {
+    expect(readableTiers(administrator)).toEqual([])
+  })
+
+  it('agrees with writableTiers, because §3 fixes the tier at write time', () => {
+    // Not a coincidence worth leaving implicit: a writer who could file above
+    // their clearance would create a record they could not read back, so the
+    // two lists are the same comparison and must not drift apart.
+    for (const person of [groupLeader, pastoralStaff, elder, administrator]) {
+      expect(readableTiers(person)).toEqual(writableTiers(person))
+    }
   })
 })
