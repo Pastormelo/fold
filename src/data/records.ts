@@ -15,6 +15,7 @@ import {
 import {
   DIRECTION_LABELS,
   SYNC_CATEGORIES,
+  type SyncCategory,
   categoryRule,
   isCategoryEnabled,
 } from '@/domain/planning-center'
@@ -461,6 +462,9 @@ export async function getPermission(
 /* ───────────────────────── Access beyond role ───────────────────────── */
 
 export type GrantedExceptionRow = {
+  /** The grant row, so it can be ended. Paired with `kind`, which table it is in. */
+  grantId: string
+  kind: 'permission' | 'clearance'
   personName: string
   what: string
   grantedByName: string
@@ -496,6 +500,8 @@ export async function getGrantedExceptions(): Promise<GrantedExceptionRow[]> {
 
     if (exception.clearance) {
       rows.push({
+        grantId: exception.clearance.id,
+        kind: 'clearance',
         personName,
         what: `${tierName(exception.clearance.tier)} clearance`,
         grantedByName:
@@ -508,6 +514,8 @@ export async function getGrantedExceptions(): Promise<GrantedExceptionRow[]> {
     }
     for (const grant of exception.permissions) {
       rows.push({
+        grantId: grant.id,
+        kind: 'permission',
         personName,
         what: grant.permission,
         grantedByName: nameOf.get(grant.grantedById) ?? grant.grantedById,
@@ -805,6 +813,8 @@ export async function getJourneyTemplates(): Promise<JourneyTemplateRow[]> {
 /* ────────────────────────── Planning Center ────────────────────────── */
 
 export type SyncCategoryRow = {
+  /** Needed by the toggle, which names a category rather than a row. */
+  category: SyncCategory
   label: string
   directionLabel: string
   enabled: boolean
@@ -828,6 +838,7 @@ export async function getSyncCategories(): Promise<SyncCategoryRow[]> {
   return SYNC_CATEGORIES.map((category) => {
     const rule = categoryRule(category)
     return {
+      category,
       label: rule.label,
       directionLabel: DIRECTION_LABELS[rule.direction],
       // Reads through isCategoryEnabled, which refuses to report confidential

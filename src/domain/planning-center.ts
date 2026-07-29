@@ -380,7 +380,8 @@ export type FoldList = (typeof FOLD_LISTS)[number]
 
 export const FOLD_LIST_LABELS: Record<FoldList, string> = {
   family: 'Family',
-  guest: 'Guest',
+  // Plural, because it names a list of people rather than one of them.
+  guest: 'Guests',
 }
 
 export const FOLD_LIST_DEFINITIONS: Record<FoldList, string> = {

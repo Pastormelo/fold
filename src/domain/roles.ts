@@ -53,14 +53,19 @@ export type Role = (typeof ROLES)[number]
  */
 export const DEFAULT_ROLE: Role = 'care_volunteer'
 
+/**
+ * Sentence case throughout, because these are job descriptions rather than
+ * titles. Listing them together made the inconsistency obvious — half were Title
+ * Case and half were not, which reads as though the capitalised ones matter more.
+ */
 export const ROLE_LABELS: Record<Role, string> = {
   administrator: 'Administrator',
-  pathway_designer: 'Pathway Designer',
-  reviewer_approver: 'Reviewer / Approver',
-  connection_team_leader: 'Connection Team Leader',
-  pastor_elder: 'Pastor / Elder',
-  lead_pastor: 'Lead Pastor',
-  executive_assistant: 'Executive Assistant',
+  pathway_designer: 'Pathway designer',
+  reviewer_approver: 'Reviewer or approver',
+  connection_team_leader: 'Connection team leader',
+  pastor_elder: 'Pastor or elder',
+  lead_pastor: 'Lead pastor',
+  executive_assistant: 'Executive assistant',
   pastoral_staff: 'Pastoral staff',
   staff: 'Staff',
   deacon: 'Deacon',
