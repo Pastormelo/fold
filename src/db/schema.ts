@@ -15,6 +15,7 @@ import {
   type AnyPgColumn,
   boolean,
   check,
+  date,
   index,
   integer,
   pgEnum,
@@ -27,6 +28,7 @@ import {
 
 import { AUDITED_AI_EVENTS, VERDICTS } from '@/domain/ai'
 import { CARE_WINDOWS } from '@/domain/journeys'
+import { MILESTONE_KINDS } from '@/domain/milestones'
 import {
   MIGRATION_CHOICES,
   PATHWAY_ACTIONS,
@@ -58,6 +60,10 @@ export const provenance = pgEnum('provenance', [
  * windows exist and in what order.
  */
 export const careWindow = pgEnum('care_window', CARE_WINDOWS)
+
+/** Declared from the domain, so `recursAnnually` cannot be asked about a kind
+ * the database allows and the code has never heard of. */
+export const milestoneKind = pgEnum('milestone_kind', MILESTONE_KINDS)
 
 export const completionKind = pgEnum('completion_kind', ['done', 'skipped'])
 
@@ -1181,6 +1187,194 @@ export const pathwayHealthFindings = pgTable(
     check(
       'pathway_findings_severity',
       sql`${table.severity} IN ('low', 'medium', 'high')`
+    ),
+  ]
+)
+
+/* ─────────────────────────────── Milestones ─────────────────────────────── */
+
+/**
+ * A date in someone's life the church should not miss (§2).
+ *
+ * One row per milestone, not per year. A birthday is a single date and the
+ * upcoming list is projected from it, so it is still right in 2031 without
+ * anybody backfilling rows — `nextOccurrence` does the arithmetic and
+ * `recursAnnually` decides whether it should.
+ *
+ * `occurredOn` is a bare date rather than a timestamp on purpose. A birthday is
+ * not a moment in a time zone, and storing it as one is how somebody's birthday
+ * shows up a day early for half the church.
+ */
+export const milestones = pgTable(
+  'milestones',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id, { onDelete: 'restrict' }),
+    personId: uuid('person_id')
+      .notNull()
+      .references(() => people.id, { onDelete: 'cascade' }),
+    kind: milestoneKind('kind').notNull(),
+    occurredOn: date('occurred_on').notNull(),
+    /**
+     * Carries the detail the wording needs — for a loss, the name of whoever
+     * died, so the reminder reads "Three years since Hector passed" rather than
+     * "Loss of a loved one".
+     */
+    note: text('note').notNull().default(''),
+    recordedById: uuid('recorded_by_id')
+      .notNull()
+      .references((): AnyPgColumn => people.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('milestones_church_idx').on(table.churchId),
+    index('milestones_person_idx').on(table.personId),
+    /** The same milestone recorded twice would show up twice in the reminder. */
+    uniqueIndex('milestones_unique_idx').on(
+      table.personId,
+      table.kind,
+      table.occurredOn
+    ),
+  ]
+)
+
+/* ─────────────────────────────── Prayer ─────────────────────────────── */
+
+/**
+ * A prayer request (§2).
+ *
+ * Carries a tier like a care note does, because "pray for my marriage" is not
+ * information for every group leader. Nothing in this table is ever deleted:
+ * `answered_at` and `outcome` make answered a state, and a church that clears its
+ * answered prayers destroys the only record it has that anything came of them.
+ */
+export const prayerRequests = pgTable(
+  'prayer_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id, { onDelete: 'restrict' }),
+    /** Who it is about. */
+    personId: uuid('person_id')
+      .notNull()
+      .references(() => people.id, { onDelete: 'restrict' }),
+    /** Who brought it — often the person, sometimes their leader. */
+    askedById: uuid('asked_by_id')
+      .notNull()
+      .references((): AnyPgColumn => people.id, { onDelete: 'restrict' }),
+    body: text('body').notNull(),
+    /** No default, for the same reason care notes have none. */
+    visibilityTier: confidentialityTier('visibility_tier').notNull(),
+    askedAt: timestamp('asked_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    answeredAt: timestamp('answered_at', { withTimezone: true }),
+    answeredById: uuid('answered_by_id').references(
+      (): AnyPgColumn => people.id,
+      { onDelete: 'restrict' }
+    ),
+    outcome: text('outcome'),
+  },
+  (table) => [
+    index('prayer_requests_church_idx').on(table.churchId, table.askedAt),
+    index('prayer_requests_person_idx').on(table.personId),
+    /**
+     * Answered means all three together. "Answered" with nothing written down is
+     * a checkbox, and in a year the sentence is the whole value of the row — so
+     * the database will not store the checkbox on its own.
+     */
+    check(
+      'prayer_answered_is_complete',
+      sql`(${table.answeredAt} IS NULL) = (${table.outcome} IS NULL)
+          AND (${table.answeredAt} IS NULL) = (${table.answeredById} IS NULL)`
+    ),
+    check(
+      'prayer_outcome_not_blank',
+      sql`${table.outcome} IS NULL OR btrim(${table.outcome}) <> ''`
+    ),
+  ]
+)
+
+/**
+ * How many times one person has prayed for one request.
+ *
+ * A count on a row rather than a row per prayer: the interesting facts are how
+ * many people have prayed and whether you are one of them, and a hundred rows per
+ * person answers neither better. The cap lives in `@/domain/prayer` and is
+ * mirrored here so a write path that skips it still cannot store 4,000.
+ */
+export const prayedFor = pgTable(
+  'prayed_for',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    requestId: uuid('request_id')
+      .notNull()
+      .references(() => prayerRequests.id, { onDelete: 'cascade' }),
+    personId: uuid('person_id')
+      .notNull()
+      .references(() => people.id, { onDelete: 'cascade' }),
+    times: integer('times').notNull().default(1),
+    lastPrayedAt: timestamp('last_prayed_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('prayed_for_unique_idx').on(table.requestId, table.personId),
+    check('prayed_for_within_cap', sql`${table.times} BETWEEN 1 AND 100`),
+  ]
+)
+
+/* ──────────────────────── Guests in the pathway ──────────────────────── */
+
+/**
+ * Where a guest is in the published pathway.
+ *
+ * Points at a stage of a specific version, not at a stage name. §4 lets a church
+ * publish a new version while people are mid-pathway and requires an explicit
+ * decision about what happens to them — that decision is only meaningful if a
+ * placement records which version it belongs to.
+ *
+ * `exitedAt` rather than a delete: someone who stopped coming and then returned is
+ * the case §4's reactivation rule is about, and it needs the history.
+ */
+export const pathwayPlacements = pgTable(
+  'pathway_placements',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id, { onDelete: 'restrict' }),
+    personId: uuid('person_id')
+      .notNull()
+      .references(() => people.id, { onDelete: 'cascade' }),
+    stageId: uuid('stage_id')
+      .notNull()
+      .references(() => pathwayStages.id, { onDelete: 'restrict' }),
+    /** The leader carrying this guest. Null is a guest nobody has picked up. */
+    connectorId: uuid('connector_id').references((): AnyPgColumn => people.id, {
+      onDelete: 'set null',
+    }),
+    enteredAt: timestamp('entered_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    exitedAt: timestamp('exited_at', { withTimezone: true }),
+    /** Why they left the stage — moved on, stopped coming, became a member. */
+    exitReason: text('exit_reason'),
+  },
+  (table) => [
+    index('pathway_placements_church_idx').on(table.churchId),
+    /** One live placement per person: two would be two answers to "what next". */
+    uniqueIndex('pathway_placements_live_idx')
+      .on(table.personId)
+      .where(sql`${table.exitedAt} is null`),
+    check(
+      'pathway_placements_exit_is_complete',
+      sql`(${table.exitedAt} IS NULL) = (${table.exitReason} IS NULL)`
     ),
   ]
 )
