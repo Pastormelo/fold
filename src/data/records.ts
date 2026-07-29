@@ -1,8 +1,13 @@
 import 'server-only'
 
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
+
 import {
+  type CareNoteRecord,
   type CareTimeline,
+  type RestorationCaseRecord,
   type RestorationCaseView,
+  type Viewer,
   buildCareTimeline,
   viewRestorationCase,
   writableTiers,
@@ -16,6 +21,8 @@ import {
 import {
   JOURNEY_WITHHELD_DISCLOSURE,
   WINDOW_LABELS,
+  type JourneyInstance,
+  type JourneyTemplate,
   canReadJourney,
   journeyProgress,
 } from '@/domain/journeys'
@@ -28,38 +35,35 @@ import {
 import {
   type Permission,
   type PermissionCheck,
+  type Principal,
+  type Role,
   ROLE_LABELS,
   clearanceFor,
   countLeadersByClearance,
   grantedExceptions,
+  isRole,
   permissionCheck,
 } from '@/domain/roles'
+import { db, schema } from '@/db/client'
 
 import { getViewer } from './viewer'
-import {
-  SAMPLE_CARE_NOTES,
-  SAMPLE_JOURNEY_INSTANCES,
-  SAMPLE_PEOPLE,
-  SAMPLE_RESTORATION_CASES,
-  SAMPLE_RESTORATION_NOTES,
-  sampleJourneyTemplate,
-  samplePerson,
-  samplePrincipals,
-} from './sample'
 
 /**
  * The Data Access Layer.
  *
- * Every function here resolves the viewer itself rather than accepting one, so
- * a caller cannot ask "show me this as somebody else". Each returns a DTO that
- * has already been through `@/domain/access`, which means content the viewer
- * may not read is absent from the returned object — not nulled out, and never
+ * Every function resolves the viewer itself rather than accepting one, so a
+ * caller cannot ask "show me this as somebody else". Each returns a DTO that has
+ * already been through `@/domain/access`, which means content the viewer may not
+ * read is absent from the returned object — not nulled out, and never
  * present-but-hidden-in-the-UI.
  *
- * The reads are against sample data for now. Replacing them with Drizzle
- * queries changes only the fetch: the redaction lives in the domain functions,
- * and those are already tested.
+ * **Every query is scoped by `viewer.churchId`.** That is not defensive
+ * programming, it is the tenancy boundary: a query that forgot it would return
+ * another church's pastoral records, which is the worst failure this application
+ * has available. The scope comes off the viewer so it cannot be passed in wrong.
  */
+
+/* ─────────────────────────────── Viewer ─────────────────────────────── */
 
 export type ViewerSummary = {
   personId: string
@@ -82,15 +86,101 @@ export async function getViewerSummary(): Promise<ViewerSummary> {
   }
 }
 
+/* ─────────────────────── Everyone who holds a role ─────────────────────── */
+
+/**
+ * The church's leaders as authorization subjects, for the tier counts and the
+ * exceptions list. Roles and grants are read together so clearance is derived
+ * from live rows rather than anything stored alongside them (§8.1).
+ */
+async function loadPrincipals(
+  churchId: string
+): Promise<(Principal & { fullName: string })[]> {
+  const roleRows = await db
+    .select({
+      personId: schema.leaderRoles.personId,
+      role: schema.leaderRoles.role,
+      firstName: schema.people.firstName,
+      lastName: schema.people.lastName,
+    })
+    .from(schema.leaderRoles)
+    .innerJoin(schema.people, eq(schema.people.id, schema.leaderRoles.personId))
+    .where(eq(schema.leaderRoles.churchId, churchId))
+
+  if (roleRows.length === 0) return []
+  const personIds = [...new Set(roleRows.map((row) => row.personId))]
+
+  const [permissionRows, clearanceRows] = await Promise.all([
+    db
+      .select()
+      .from(schema.permissionGrants)
+      .where(
+        and(
+          inArray(schema.permissionGrants.personId, personIds),
+          isNull(schema.permissionGrants.revokedAt)
+        )
+      ),
+    db
+      .select()
+      .from(schema.clearanceGrants)
+      .where(
+        and(
+          inArray(schema.clearanceGrants.personId, personIds),
+          isNull(schema.clearanceGrants.revokedAt)
+        )
+      ),
+  ])
+
+  const byPerson = new Map<string, Principal & { fullName: string }>()
+  for (const row of roleRows) {
+    const existing = byPerson.get(row.personId)
+    // A role name this build does not recognise is dropped rather than trusted:
+    // access must never come from a string the code cannot evaluate.
+    const role = isRole(row.role) ? (row.role as Role) : null
+    if (existing) {
+      if (role) existing.roles = [...existing.roles, role]
+      continue
+    }
+    byPerson.set(row.personId, {
+      personId: row.personId,
+      fullName: `${row.firstName} ${row.lastName}`,
+      roles: role ? [role] : [],
+      permissionGrants: permissionRows
+        .filter((grant) => grant.personId === row.personId)
+        .map((grant) => ({
+          id: grant.id,
+          permission: grant.permission as Permission,
+          grantedById: grant.grantedById,
+          grantedByName: grant.grantedById,
+          grantedAt: grant.grantedAt,
+          reason: grant.reason,
+          revokedAt: grant.revokedAt,
+          revokedById: grant.revokedById,
+        })),
+      clearanceGrants: clearanceRows
+        .filter((grant) => grant.personId === row.personId)
+        .map((grant) => ({
+          id: grant.id,
+          tier: grant.tier,
+          grantedById: grant.grantedById,
+          grantedByName: grant.grantedById,
+          grantedAt: grant.grantedAt,
+          reason: grant.reason,
+          revokedAt: grant.revokedAt,
+          revokedById: grant.revokedById,
+        })),
+    })
+  }
+  return [...byPerson.values()]
+}
+
+/* ──────────────────────────── A person record ──────────────────────────── */
+
 export type PersonRecord = {
   id: string
   fullName: string
   initials: string
   since: string
-  /**
-   * A member with no fold is an open pastoral matter, not a data gap (§2), so
-   * this carries the sentence rather than an empty string.
-   */
   foldLabel: string
   foldIsUnassigned: boolean
   isMember: boolean
@@ -98,7 +188,6 @@ export type PersonRecord = {
   serving: string
   groups: string
   care: CareTimeline
-  /** Tiers this viewer may file a note at. Empty means the form is not offered. */
   writableTiers: { tier: ConfidentialityTier; label: string }[]
   logNoteCheck: PermissionCheck
 }
@@ -107,28 +196,80 @@ export async function getPersonRecord(
   personId: string
 ): Promise<PersonRecord | null> {
   const viewer = await getViewer()
-  const person = samplePerson(personId)
+
+  const [person] = await db
+    .select({
+      id: schema.people.id,
+      firstName: schema.people.firstName,
+      lastName: schema.people.lastName,
+      isMember: schema.people.isMember,
+      createdAt: schema.people.createdAt,
+      foldName: schema.folds.name,
+      householdName: schema.households.name,
+    })
+    .from(schema.people)
+    .leftJoin(schema.folds, eq(schema.folds.id, schema.people.foldId))
+    .leftJoin(
+      schema.households,
+      eq(schema.households.id, schema.people.householdId)
+    )
+    // Scoped to the viewer's church, so a guessed id from elsewhere finds nothing.
+    .where(
+      and(
+        eq(schema.people.id, personId),
+        eq(schema.people.churchId, viewer.churchId)
+      )
+    )
+    .limit(1)
+
   if (!person) return null
 
-  const notes = [...SAMPLE_CARE_NOTES, ...SAMPLE_RESTORATION_NOTES]
-    .filter((note) => note.personId === personId)
-    .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime())
+  const noteRows = await db
+    .select({
+      id: schema.careNotes.id,
+      personId: schema.careNotes.personId,
+      authorId: schema.careNotes.authorId,
+      occurredAt: schema.careNotes.occurredAt,
+      visibilityTier: schema.careNotes.visibilityTier,
+      body: schema.careNotes.body,
+      restorationCaseId: schema.careNotes.restorationCaseId,
+      authorFirst: schema.people.firstName,
+      authorLast: schema.people.lastName,
+    })
+    .from(schema.careNotes)
+    .innerJoin(schema.people, eq(schema.people.id, schema.careNotes.authorId))
+    .where(
+      and(
+        eq(schema.careNotes.personId, personId),
+        eq(schema.careNotes.churchId, viewer.churchId)
+      )
+    )
+    .orderBy(desc(schema.careNotes.occurredAt))
 
-  const unassigned = person.foldName === null
+  const notes: CareNoteRecord[] = noteRows.map((row) => ({
+    id: row.id,
+    personId: row.personId,
+    authorId: row.authorId,
+    authorName: `${row.authorFirst} ${row.authorLast}`,
+    occurredAt: row.occurredAt,
+    visibilityTier: row.visibilityTier,
+    body: row.body,
+    restorationCaseId: row.restorationCaseId,
+  }))
 
   return {
     id: person.id,
     fullName: `${person.firstName} ${person.lastName}`,
     initials: `${person.firstName[0] ?? ''}${person.lastName[0] ?? ''}`,
-    since: person.since,
+    since: `In the directory since ${person.createdAt.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })}`,
     foldLabel:
       person.foldName ??
       'No fold. This is an open pastoral matter, not a data gap.',
-    foldIsUnassigned: unassigned,
+    foldIsUnassigned: person.foldName === null,
     isMember: person.isMember,
-    household: person.household,
-    serving: person.serving.join(' · ') || 'Not serving right now',
-    groups: person.groups.join(' · ') || 'No group',
+    household: person.householdName ? [person.householdName] : [],
+    serving: 'Not recorded yet',
+    groups: 'Not recorded yet',
     care: buildCareTimeline(viewer, notes),
     writableTiers: writableTiers(viewer).map((tier) => ({
       tier,
@@ -138,12 +279,83 @@ export async function getPersonRecord(
   }
 }
 
+/** The people this viewer can see, for choosing whose record to open. */
+export async function listPeople(): Promise<
+  { id: string; fullName: string }[]
+> {
+  const viewer = await getViewer()
+  const rows = await db
+    .select({
+      id: schema.people.id,
+      firstName: schema.people.firstName,
+      lastName: schema.people.lastName,
+    })
+    .from(schema.people)
+    .where(eq(schema.people.churchId, viewer.churchId))
+    .orderBy(asc(schema.people.lastName), asc(schema.people.firstName))
+  return rows.map((row) => ({
+    id: row.id,
+    fullName: `${row.firstName} ${row.lastName}`,
+  }))
+}
+
+/* ─────────────────────────── Restoration cases ─────────────────────────── */
+
 export async function getRestorationCases(): Promise<RestorationCaseView[]> {
   const viewer = await getViewer()
-  return SAMPLE_RESTORATION_CASES.map((record) =>
-    viewRestorationCase(viewer, record)
+
+  const rows = await db
+    .select()
+    .from(schema.restorationCases)
+    .where(eq(schema.restorationCases.churchId, viewer.churchId))
+    .orderBy(desc(schema.restorationCases.openedAt))
+
+  if (rows.length === 0) return []
+
+  // Names for the person and the two elders, resolved in one query.
+  const ids = [
+    ...new Set(
+      rows.flatMap((r) => [r.personId, r.leadElderId, r.secondElderId])
+    ),
+  ]
+  const nameRows = await db
+    .select({
+      id: schema.people.id,
+      firstName: schema.people.firstName,
+      lastName: schema.people.lastName,
+    })
+    .from(schema.people)
+    .where(inArray(schema.people.id, ids))
+  const nameOf = new Map(
+    nameRows.map((row) => [row.id, `${row.firstName} ${row.lastName}`])
   )
+
+  return rows.map((row) => {
+    const record: RestorationCaseRecord = {
+      id: row.id,
+      personId: row.personId,
+      personName: nameOf.get(row.personId) ?? 'Unknown',
+      foldName: '',
+      openedAt: row.openedAt,
+      leadElderId: row.leadElderId,
+      secondElderId: row.secondElderId,
+      leadElderName: nameOf.get(row.leadElderId) ?? 'Unknown',
+      secondElderName: nameOf.get(row.secondElderId) ?? 'Unknown',
+      step: row.step,
+      stepLabel: row.stepLabel,
+      status: row.status,
+      closedAt: row.closedAt,
+      outcome: row.outcome,
+      plan: row.plan,
+      knows: row.knows,
+      doesNotKnow: row.doesNotKnow,
+      decisionQuestion: row.decisionQuestion,
+    }
+    return viewRestorationCase(viewer, record)
+  })
 }
+
+/* ──────────────────────────── The tier table ──────────────────────────── */
 
 export type TierOverviewRow = {
   tier: ConfidentialityTier
@@ -151,7 +363,6 @@ export type TierOverviewRow = {
   who: string
   sees: string
   cannot: string
-  /** Computed from the leader records — §8.1, never a literal. */
   leaderCount: number
   leaderCountLabel: string
   viewerIsAtThisTier: boolean
@@ -160,7 +371,8 @@ export type TierOverviewRow = {
 export async function getTierOverview(): Promise<TierOverviewRow[]> {
   const viewer = await getViewer()
   const viewerClearance = clearanceFor(viewer)
-  const counts = countLeadersByClearance(samplePrincipals())
+  // Counted from the leader rows, never written as a literal (§8.1).
+  const counts = countLeadersByClearance(await loadPrincipals(viewer.churchId))
 
   return TIER_ORDER.map((tier) => {
     const count = counts[tier]
@@ -168,7 +380,6 @@ export async function getTierOverview(): Promise<TierOverviewRow[]> {
       tier,
       ...TIER_DESCRIPTIONS[tier],
       leaderCount: count,
-      // Pluralised from the count, not written twice.
       leaderCountLabel: `${count} ${count === 1 ? 'person' : 'people'}`,
       viewerIsAtThisTier: viewerClearance === tier,
     }
@@ -182,9 +393,10 @@ export async function getPermission(
   return permissionCheck(viewer, permission)
 }
 
+/* ───────────────────────── Access beyond role ───────────────────────── */
+
 export type GrantedExceptionRow = {
   personName: string
-  /** What they were given, in plain words. */
   what: string
   grantedByName: string
   grantedAt: string
@@ -196,22 +408,15 @@ export type GrantedExceptionRow = {
  * Everyone whose access exceeds what their role carries.
  *
  * An administrator can grant anything, so the safeguard is not a narrower gate —
- * it is that every exception is answerable in one place. This is the elder
- * board's review list, and it is deliberately readable by anyone who can see
- * reporting: a grant nobody looks at is the same as having no grant policy.
- *
- * Self-grants are marked. An administrator raising their own clearance is
- * legitimate — verifying an import, covering a vacancy — and also the obvious
- * abuse path, so it is called out rather than blended in.
+ * it is that every exception is answerable in one place. Self-grants are marked,
+ * since an administrator raising their own clearance is both legitimate and the
+ * obvious abuse path.
  */
 export async function getGrantedExceptions(): Promise<GrantedExceptionRow[]> {
-  await getViewer()
+  const viewer = await getViewer()
+  const principals = await loadPrincipals(viewer.churchId)
+  const nameOf = new Map(principals.map((p) => [p.personId, p.fullName]))
 
-  const byId = new Map(SAMPLE_PEOPLE.map((person) => [person.id, person]))
-  const nameOf = (id: string) => {
-    const person = byId.get(id)
-    return person ? `${person.firstName} ${person.lastName}` : id
-  }
   const when = (date: Date) =>
     date.toLocaleDateString('en-US', {
       month: 'short',
@@ -220,55 +425,65 @@ export async function getGrantedExceptions(): Promise<GrantedExceptionRow[]> {
       timeZone: 'UTC',
     })
 
-  return grantedExceptions(samplePrincipals()).flatMap((exception) => {
+  return grantedExceptions(principals).flatMap((exception) => {
     const rows: GrantedExceptionRow[] = []
-    const personName = nameOf(exception.personId)
+    const personName = nameOf.get(exception.personId) ?? exception.personId
 
     if (exception.clearance) {
       rows.push({
         personName,
         what: `${tierName(exception.clearance.tier)} clearance`,
-        grantedByName: exception.clearance.grantedByName,
+        grantedByName:
+          nameOf.get(exception.clearance.grantedById) ??
+          exception.clearance.grantedById,
         grantedAt: when(exception.clearance.grantedAt),
         reason: exception.clearance.reason,
         selfGranted: exception.clearance.grantedById === exception.personId,
       })
     }
-
     for (const grant of exception.permissions) {
       rows.push({
         personName,
         what: grant.permission,
-        grantedByName: grant.grantedByName,
+        grantedByName: nameOf.get(grant.grantedById) ?? grant.grantedById,
         grantedAt: when(grant.grantedAt),
         reason: grant.reason,
         selfGranted: grant.grantedById === exception.personId,
       })
     }
-
     return rows
   })
 }
 
-/** Members with no fold. An open pastoral matter the product surfaces (§2). */
+/* ──────────────────────── Members with no fold ──────────────────────── */
+
+/** An open pastoral matter, not a data gap (§2). */
 export async function getUnfoldedMembers(): Promise<
   { id: string; fullName: string }[]
 > {
-  await getViewer()
-  return SAMPLE_PEOPLE.filter(
-    (person) => person.isMember && person.foldName === null
-  ).map((person) => ({
-    id: person.id,
-    fullName: `${person.firstName} ${person.lastName}`,
+  const viewer = await getViewer()
+  const rows = await db
+    .select({
+      id: schema.people.id,
+      firstName: schema.people.firstName,
+      lastName: schema.people.lastName,
+    })
+    .from(schema.people)
+    .where(
+      and(
+        eq(schema.people.churchId, viewer.churchId),
+        eq(schema.people.isMember, true),
+        isNull(schema.people.foldId)
+      )
+    )
+    .orderBy(asc(schema.people.lastName))
+  return rows.map((row) => ({
+    id: row.id,
+    fullName: `${row.firstName} ${row.lastName}`,
   }))
 }
 
-export function listPeople(): { id: string; fullName: string }[] {
-  return SAMPLE_PEOPLE.map((person) => ({
-    id: person.id,
-    fullName: `${person.firstName} ${person.lastName}`,
-  }))
-}
+/* ──────────────────────────── Care journeys ──────────────────────────── */
 
 export type JourneyRow =
   | {
@@ -295,12 +510,11 @@ export type JourneyRow =
     }
 
 /**
- * Running care journeys, redacted for this viewer.
+ * Running journeys, redacted for this viewer.
  *
- * A journey above the reader's tier is withheld the same way a note is: they can
- * see someone is being cared for without seeing what for. The person's name
- * stays visible, because the point of the product is that nobody disappears
- * quietly — hiding that a person is receiving care would defeat it.
+ * A journey above the reader's tier is withheld the way a note is — but the
+ * person's name stays visible, because the product's premise is that nobody
+ * disappears quietly, and hiding that someone is receiving care would defeat it.
  */
 export async function getJourneys(
   asOf: Date = new Date()
@@ -308,21 +522,89 @@ export async function getJourneys(
   const viewer = await getViewer()
   const clearance = clearanceFor(viewer)
 
-  return SAMPLE_JOURNEY_INSTANCES.flatMap((instance): JourneyRow[] => {
-    const template = sampleJourneyTemplate(instance.templateId)
+  const instanceRows = await db
+    .select({
+      id: schema.journeyInstances.id,
+      templateId: schema.journeyInstances.templateId,
+      personId: schema.journeyInstances.personId,
+      startedAt: schema.journeyInstances.startedAt,
+      ownerId: schema.journeyInstances.ownerId,
+      closedAt: schema.journeyInstances.closedAt,
+      closedReason: schema.journeyInstances.closedReason,
+    })
+    .from(schema.journeyInstances)
+    .where(eq(schema.journeyInstances.churchId, viewer.churchId))
+
+  if (instanceRows.length === 0) return []
+
+  const templateIds = [...new Set(instanceRows.map((r) => r.templateId))]
+  const [templateRows, stepRows, completionRows, peopleRows] =
+    await Promise.all([
+      db
+        .select()
+        .from(schema.journeyTemplates)
+        .where(inArray(schema.journeyTemplates.id, templateIds)),
+      db
+        .select()
+        .from(schema.journeySteps)
+        .where(inArray(schema.journeySteps.templateId, templateIds))
+        .orderBy(asc(schema.journeySteps.position)),
+      db
+        .select()
+        .from(schema.journeyStepCompletions)
+        .where(
+          inArray(
+            schema.journeyStepCompletions.instanceId,
+            instanceRows.map((r) => r.id)
+          )
+        ),
+      db
+        .select({
+          id: schema.people.id,
+          firstName: schema.people.firstName,
+          lastName: schema.people.lastName,
+        })
+        .from(schema.people)
+        .where(eq(schema.people.churchId, viewer.churchId)),
+    ])
+
+  const nameOf = new Map(
+    peopleRows.map((row) => [row.id, `${row.firstName} ${row.lastName}`])
+  )
+  const templates = new Map<string, JourneyTemplate>(
+    templateRows.map((row) => [
+      row.id,
+      {
+        id: row.id,
+        name: row.name,
+        trigger: row.trigger,
+        visibilityTier: row.visibilityTier,
+        isSystemDefault: row.isSystemDefault,
+        steps: stepRows
+          .filter((step) => step.templateId === row.id)
+          .map((step) => ({
+            id: step.id,
+            title: step.title,
+            window: step.window,
+            ownerRole: step.ownerRole as Role,
+            guidanceNote: step.guidanceNote,
+          })),
+      },
+    ])
+  )
+
+  return instanceRows.flatMap((row): JourneyRow[] => {
+    const template = templates.get(row.templateId)
     if (!template) return []
 
-    const person = samplePerson(instance.personId)
-    const personName = person
-      ? `${person.firstName} ${person.lastName}`
-      : 'Unknown person'
+    const personName = nameOf.get(row.personId) ?? 'Unknown person'
     const tierLabel = tierName(template.visibilityTier)
 
     if (!canReadJourney(clearance, template)) {
       return [
         {
-          access: 'withheld' as const,
-          instanceId: instance.id,
+          access: 'withheld',
+          instanceId: row.id,
           personName,
           tierLabel,
           disclosure: JOURNEY_WITHHELD_DISCLOSURE,
@@ -330,11 +612,43 @@ export async function getJourneys(
       ]
     }
 
+    const instance: JourneyInstance = {
+      id: row.id,
+      templateId: row.templateId,
+      personId: row.personId,
+      startedAt: row.startedAt,
+      ownerId: row.ownerId,
+      ownerName: nameOf.get(row.ownerId) ?? 'Unknown',
+      completions: completionRows
+        .filter((c) => c.instanceId === row.id)
+        .map((c) =>
+          c.kind === 'done'
+            ? {
+                stepId: c.stepId,
+                completedAt: c.completedAt,
+                byId: c.byId,
+                byName: nameOf.get(c.byId) ?? 'Unknown',
+                kind: 'done' as const,
+                outcome: c.outcome ?? '',
+              }
+            : {
+                stepId: c.stepId,
+                completedAt: c.completedAt,
+                byId: c.byId,
+                byName: nameOf.get(c.byId) ?? 'Unknown',
+                kind: 'skipped' as const,
+                skipReason: c.skipReason ?? '',
+              }
+        ),
+      closedAt: row.closedAt,
+      closedReason: row.closedReason,
+    }
+
     const progress = journeyProgress(template, instance, asOf)
     return [
       {
-        access: 'visible' as const,
-        instanceId: instance.id,
+        access: 'visible',
+        instanceId: row.id,
         personName,
         templateName: template.name,
         trigger: template.trigger,
@@ -353,32 +667,90 @@ export async function getJourneys(
   })
 }
 
+/**
+ * The journey templates the church has, whether or not any are running.
+ *
+ * Worth showing on its own: a church that has configured its grief journey and
+ * never started one is in a different position from a church with none.
+ */
+export type JourneyTemplateRow = {
+  name: string
+  trigger: string
+  tierLabel: string
+  stepCount: number
+  isSystemDefault: boolean
+  readable: boolean
+}
+
+export async function getJourneyTemplates(): Promise<JourneyTemplateRow[]> {
+  const viewer = await getViewer()
+  const clearance = clearanceFor(viewer)
+
+  const rows = await db
+    .select()
+    .from(schema.journeyTemplates)
+    .where(eq(schema.journeyTemplates.churchId, viewer.churchId))
+    .orderBy(asc(schema.journeyTemplates.name))
+
+  if (rows.length === 0) return []
+
+  const steps = await db
+    .select({ templateId: schema.journeySteps.templateId })
+    .from(schema.journeySteps)
+    .where(
+      inArray(
+        schema.journeySteps.templateId,
+        rows.map((r) => r.id)
+      )
+    )
+
+  return rows.map((row) => ({
+    name: row.name,
+    trigger: row.trigger,
+    tierLabel: tierName(row.visibilityTier),
+    stepCount: steps.filter((s) => s.templateId === row.id).length,
+    isSystemDefault: row.isSystemDefault,
+    readable: canReadJourney(clearance, {
+      id: row.id,
+      name: row.name,
+      trigger: row.trigger,
+      visibilityTier: row.visibilityTier,
+      isSystemDefault: row.isSystemDefault,
+      steps: [],
+    }),
+  }))
+}
+
+/* ────────────────────────── Planning Center ────────────────────────── */
+
 export type SyncCategoryRow = {
   label: string
   directionLabel: string
   enabled: boolean
   switchable: boolean
-  /** Present only when §6 fixes the category, shown instead of a control. */
   fixedReason: string | null
   conflictNote: string | null
 }
 
-/**
- * The sync matrix, as §6 defines it.
- *
- * Rendered from the rules rather than a hand-written table, so the screen cannot
- * claim a direction the sync would not honour. `switchable: false` rows carry
- * their reason, which is what the UI shows where a toggle would otherwise be.
- */
 export async function getSyncCategories(): Promise<SyncCategoryRow[]> {
-  await getViewer()
-  const settings = {}
+  const viewer = await getViewer()
+
+  const stored = await db
+    .select()
+    .from(schema.syncSettings)
+    .where(eq(schema.syncSettings.churchId, viewer.churchId))
+
+  const settings = Object.fromEntries(
+    stored.map((row) => [row.category, row.enabled])
+  )
 
   return SYNC_CATEGORIES.map((category) => {
     const rule = categoryRule(category)
     return {
       label: rule.label,
       directionLabel: DIRECTION_LABELS[rule.direction],
+      // Reads through isCategoryEnabled, which refuses to report confidential
+      // notes as on even if a stored row says otherwise.
       enabled: isCategoryEnabled(settings, category),
       switchable: rule.switchable,
       fixedReason: rule.fixedReason,
@@ -391,3 +763,6 @@ export async function getSyncCategories(): Promise<SyncCategoryRow[]> {
     }
   })
 }
+
+/** Re-exported so the screen can name the signed-in person without a second call. */
+export type { Viewer }

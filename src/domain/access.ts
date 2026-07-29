@@ -31,6 +31,15 @@ import { type Principal, clearanceFor } from './roles'
  */
 export type Viewer = Principal & {
   displayName: string
+  /**
+   * Which church this person belongs to.
+   *
+   * Carried on the viewer rather than looked up per query, so every read is
+   * scoped by construction. A query that forgets it would return another
+   * church's people, and in an application about confidentiality that is the
+   * worst class of bug available — so the value travels with the identity.
+   */
+  churchId: string
 }
 
 /**

@@ -19,7 +19,7 @@ function viewer(
   roles: Role[],
   displayName = personId
 ): Viewer {
-  return { personId, displayName, roles }
+  return { personId, displayName, roles, churchId: 'church-1' }
 }
 
 const groupLeader = viewer('p-ben', ['group_leader'], 'Ben Ortiz')

@@ -255,11 +255,15 @@ export function samplePrincipals(): Principal[] {
   )
 }
 
+/** A stand-in church id for the demo path, which never touches the database. */
+export const SAMPLE_CHURCH_ID = '00000000-0000-0000-0000-000000000000'
+
 export function sampleViewers(): Viewer[] {
   return SAMPLE_PEOPLE.filter((person) => person.roles.length > 0).map(
     (person) => ({
       ...samplePrincipal(person),
       displayName: `${person.firstName} ${person.lastName}`,
+      churchId: SAMPLE_CHURCH_ID,
     })
   )
 }

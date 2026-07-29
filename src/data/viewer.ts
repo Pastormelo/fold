@@ -109,6 +109,7 @@ async function resolveViewerForAccount(account: {
   const [person] = await db
     .select({
       id: schema.people.id,
+      churchId: schema.people.churchId,
       firstName: schema.people.firstName,
       lastName: schema.people.lastName,
     })
@@ -152,6 +153,7 @@ async function resolveViewerForAccount(account: {
 
   return {
     personId: person.id,
+    churchId: person.churchId,
     displayName: `${person.firstName} ${person.lastName}`,
     roles,
     permissionGrants: permissionGrantRows.map((row) => ({

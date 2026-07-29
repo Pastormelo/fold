@@ -1,13 +1,15 @@
 import { CareTimeline } from '@/components/care-timeline'
 import {
   getGrantedExceptions,
+  getJourneyTemplates,
   getJourneys,
   getPersonRecord,
-  getSyncCategories,
   getRestorationCases,
+  getSyncCategories,
   getTierOverview,
   getUnfoldedMembers,
   getViewerSummary,
+  listPeople,
 } from '@/data/records'
 import {
   CONFIDENTIALITY_RULES,
@@ -37,17 +39,21 @@ export default async function Home() {
     unfolded,
     exceptions,
     syncCategories,
+    journeyTemplates,
   ] = await Promise.all([
     getViewerSummary(),
-    getPersonRecord('p-lena'),
+    // Whoever is first in the directory. There is no fixed person any more —
+    // sample data's Lena Whitcomb does not exist in a real church.
+    listPeople().then((people) =>
+      people[0] ? getPersonRecord(people[0].id) : null
+    ),
     getTierOverview(),
-    // Fixed date so the demo's overdue states are stable to look at rather
-    // than drifting with the clock.
-    getJourneys(new Date('2026-07-26T00:00:00Z')),
+    getJourneys(),
     getRestorationCases(),
     getUnfoldedMembers(),
     getGrantedExceptions(),
     getSyncCategories(),
+    getJourneyTemplates(),
   ])
 
   return (
@@ -61,8 +67,8 @@ export default async function Home() {
           className="max-w-[62ch] text-[1.0625rem]"
           style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}
         >
-          Switch the viewer above and watch this page change. Nothing is hidden
-          with CSS: the server decides what {viewer.displayName} may read and
+          Signed in as {viewer.displayName} — {viewer.clearanceLabel}. Nothing
+          here is hidden with CSS: the server decides what you may read and
           sends only that.
         </p>
       </header>
@@ -253,6 +259,61 @@ export default async function Home() {
         </section>
       )}
 
+      {/* ── The journeys this church has configured ── */}
+      {journeyTemplates.length > 0 && (
+        <section className="flex flex-col gap-4">
+          <h2 style={{ fontSize: '1.375rem' }}>Journey templates</h2>
+          <p
+            className="max-w-[62ch] text-[0.9375rem]"
+            style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}
+          >
+            What this church responds to, and how. Defaults can be edited but
+            never deleted — the situation does not stop happening because the
+            journey was removed.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {journeyTemplates.map((template) => (
+              <article
+                key={template.name}
+                style={{
+                  background: 'var(--surface-card)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '14px 16px',
+                  opacity: template.readable ? 1 : 0.6,
+                }}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold">{template.name}</span>
+                  {template.isSystemDefault && (
+                    <span
+                      className="overline"
+                      style={{ fontSize: '0.5625rem', letterSpacing: '0.1em' }}
+                    >
+                      Default
+                    </span>
+                  )}
+                </div>
+                <p
+                  className="mt-1 text-[0.875rem]"
+                  style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}
+                >
+                  {template.trigger}
+                </p>
+                <p
+                  className="mt-2 text-[0.8125rem]"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  {template.stepCount}{' '}
+                  {template.stepCount === 1 ? 'step' : 'steps'} ·{' '}
+                  {template.tierLabel}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ── Running care journeys ── */}
       <section className="flex flex-col gap-4">
         <h2 style={{ fontSize: '1.375rem' }}>Journeys</h2>
@@ -264,6 +325,12 @@ export default async function Home() {
           ends — visibly, rather than by being forgotten. Due dates are computed
           from the current step&rsquo;s window, never stored.
         </p>
+        {journeys.length === 0 && (
+          <p style={{ color: 'var(--text-muted)', textWrap: 'pretty' }}>
+            No journeys running. That is a fact about the record, not about the
+            church — one starts when a life event is logged.
+          </p>
+        )}
         <div className="flex flex-col gap-3">
           {journeys.map((journey) => (
             <article
@@ -366,6 +433,9 @@ export default async function Home() {
           elder with full clearance, to see what a case he does not carry looks
           like.
         </p>
+        {cases.length === 0 && (
+          <p style={{ color: 'var(--text-muted)' }}>No restoration cases.</p>
+        )}
         <div className="flex flex-col gap-3">
           {cases.map((restorationCase) => (
             <article
