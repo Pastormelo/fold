@@ -75,6 +75,18 @@ export function supabasePublicConfig(): SupabasePublicConfig | null {
   return { url, anonKey }
 }
 
+/**
+ * Whether to offer Google sign-in.
+ *
+ * Off unless explicitly enabled, because the provider needs an OAuth client from
+ * Google Cloud that Supabase cannot supply on its own. Offering the button
+ * without it means a control that always fails, which is the §8.4 rule about not
+ * presenting an action that will be refused.
+ */
+export function isGoogleSignInEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_FOLD_GOOGLE_SIGN_IN === '1'
+}
+
 export function isSupabaseConfigured(): boolean {
   return supabasePublicConfig() !== null
 }

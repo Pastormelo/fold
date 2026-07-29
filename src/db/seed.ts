@@ -83,7 +83,8 @@ const DEFAULT_JOURNEYS = [
         title: 'Check in once they are home',
         window: 'week_1' as const,
         ownerRole: 'care_volunteer' as const,
-        guidanceNote: 'Going home is when the help stops and the tiredness starts.',
+        guidanceNote:
+          'Going home is when the help stops and the tiredness starts.',
       },
     ],
   },
@@ -159,7 +160,9 @@ async function seed() {
     .limit(1)
 
   if (person) {
-    console.log(`  person           already there: ${person.firstName} ${person.lastName}`)
+    console.log(
+      `  person           already there: ${person.firstName} ${person.lastName}`
+    )
   } else {
     ;[person] = await db
       .insert(schema.people)
@@ -171,7 +174,9 @@ async function seed() {
         isMember: true,
       })
       .returning()
-    console.log(`  person           created: ${person!.firstName} ${person!.lastName}`)
+    console.log(
+      `  person           created: ${person!.firstName} ${person!.lastName}`
+    )
   }
   const personId = person!.id
 
@@ -252,6 +257,9 @@ async function seed() {
 seed()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error('\nSeed failed:', error instanceof Error ? error.message : error)
+    console.error(
+      '\nSeed failed:',
+      error instanceof Error ? error.message : error
+    )
     process.exit(1)
   })

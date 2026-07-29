@@ -18,7 +18,10 @@ declare global {
 
 /** Serverless gives each invocation its own process, so pools must not be big. */
 function isServerless(): boolean {
-  return process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined
+  return (
+    process.env.VERCEL === '1' ||
+    process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined
+  )
 }
 
 function connection() {

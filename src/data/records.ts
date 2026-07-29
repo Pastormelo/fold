@@ -24,6 +24,7 @@ import {
   type JourneyInstance,
   type JourneyTemplate,
   canReadJourney,
+  deleteTemplateRefusal,
   journeyProgress,
 } from '@/domain/journeys'
 import {
@@ -32,6 +33,7 @@ import {
   TIER_ORDER,
   tierName,
 } from '@/domain/tiers'
+import type { RailSection } from '@/domain/navigation'
 import {
   type Permission,
   type PermissionCheck,
@@ -68,6 +70,7 @@ import { getViewer } from './viewer'
 export type ViewerSummary = {
   personId: string
   displayName: string
+  churchName: string
   roleLabels: string[]
   clearanceTier: ConfidentialityTier | null
   clearanceLabel: string
@@ -77,12 +80,58 @@ export async function getViewerSummary(): Promise<ViewerSummary> {
   const viewer = await getViewer()
   const clearance = clearanceFor(viewer)
 
+  const [church] = await db
+    .select({ name: schema.churches.name })
+    .from(schema.churches)
+    .where(eq(schema.churches.id, viewer.churchId))
+    .limit(1)
+
   return {
     personId: viewer.personId,
     displayName: viewer.displayName,
+    churchName: church?.name ?? 'This church',
     roleLabels: viewer.roles.map((role) => ROLE_LABELS[role]),
     clearanceTier: clearance,
     clearanceLabel: clearance ? tierName(clearance) : 'No pastoral care access',
+  }
+}
+
+/* ────────────────────────────── The rail ────────────────────────────── */
+
+/**
+ * The badge counts on the rail.
+ *
+ * Every one is a count of things needing attention, computed here rather than
+ * stored — §8.1, and the same way the prototype derived them. A section whose
+ * count is zero renders no badge at all: a badge reading 0 is noise pretending to
+ * be information.
+ *
+ * A viewer with no care clearance gets no counts, because they will not be
+ * offered those sections either.
+ */
+export async function getRailBadges(): Promise<
+  Partial<Record<RailSection, number>>
+> {
+  const viewer = await getViewer()
+  if (clearanceFor(viewer) === null) return {}
+
+  // Deliberately built from the same functions the sections themselves use,
+  // rather than from a second set of queries. A badge is a claim about what a
+  // section contains, so counting it separately is how the two come to disagree
+  // — §8.2, the subject of a claim must match what it was computed from.
+  const [journeys, unfolded] = await Promise.all([
+    getJourneys(),
+    getUnfoldedMembers(),
+  ])
+
+  return {
+    // A member under no named elder is the product's central failure, so that is
+    // what Family counts. Journeys counts only the late ones this viewer can
+    // actually read — a number they cannot act on is worse than none.
+    people: unfolded.length,
+    journeys: journeys.filter(
+      (journey) => journey.access === 'visible' && journey.isOverdue
+    ).length,
   }
 }
 
@@ -280,22 +329,38 @@ export async function getPersonRecord(
 }
 
 /** The people this viewer can see, for choosing whose record to open. */
-export async function listPeople(): Promise<
-  { id: string; fullName: string }[]
-> {
+export type PersonListRow = {
+  id: string
+  fullName: string
+  initials: string
+  /** Carries the sentence when there is no fold, not an empty string (§2). */
+  foldLabel: string
+  isUnfolded: boolean
+}
+
+export async function listPeople(): Promise<PersonListRow[]> {
   const viewer = await getViewer()
   const rows = await db
     .select({
       id: schema.people.id,
       firstName: schema.people.firstName,
       lastName: schema.people.lastName,
+      isMember: schema.people.isMember,
+      foldName: schema.folds.name,
     })
     .from(schema.people)
+    .leftJoin(schema.folds, eq(schema.folds.id, schema.people.foldId))
     .where(eq(schema.people.churchId, viewer.churchId))
     .orderBy(asc(schema.people.lastName), asc(schema.people.firstName))
+
   return rows.map((row) => ({
     id: row.id,
     fullName: `${row.firstName} ${row.lastName}`,
+    initials: `${row.firstName[0] ?? ''}${row.lastName[0] ?? ''}`,
+    foldLabel:
+      row.foldName ??
+      (row.isMember ? 'No fold — an open pastoral matter' : 'Not yet a member'),
+    isUnfolded: row.foldName === null && row.isMember,
   }))
 }
 
@@ -674,12 +739,21 @@ export async function getJourneys(
  * never started one is in a different position from a church with none.
  */
 export type JourneyTemplateRow = {
+  id: string
   name: string
   trigger: string
   tierLabel: string
   stepCount: number
+  /** Pluralised from the count, not written twice (§8.1). */
+  stepCountLabel: string
   isSystemDefault: boolean
   readable: boolean
+  /**
+   * Why this template cannot be deleted, or `null` when it can. §2: system
+   * defaults are editable but never removable, and the sentence explains that in
+   * terms of the situation rather than the software.
+   */
+  deleteRefusal: string | null
 }
 
 export async function getJourneyTemplates(): Promise<JourneyTemplateRow[]> {
@@ -704,21 +778,28 @@ export async function getJourneyTemplates(): Promise<JourneyTemplateRow[]> {
       )
     )
 
-  return rows.map((row) => ({
-    name: row.name,
-    trigger: row.trigger,
-    tierLabel: tierName(row.visibilityTier),
-    stepCount: steps.filter((s) => s.templateId === row.id).length,
-    isSystemDefault: row.isSystemDefault,
-    readable: canReadJourney(clearance, {
+  return rows.map((row) => {
+    const template: JourneyTemplate = {
       id: row.id,
       name: row.name,
       trigger: row.trigger,
       visibilityTier: row.visibilityTier,
       isSystemDefault: row.isSystemDefault,
       steps: [],
-    }),
-  }))
+    }
+    const stepCount = steps.filter((s) => s.templateId === row.id).length
+    return {
+      id: row.id,
+      name: row.name,
+      trigger: row.trigger,
+      tierLabel: tierName(row.visibilityTier),
+      stepCount,
+      stepCountLabel: `${stepCount} ${stepCount === 1 ? 'step' : 'steps'}`,
+      isSystemDefault: row.isSystemDefault,
+      readable: canReadJourney(clearance, template),
+      deleteRefusal: deleteTemplateRefusal(template),
+    }
+  })
 }
 
 /* ────────────────────────── Planning Center ────────────────────────── */

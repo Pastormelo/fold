@@ -1,4 +1,7 @@
-import { isSupabaseConfigured } from '@/auth/supabase-config'
+import {
+  isGoogleSignInEnabled,
+  isSupabaseConfigured,
+} from '@/auth/supabase-config'
 import { SignInForm } from './sign-in-form'
 
 export const metadata = { title: 'Sign in · Fold' }
@@ -26,7 +29,10 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
       </header>
 
       {configured ? (
-        <SignInForm initialError={initialError} />
+        <SignInForm
+          initialError={initialError}
+          googleEnabled={isGoogleSignInEnabled()}
+        />
       ) : (
         /* No Supabase project yet. Saying so beats rendering a form that cannot
            work, and it names the variables rather than making someone guess. */

@@ -54,13 +54,13 @@ async function link() {
 
   // Refuse to steal a link from another person rather than silently moving it.
   const [clash] = await db
-    .select({ id: schema.people.id, firstName: schema.people.firstName, lastName: schema.people.lastName })
+    .select({
+      id: schema.people.id,
+      firstName: schema.people.firstName,
+      lastName: schema.people.lastName,
+    })
     .from(schema.people)
-    .where(
-      and(
-        eq(schema.people.authUserId, authUserId)
-      )
-    )
+    .where(and(eq(schema.people.authUserId, authUserId)))
     .limit(1)
 
   if (clash && clash.id !== person.id) {
@@ -72,7 +72,9 @@ async function link() {
   }
 
   if (person.existing === authUserId) {
-    console.log(`Already linked: ${person.firstName} ${person.lastName} ← ${authUserId}`)
+    console.log(
+      `Already linked: ${person.firstName} ${person.lastName} ← ${authUserId}`
+    )
     process.exit(0)
   }
 
@@ -81,7 +83,9 @@ async function link() {
     .set({ authUserId })
     .where(eq(schema.people.id, person.id))
 
-  console.log(`Linked ${person.firstName} ${person.lastName} to auth user ${authUserId}.`)
+  console.log(
+    `Linked ${person.firstName} ${person.lastName} to auth user ${authUserId}.`
+  )
   console.log('Signing in with that account will now resolve to this person.')
 }
 

@@ -41,7 +41,13 @@ const primaryButton = {
   width: '100%',
 } as const
 
-export function SignInForm({ initialError }: { initialError: string | null }) {
+export function SignInForm({
+  initialError,
+  googleEnabled,
+}: {
+  initialError: string | null
+  googleEnabled: boolean
+}) {
   const [mode, setMode] = useState<Mode>('password')
   const [result, setResult] = useState<AuthResult | null>(
     initialError ? { ok: false, message: initialError } : null
@@ -150,34 +156,46 @@ export function SignInForm({ initialError }: { initialError: string | null }) {
         </button>
       </form>
 
-      <div className="flex items-center gap-3">
-        <span
-          style={{ flex: 1, height: 1, background: 'var(--border-default)' }}
-        />
-        <span
-          className="overline"
-          style={{ fontSize: '0.5625rem', letterSpacing: '0.14em' }}
-        >
-          or
-        </span>
-        <span
-          style={{ flex: 1, height: 1, background: 'var(--border-default)' }}
-        />
-      </div>
+      {googleEnabled && (
+        <>
+          <div className="flex items-center gap-3">
+            <span
+              style={{
+                flex: 1,
+                height: 1,
+                background: 'var(--border-default)',
+              }}
+            />
+            <span
+              className="overline"
+              style={{ fontSize: '0.5625rem', letterSpacing: '0.14em' }}
+            >
+              or
+            </span>
+            <span
+              style={{
+                flex: 1,
+                height: 1,
+                background: 'var(--border-default)',
+              }}
+            />
+          </div>
 
-      <button
-        type="button"
-        onClick={google}
-        disabled={pending}
-        style={{
-          ...primaryButton,
-          background: 'var(--surface-card)',
-          color: 'var(--text-primary)',
-          border: '1px solid var(--border-strong)',
-        }}
-      >
-        Continue with Google
-      </button>
+          <button
+            type="button"
+            onClick={google}
+            disabled={pending}
+            style={{
+              ...primaryButton,
+              background: 'var(--surface-card)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-strong)',
+            }}
+          >
+            Continue with Google
+          </button>
+        </>
+      )}
 
       {result && (
         <p
