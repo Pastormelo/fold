@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { cache } from 'react'
+
 import { desc, eq } from 'drizzle-orm'
 
 import {
@@ -60,7 +62,7 @@ export type NotesPage = {
 
 const HOW_MANY = 200
 
-export async function getNotesPage(): Promise<NotesPage> {
+export const getNotesPage = cache(async (): Promise<NotesPage> => {
   const viewer = await getViewer()
 
   const [noteRows, people] = await Promise.all([
@@ -154,4 +156,4 @@ export async function getNotesPage(): Promise<NotesPage> {
           ? 'Care has been logged, and none of it is at a tier you read.'
           : '',
   }
-}
+})

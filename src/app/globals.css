@@ -179,3 +179,52 @@ h4 {
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+ * Rail links.
+ *
+ * Hover and focus live here rather than in the component's inline styles,
+ * because inline styles cannot express `:hover` at all — which is why the rail
+ * had no hover state: every item was styled inline, so there was nowhere for one
+ * to go. The current item is marked with `aria-current="page"`, so the selector
+ * follows the accessibility attribute rather than a duplicate class.
+ */
+[aria-label='Sections'] a {
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+[aria-label='Sections'] a:hover:not([aria-current='page']) {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--ofc-paper);
+}
+
+[aria-label='Sections'] a:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Consistent focus for everything else that takes a keyboard. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-xs);
+}
+
+/* Buttons and links that are already styled inline still get a hover cue. */
+button:not(:disabled):hover,
+summary:hover {
+  filter: brightness(0.97);
+}
+
+input:not(:disabled):hover,
+select:hover,
+textarea:hover {
+  border-color: var(--border-strong);
+}

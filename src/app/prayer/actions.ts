@@ -13,7 +13,7 @@ import {
 import { permissionCheck } from '@/domain/roles'
 import { TIER_ORDER, type ConfidentialityTier, tierName } from '@/domain/tiers'
 import { db, schema } from '@/db/client'
-import { getViewer } from '@/data/viewer'
+import { getWriter } from '@/data/viewer'
 
 export type ActionOutcome =
   { ok: true; message: string } | { ok: false; message: string }
@@ -41,7 +41,7 @@ export async function askForPrayer(formData: FormData): Promise<ActionOutcome> {
     return { ok: false, message: 'An empty request asks for nothing.' }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'care.log_note')
   if (!gate.allowed) return { ok: false, message: gate.note }
 
@@ -101,7 +101,7 @@ export async function prayForRequest(
     return { ok: false, message: 'No request named.' }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
 
   const [request] = await db
     .select({
@@ -188,7 +188,7 @@ export async function markAnswered(formData: FormData): Promise<ActionOutcome> {
   const attempt = answerRequest(typeof outcome === 'string' ? outcome : '')
   if (!attempt.ok) return { ok: false, message: attempt.refusal }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'care.log_note')
   if (!gate.allowed) return { ok: false, message: gate.note }
 
@@ -227,7 +227,7 @@ export async function reopenRequest(
     return { ok: false, message: 'No request named.' }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'care.log_note')
   if (!gate.allowed) return { ok: false, message: gate.note }
 

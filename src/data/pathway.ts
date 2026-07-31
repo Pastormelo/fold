@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { cache } from 'react'
+
 import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm'
 
 import {
@@ -270,7 +272,7 @@ const DATE_TIME = new Intl.DateTimeFormat('en-US', {
   minute: '2-digit',
 })
 
-export async function getPathwayOverview(): Promise<PathwayOverview> {
+export const getPathwayOverview = cache(async (): Promise<PathwayOverview> => {
   const viewer = await getViewer()
 
   const [working, active] = await Promise.all([
@@ -436,7 +438,7 @@ export async function getPathwayOverview(): Promise<PathwayOverview> {
       detail: row.detail,
     })),
   }
-}
+})
 
 /**
  * What a reviewer's position actually is, said in full.
@@ -537,7 +539,7 @@ export type VersionRow = {
  * which counts only real approvals — the reason this list and
  * `addressedNotApproved` are separate columns rather than one status.
  */
-export async function getPathwayVersions(): Promise<VersionRow[]> {
+export const getPathwayVersions = cache(async (): Promise<VersionRow[]> => {
   const viewer = await getViewer()
 
   const rows = await db
@@ -586,7 +588,7 @@ export async function getPathwayVersions(): Promise<VersionRow[]> {
       stageCountLabel: `${stageCount} ${stageCount === 1 ? 'stage' : 'stages'}`,
     }
   })
-}
+})
 
 function approvalsOn(reviews: readonly Review[]): string[] {
   return reviews

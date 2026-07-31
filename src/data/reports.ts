@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { cache } from 'react'
+
 import { and, eq, gte, max, sql } from 'drizzle-orm'
 
 import { canReadTier } from '@/domain/access'
@@ -79,58 +81,122 @@ const DATE = new Intl.DateTimeFormat('en-US', {
   year: 'numeric',
 })
 
-export async function getReportPage(): Promise<ReportPage> {
+export const getReportPage = cache(async (): Promise<ReportPage> => {
   const viewer = await getViewer()
   const gate = permissionCheck(viewer, 'reporting.view')
   const asOf = new Date()
 
-  const [church] = await db
-    .select({ name: schema.churches.name })
-    .from(schema.churches)
-    .where(eq(schema.churches.id, viewer.churchId))
-    .limit(1)
-
-  const empty: ReportPage = {
-    gate,
-    asOf: DATE.format(asOf),
-    churchName: church?.name ?? 'This church',
-    coverage: summariseCoverage([], asOf),
-    stats: [],
-    folds: [],
-    concerns: [],
-    unfolded: [],
-    overdueJourneys: [],
-    appendix: { count: 0, note: '', readable: false },
+  // Refused before any query at all. A refusal that has already loaded the
+  // records is a refusal in the interface only — and the permission check needs
+  // nothing from the database, so there is no reason to have touched it yet.
+  if (!gate.allowed) {
+    return {
+      gate,
+      asOf: DATE.format(asOf),
+      churchName: 'This church',
+      coverage: summariseCoverage([], asOf),
+      stats: [],
+      folds: [],
+      concerns: [],
+      unfolded: [],
+      overdueJourneys: [],
+      appendix: { count: 0, note: '', readable: false },
+    }
   }
 
-  // Returned before any query that would read people. A refusal that has already
-  // loaded the records is a refusal in the interface only.
-  if (!gate.allowed) return empty
+  const monthStart = new Date(
+    Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth(), 1)
+  )
 
-  /* ── Last contact per member, from logged notes ── */
-  const members = await db
-    .select({
-      id: schema.people.id,
-      firstName: schema.people.firstName,
-      lastName: schema.people.lastName,
-      foldId: schema.people.foldId,
-    })
-    .from(schema.people)
-    .where(
-      and(
-        eq(schema.people.churchId, viewer.churchId),
-        eq(schema.people.isMember, true)
-      )
-    )
+  /*
+   * One round trip's worth of latency instead of seven.
+   *
+   * These queries are independent of each other, and this page was awaiting them
+   * one at a time — against a pooler in another region, that is seven times the
+   * network cost for no reason. `overdueJourneys` goes in the same batch because
+   * `getJourneys` is memoised per request, so the copy the rail already fetched is
+   * reused rather than queried again.
+   */
+  const [
+    churchRows,
+    members,
+    lastContactRows,
+    foldRows,
+    loggedRows,
+    shepherdRows,
+    appendixRows,
+    overdueJourneys,
+  ] = await Promise.all([
+    db
+      .select({ name: schema.churches.name })
+      .from(schema.churches)
+      .where(eq(schema.churches.id, viewer.churchId))
+      .limit(1),
+    db
+      .select({
+        id: schema.people.id,
+        firstName: schema.people.firstName,
+        lastName: schema.people.lastName,
+        foldId: schema.people.foldId,
+      })
+      .from(schema.people)
+      .where(
+        and(
+          eq(schema.people.churchId, viewer.churchId),
+          eq(schema.people.isMember, true)
+        )
+      ),
+    db
+      .select({
+        personId: schema.careNotes.personId,
+        lastAt: max(schema.careNotes.occurredAt),
+      })
+      .from(schema.careNotes)
+      .where(eq(schema.careNotes.churchId, viewer.churchId))
+      .groupBy(schema.careNotes.personId),
+    db
+      .select({
+        id: schema.folds.id,
+        name: schema.folds.name,
+        elderFirst: schema.people.firstName,
+        elderLast: schema.people.lastName,
+      })
+      .from(schema.folds)
+      .innerJoin(schema.people, eq(schema.people.id, schema.folds.elderId))
+      .where(eq(schema.folds.churchId, viewer.churchId)),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(schema.careNotes)
+      .where(
+        and(
+          eq(schema.careNotes.churchId, viewer.churchId),
+          gte(schema.careNotes.occurredAt, monthStart)
+        )
+      ),
+    db
+      .select({
+        n: sql<number>`count(distinct ${schema.leaderRoles.personId})::int`,
+      })
+      .from(schema.leaderRoles)
+      .where(eq(schema.leaderRoles.churchId, viewer.churchId)),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(schema.careNotes)
+      .where(
+        and(
+          eq(schema.careNotes.churchId, viewer.churchId),
+          eq(schema.careNotes.visibilityTier, 'elders_only'),
+          gte(schema.careNotes.occurredAt, monthStart)
+        )
+      ),
+    loadOverdueJourneys(asOf),
+  ])
 
-  const lastContactRows = await db
-    .select({
-      personId: schema.careNotes.personId,
-      lastAt: max(schema.careNotes.occurredAt),
-    })
-    .from(schema.careNotes)
-    .where(eq(schema.careNotes.churchId, viewer.churchId))
-    .groupBy(schema.careNotes.personId)
+  // The batch hands back arrays; these are the single rows inside them.
+  const church = churchRows[0]
+  const logged = loggedRows[0]
+  const shepherds = shepherdRows[0]
+  const appendix = appendixRows[0]
 
   // Every tier counts towards coverage, including tiers this reader cannot open.
   // Contact happening is not confidential; what was said is. Filtering by tier
@@ -148,17 +214,6 @@ export async function getReportPage(): Promise<ReportPage> {
   const coverage = summariseCoverage(contacts, asOf)
 
   /* ── Fold by fold ── */
-  const foldRows = await db
-    .select({
-      id: schema.folds.id,
-      name: schema.folds.name,
-      elderFirst: schema.people.firstName,
-      elderLast: schema.people.lastName,
-    })
-    .from(schema.folds)
-    .innerJoin(schema.people, eq(schema.people.id, schema.folds.elderId))
-    .where(eq(schema.folds.churchId, viewer.churchId))
-
   const folds: FoldCoverage[] = foldRows.map((fold) => ({
     foldId: fold.id,
     foldName: fold.name,
@@ -191,43 +246,6 @@ export async function getReportPage(): Promise<ReportPage> {
         label: assessment.label,
       }
     })
-
-  /* ── Care logged this month ── */
-  const monthStart = new Date(
-    Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth(), 1)
-  )
-  const [logged] = await db
-    .select({ n: sql<number>`count(*)::int` })
-    .from(schema.careNotes)
-    .where(
-      and(
-        eq(schema.careNotes.churchId, viewer.churchId),
-        gte(schema.careNotes.occurredAt, monthStart)
-      )
-    )
-
-  /* ── Shepherds ── */
-  const [shepherds] = await db
-    .select({
-      n: sql<number>`count(distinct ${schema.leaderRoles.personId})::int`,
-    })
-    .from(schema.leaderRoles)
-    .where(eq(schema.leaderRoles.churchId, viewer.churchId))
-
-  /* ── Overdue journeys, at this reader's tier ── */
-  const overdueJourneys = await loadOverdueJourneys(asOf)
-
-  /* ── The confidential appendix, counted ── */
-  const [appendix] = await db
-    .select({ n: sql<number>`count(*)::int` })
-    .from(schema.careNotes)
-    .where(
-      and(
-        eq(schema.careNotes.churchId, viewer.churchId),
-        eq(schema.careNotes.visibilityTier, 'elders_only'),
-        gte(schema.careNotes.occurredAt, monthStart)
-      )
-    )
 
   const appendixCount = appendix?.n ?? 0
   const appendixReadable = canReadTier(viewer, 'elders_only')
@@ -283,7 +301,7 @@ export async function getReportPage(): Promise<ReportPage> {
               `${appendixCount} ${appendixCount === 1 ? 'matter is' : 'matters are'} held at elders-only visibility. You can see that they exist, not what is in them.`,
     },
   }
-}
+})
 
 /**
  * Journeys with somebody waiting.

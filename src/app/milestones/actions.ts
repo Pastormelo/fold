@@ -10,7 +10,7 @@ import {
 } from '@/domain/milestones'
 import { permissionCheck } from '@/domain/roles'
 import { db, schema } from '@/db/client'
-import { getViewer } from '@/data/viewer'
+import { getWriter } from '@/data/viewer'
 
 export type ActionOutcome =
   { ok: true; message: string } | { ok: false; message: string }
@@ -44,7 +44,7 @@ export async function recordMilestone(
     }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'care.log_note')
   if (!gate.allowed) return { ok: false, message: gate.note }
 
@@ -113,7 +113,7 @@ export async function removeMilestone(
     return { ok: false, message: 'No milestone named.' }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'care.log_note')
   if (!gate.allowed) return { ok: false, message: gate.note }
 

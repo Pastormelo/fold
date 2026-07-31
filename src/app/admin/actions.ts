@@ -14,7 +14,7 @@ import {
 } from '@/domain/roles'
 import { TIER_ORDER, type ConfidentialityTier, tierName } from '@/domain/tiers'
 import { db, schema } from '@/db/client'
-import { getViewer } from '@/data/viewer'
+import { getWriter } from '@/data/viewer'
 
 /**
  * Administration.
@@ -83,7 +83,7 @@ export async function grantRole(formData: FormData): Promise<ActionOutcome> {
     return { ok: false, message: 'Say which person and which role.' }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'admin.manage_roles')
   if (!gate.allowed) return { ok: false, message: gate.note }
 
@@ -140,7 +140,7 @@ export async function revokeRole(formData: FormData): Promise<ActionOutcome> {
     return { ok: false, message: 'Say which person and which role.' }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'admin.manage_roles')
   if (!gate.allowed) return { ok: false, message: gate.note }
 
@@ -204,7 +204,7 @@ export async function grantPermission(
     }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'admin.grant_permissions')
   if (!gate.allowed) return { ok: false, message: gate.note }
 
@@ -274,7 +274,7 @@ export async function grantClearance(
     }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'admin.grant_permissions')
   if (!gate.allowed) return { ok: false, message: gate.note }
 
@@ -331,7 +331,7 @@ export async function revokeGrant(formData: FormData): Promise<ActionOutcome> {
     return { ok: false, message: 'Say which grant.' }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'admin.grant_permissions')
   if (!gate.allowed) return { ok: false, message: gate.note }
 
@@ -386,7 +386,7 @@ export async function setSyncCategory(
     return { ok: false, message: 'Say which category.' }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'admin.manage_integrations')
   if (!gate.allowed) return { ok: false, message: gate.note }
 

@@ -7,7 +7,7 @@ import { canWriteAtTier } from '@/domain/access'
 import { permissionCheck } from '@/domain/roles'
 import { TIER_ORDER, type ConfidentialityTier, tierName } from '@/domain/tiers'
 import { db, schema } from '@/db/client'
-import { getViewer } from '@/data/viewer'
+import { getWriter } from '@/data/viewer'
 
 /**
  * Logging care.
@@ -52,7 +52,7 @@ export async function logCareNote(formData: FormData): Promise<ActionOutcome> {
     return { ok: false, message: 'An empty note records nothing.' }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
 
   const gate = permissionCheck(viewer, 'care.log_note')
   if (!gate.allowed) return { ok: false, message: gate.note }

@@ -38,8 +38,26 @@ export function ActionForm({
   children?: React.ReactNode
 }) {
   const [outcome, submit, pending] = useActionState(
-    async (_previous: ActionOutcome | null, formData: FormData) =>
-      action(formData),
+    async (
+      _previous: ActionOutcome | null,
+      formData: FormData
+    ): Promise<ActionOutcome> => {
+      try {
+        return await action(formData)
+      } catch (error) {
+        // Actions return refusals rather than throwing, so anything caught here
+        // is unexpected. Reported beside the button instead of taking the whole
+        // page to the error boundary: the rest of the screen is still valid, and
+        // the person needs to know *this* did not happen.
+        return {
+          ok: false,
+          message:
+            error instanceof Error
+              ? error.message
+              : 'That did not go through, and the reason was not something this form could read.',
+        }
+      }
+    },
     null
   )
 

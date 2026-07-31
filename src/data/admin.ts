@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { cache } from 'react'
+
 import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm'
 
 import {
@@ -57,7 +59,7 @@ export type RoleRow = {
   unrestrictedNote: string | null
 }
 
-export async function getRoleMatrix(): Promise<RoleRow[]> {
+export const getRoleMatrix = cache(async (): Promise<RoleRow[]> => {
   const viewer = await getViewer()
 
   const holders = await db
@@ -105,7 +107,7 @@ export async function getRoleMatrix(): Promise<RoleRow[]> {
           : null,
     }
   })
-}
+})
 
 /* ───────────────────────────── People and roles ───────────────────────────── */
 
@@ -128,7 +130,7 @@ export type LeaderRow = {
  * Sorted by name rather than by clearance: a list ordered by access reads like a
  * ranking of people, and this is a directory of who does what.
  */
-export async function getLeaders(): Promise<LeaderRow[]> {
+export const getLeaders = cache(async (): Promise<LeaderRow[]> => {
   const viewer = await getViewer()
 
   const [people, roleRows, clearanceGrants] = await Promise.all([
@@ -201,12 +203,14 @@ export async function getLeaders(): Promise<LeaderRow[]> {
         isViewer: person.id === viewer.personId,
       }
     })
-}
+})
 
 /** Whether the viewer reaches care at all, for the screen's own framing. */
-export async function getViewerClearance(): Promise<ConfidentialityTier | null> {
-  return clearanceFor(await getViewer())
-}
+export const getViewerClearance = cache(
+  async (): Promise<ConfidentialityTier | null> => {
+    return clearanceFor(await getViewer())
+  }
+)
 
 /* ─────────────────────── Whether anything is connected ─────────────────────── */
 
@@ -226,30 +230,32 @@ export type IntegrationState = {
  * "People and households · both ways" as a description of what is happening
  * tonight rather than of what would happen if it were switched on.
  */
-export async function getIntegrationState(): Promise<IntegrationState> {
-  const viewer = await getViewer()
+export const getIntegrationState = cache(
+  async (): Promise<IntegrationState> => {
+    const viewer = await getViewer()
 
-  const [imported] = await db
-    .select({ id: schema.people.id })
-    .from(schema.people)
-    .where(
-      and(
-        eq(schema.people.churchId, viewer.churchId),
-        isNotNull(schema.people.planningCenterId)
+    const [imported] = await db
+      .select({ id: schema.people.id })
+      .from(schema.people)
+      .where(
+        and(
+          eq(schema.people.churchId, viewer.churchId),
+          isNotNull(schema.people.planningCenterId)
+        )
       )
-    )
-    .limit(1)
+      .limit(1)
 
-  return imported
-    ? {
-        connected: true,
-        note: 'Connected. Records that came from Planning Center keep their id, so a resync never creates a second person.',
-      }
-    : {
-        connected: false,
-        note: 'Planning Center is not connected, so nothing is syncing. What follows is the scope that would apply once it is — not a description of what is happening now.',
-      }
-}
+    return imported
+      ? {
+          connected: true,
+          note: 'Connected. Records that came from Planning Center keep their id, so a resync never creates a second person.',
+        }
+      : {
+          connected: false,
+          note: 'Planning Center is not connected, so nothing is syncing. What follows is the scope that would apply once it is — not a description of what is happening now.',
+        }
+  }
+)
 
 /* ───────────────────────────── Fold lists ───────────────────────────── */
 
@@ -268,7 +274,7 @@ export type FoldListRow = {
  * The counts come off `is_member` rather than a list column, because membership
  * is the fact and the list is the consequence.
  */
-export async function getFoldLists(): Promise<FoldListRow[]> {
+export const getFoldLists = cache(async (): Promise<FoldListRow[]> => {
   const viewer = await getViewer()
 
   const rows = await db
@@ -288,4 +294,4 @@ export async function getFoldLists(): Promise<FoldListRow[]> {
       countLabel: `${count} ${count === 1 ? 'person' : 'people'}`,
     }
   })
-}
+})

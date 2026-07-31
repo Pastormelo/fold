@@ -9,7 +9,7 @@ import type { Viewer } from '@/domain/access'
 import { isRole, type Role } from '@/domain/roles'
 import { isSupabaseConfigured } from '@/auth/supabase-config'
 import { getSupabaseUser } from '@/auth/supabase-server'
-import { sampleViewers } from './sample'
+import { SAMPLE_CHURCH_ID, sampleViewers } from './sample'
 
 /**
  * Who is asking — the entry point for every authorization decision.
@@ -215,4 +215,48 @@ function leastPrivileged(viewers: readonly Viewer[]): Viewer {
 export function availableDevViewers(): Viewer[] {
   if (isSupabaseConfigured()) return []
   return demoAuthEnabled() ? sampleViewers() : []
+}
+
+/* ─────────────────── Keeping the demo out of real records ─────────────────── */
+
+/**
+ * Whether this viewer is the sample-data stand-in rather than a real person.
+ *
+ * Pure, so it can be asserted without a request context. A demo viewer's
+ * `personId` is a slug like `p-melo` and its `churchId` is the all-zero UUID —
+ * neither of which is a row in anybody's database.
+ */
+export function isSampleViewer(viewer: Viewer): boolean {
+  return viewer.churchId === SAMPLE_CHURCH_ID
+}
+
+/**
+ * The viewer, for a write.
+ *
+ * Reads under the demo identity are harmless: they are scoped to a church id no
+ * row carries, so they return nothing. Writes are not harmless — they reach the
+ * real database with a fabricated identity, and Postgres rejects them with
+ * `invalid input syntax for type uuid: "p-melo"`, which is a confusing way to
+ * learn that the sample viewer was never meant to get this far.
+ *
+ * Worse than the error is what a permissive version would do: if the ids happened
+ * to be valid UUIDs, a demo session would be writing rows attributed to a person
+ * who does not exist, into a church that does not exist. So this refuses by
+ * identity rather than by validating the shape of an id.
+ *
+ * Every Server Action that writes calls this instead of `getViewer`.
+ */
+export class DemoCannotWriteError extends Error {
+  constructor() {
+    super(
+      'This is the sample-data viewer, which has no record in the database. Sign in as yourself to change anything.'
+    )
+    this.name = 'DemoCannotWriteError'
+  }
+}
+
+export async function getWriter(): Promise<Viewer> {
+  const viewer = await getViewer()
+  if (isSampleViewer(viewer)) throw new DemoCannotWriteError()
+  return viewer
 }

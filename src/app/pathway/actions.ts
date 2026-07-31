@@ -13,7 +13,7 @@ import {
 import { permissionCheck } from '@/domain/roles'
 import { db, schema } from '@/db/client'
 import { getPathwayOverview } from '@/data/pathway'
-import { getViewer } from '@/data/viewer'
+import { getWriter } from '@/data/viewer'
 
 /**
  * Changing the pathway.
@@ -58,7 +58,7 @@ function isMigrationChoice(value: unknown): value is MigrationChoice {
  * other one as though it were the product.
  */
 export async function beginPathway(): Promise<ActionOutcome> {
-  const viewer = await getViewer()
+  const viewer = await getWriter()
 
   const gate = permissionCheck(viewer, 'pathway.edit')
   if (!gate.allowed) return { ok: false, message: gate.note }
@@ -122,7 +122,7 @@ export async function takePathwayAction(
   const note =
     typeof detail === 'string' && detail.trim() !== '' ? detail.trim() : null
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
 
   // Read the same overview the page read, so the gate the action evaluates is
   // computed from the same rows the buttons were rendered from rather than from
@@ -346,7 +346,7 @@ export async function saveStage(formData: FormData): Promise<ActionOutcome> {
     return { ok: false, message: 'No stage named.' }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'pathway.edit')
   if (!gate.allowed) return { ok: false, message: gate.note }
 
@@ -438,7 +438,7 @@ export async function chooseMigration(
     return { ok: false, message: 'That is not one of the four options.' }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'pathway.publish')
   if (!gate.allowed) return { ok: false, message: gate.note }
 
@@ -485,7 +485,7 @@ export async function recordReview(formData: FormData): Promise<ActionOutcome> {
   const position = formData.get('position')
   const note = formData.get('note')
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
 
   const gate = permissionCheck(
     viewer,
@@ -579,7 +579,7 @@ export async function addressObjection(
     return { ok: false, message: 'No reviewer named.' }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'pathway.edit')
   if (!gate.allowed) return { ok: false, message: gate.note }
 
@@ -641,7 +641,7 @@ export async function acknowledgeFinding(
     }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'pathway.publish')
   if (!gate.allowed) return { ok: false, message: gate.note }
 

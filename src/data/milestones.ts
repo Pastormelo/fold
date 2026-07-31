@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { cache } from 'react'
+
 import { asc, eq } from 'drizzle-orm'
 
 import {
@@ -34,68 +36,68 @@ export type MilestonesPage = {
   emptyNote: string
 }
 
-export async function getMilestonesPage(
-  asOf: Date = new Date()
-): Promise<MilestonesPage> {
-  const viewer = await getViewer()
+export const getMilestonesPage = cache(
+  async (asOf: Date = new Date()): Promise<MilestonesPage> => {
+    const viewer = await getViewer()
 
-  const [rows, people] = await Promise.all([
-    db
-      .select({
-        id: schema.milestones.id,
-        personId: schema.milestones.personId,
-        kind: schema.milestones.kind,
-        occurredOn: schema.milestones.occurredOn,
-        note: schema.milestones.note,
-        firstName: schema.people.firstName,
-        lastName: schema.people.lastName,
-      })
-      .from(schema.milestones)
-      .innerJoin(
-        schema.people,
-        eq(schema.people.id, schema.milestones.personId)
-      )
-      .where(eq(schema.milestones.churchId, viewer.churchId)),
-    db
-      .select({
-        id: schema.people.id,
-        firstName: schema.people.firstName,
-        lastName: schema.people.lastName,
-      })
-      .from(schema.people)
-      .where(eq(schema.people.churchId, viewer.churchId))
-      .orderBy(asc(schema.people.lastName), asc(schema.people.firstName)),
-  ])
+    const [rows, people] = await Promise.all([
+      db
+        .select({
+          id: schema.milestones.id,
+          personId: schema.milestones.personId,
+          kind: schema.milestones.kind,
+          occurredOn: schema.milestones.occurredOn,
+          note: schema.milestones.note,
+          firstName: schema.people.firstName,
+          lastName: schema.people.lastName,
+        })
+        .from(schema.milestones)
+        .innerJoin(
+          schema.people,
+          eq(schema.people.id, schema.milestones.personId)
+        )
+        .where(eq(schema.milestones.churchId, viewer.churchId)),
+      db
+        .select({
+          id: schema.people.id,
+          firstName: schema.people.firstName,
+          lastName: schema.people.lastName,
+        })
+        .from(schema.people)
+        .where(eq(schema.people.churchId, viewer.churchId))
+        .orderBy(asc(schema.people.lastName), asc(schema.people.firstName)),
+    ])
 
-  const records: MilestoneRecord[] = rows.map((row) => ({
-    id: row.id,
-    personId: row.personId,
-    personName: `${row.firstName} ${row.lastName}`,
-    kind: row.kind,
-    // Verified against the live database: Drizzle's `date()` hands back the bare
-    // string, and `parseStoredDate` pins it to UTC midnight so a birthday does
-    // not land a day early for everybody west of Greenwich.
-    occurredOn: parseStoredDate(row.occurredOn),
-    note: row.note,
-  }))
+    const records: MilestoneRecord[] = rows.map((row) => ({
+      id: row.id,
+      personId: row.personId,
+      personName: `${row.firstName} ${row.lastName}`,
+      kind: row.kind,
+      // Verified against the live database: Drizzle's `date()` hands back the bare
+      // string, and `parseStoredDate` pins it to UTC midnight so a birthday does
+      // not land a day early for everybody west of Greenwich.
+      occurredOn: parseStoredDate(row.occurredOn),
+      note: row.note,
+    }))
 
-  const groups = upcomingMilestones(records, asOf)
-  const totalInWindow = groups.reduce((sum, group) => sum + group.count, 0)
+    const groups = upcomingMilestones(records, asOf)
+    const totalInWindow = groups.reduce((sum, group) => sum + group.count, 0)
 
-  return {
-    groups,
-    totalInWindow,
-    people: people.map((person) => ({
-      id: person.id,
-      fullName: `${person.firstName} ${person.lastName}`,
-    })),
-    recordCheck: permissionCheck(viewer, 'care.log_note'),
-    // Nothing recorded and nothing coming up are different facts.
-    emptyNote:
-      records.length === 0
-        ? 'No milestones recorded. Until birthdays and anniversaries are in here, nothing will surface on the day.'
-        : totalInWindow === 0
-          ? `${records.length} ${records.length === 1 ? 'milestone is' : 'milestones are'} recorded, and none falls in the next thirty days.`
-          : '',
+    return {
+      groups,
+      totalInWindow,
+      people: people.map((person) => ({
+        id: person.id,
+        fullName: `${person.firstName} ${person.lastName}`,
+      })),
+      recordCheck: permissionCheck(viewer, 'care.log_note'),
+      // Nothing recorded and nothing coming up are different facts.
+      emptyNote:
+        records.length === 0
+          ? 'No milestones recorded. Until birthdays and anniversaries are in here, nothing will surface on the day.'
+          : totalInWindow === 0
+            ? `${records.length} ${records.length === 1 ? 'milestone is' : 'milestones are'} recorded, and none falls in the next thirty days.`
+            : '',
+    }
   }
-}
+)

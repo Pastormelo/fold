@@ -50,7 +50,16 @@ export default function RootLayout({
       lang="en"
       className={`${montserrat.variable} ${mulish.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">
+      {/*
+        Browser extensions inject attributes onto <body> before React hydrates —
+        Grammarly adds `data-gr-ext-installed` and `data-new-gr-c-s-check-loaded`,
+        and React reports the mismatch as a hydration error. Nothing in this app
+        renders those attributes, so there is nothing here to fix; suppressing the
+        warning on this one element is the documented remedy. It is scoped to
+        <body> deliberately, because a real mismatch anywhere inside it should
+        still be reported.
+      */}
+      <body className="flex min-h-full flex-col" suppressHydrationWarning>
         <ViewerSwitch />
         {children}
       </body>

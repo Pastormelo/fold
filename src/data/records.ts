@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { cache } from 'react'
+
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 
 import {
@@ -77,7 +79,7 @@ export type ViewerSummary = {
   clearanceLabel: string
 }
 
-export async function getViewerSummary(): Promise<ViewerSummary> {
+export const getViewerSummary = cache(async (): Promise<ViewerSummary> => {
   const viewer = await getViewer()
   const clearance = clearanceFor(viewer)
 
@@ -95,7 +97,7 @@ export async function getViewerSummary(): Promise<ViewerSummary> {
     clearanceTier: clearance,
     clearanceLabel: clearance ? tierName(clearance) : 'No pastoral care access',
   }
-}
+})
 
 /* ────────────────────────────── The rail ────────────────────────────── */
 
@@ -110,31 +112,31 @@ export async function getViewerSummary(): Promise<ViewerSummary> {
  * A viewer with no care clearance gets no counts, because they will not be
  * offered those sections either.
  */
-export async function getRailBadges(): Promise<
-  Partial<Record<RailSection, number>>
-> {
-  const viewer = await getViewer()
-  if (clearanceFor(viewer) === null) return {}
+export const getRailBadges = cache(
+  async (): Promise<Partial<Record<RailSection, number>>> => {
+    const viewer = await getViewer()
+    if (clearanceFor(viewer) === null) return {}
 
-  // Deliberately built from the same functions the sections themselves use,
-  // rather than from a second set of queries. A badge is a claim about what a
-  // section contains, so counting it separately is how the two come to disagree
-  // — §8.2, the subject of a claim must match what it was computed from.
-  const [journeys, unfolded] = await Promise.all([
-    getJourneys(),
-    getUnfoldedMembers(),
-  ])
+    // Deliberately built from the same functions the sections themselves use,
+    // rather than from a second set of queries. A badge is a claim about what a
+    // section contains, so counting it separately is how the two come to disagree
+    // — §8.2, the subject of a claim must match what it was computed from.
+    const [journeys, unfolded] = await Promise.all([
+      getJourneys(),
+      getUnfoldedMembers(),
+    ])
 
-  return {
-    // A member under no named elder is the product's central failure, so that is
-    // what Family counts. Journeys counts only the late ones this viewer can
-    // actually read — a number they cannot act on is worse than none.
-    people: unfolded.length,
-    journeys: journeys.filter(
-      (journey) => journey.access === 'visible' && journey.isOverdue
-    ).length,
+    return {
+      // A member under no named elder is the product's central failure, so that is
+      // what Family counts. Journeys counts only the late ones this viewer can
+      // actually read — a number they cannot act on is worse than none.
+      people: unfolded.length,
+      journeys: journeys.filter(
+        (journey) => journey.access === 'visible' && journey.isOverdue
+      ).length,
+    }
   }
-}
+)
 
 /* ─────────────────────── Everyone who holds a role ─────────────────────── */
 
@@ -242,92 +244,92 @@ export type PersonRecord = {
   logNoteCheck: PermissionCheck
 }
 
-export async function getPersonRecord(
-  personId: string
-): Promise<PersonRecord | null> {
-  const viewer = await getViewer()
+export const getPersonRecord = cache(
+  async (personId: string): Promise<PersonRecord | null> => {
+    const viewer = await getViewer()
 
-  const [person] = await db
-    .select({
-      id: schema.people.id,
-      firstName: schema.people.firstName,
-      lastName: schema.people.lastName,
-      isMember: schema.people.isMember,
-      createdAt: schema.people.createdAt,
-      foldName: schema.folds.name,
-      householdName: schema.households.name,
-    })
-    .from(schema.people)
-    .leftJoin(schema.folds, eq(schema.folds.id, schema.people.foldId))
-    .leftJoin(
-      schema.households,
-      eq(schema.households.id, schema.people.householdId)
-    )
-    // Scoped to the viewer's church, so a guessed id from elsewhere finds nothing.
-    .where(
-      and(
-        eq(schema.people.id, personId),
-        eq(schema.people.churchId, viewer.churchId)
+    const [person] = await db
+      .select({
+        id: schema.people.id,
+        firstName: schema.people.firstName,
+        lastName: schema.people.lastName,
+        isMember: schema.people.isMember,
+        createdAt: schema.people.createdAt,
+        foldName: schema.folds.name,
+        householdName: schema.households.name,
+      })
+      .from(schema.people)
+      .leftJoin(schema.folds, eq(schema.folds.id, schema.people.foldId))
+      .leftJoin(
+        schema.households,
+        eq(schema.households.id, schema.people.householdId)
       )
-    )
-    .limit(1)
-
-  if (!person) return null
-
-  const noteRows = await db
-    .select({
-      id: schema.careNotes.id,
-      personId: schema.careNotes.personId,
-      authorId: schema.careNotes.authorId,
-      occurredAt: schema.careNotes.occurredAt,
-      visibilityTier: schema.careNotes.visibilityTier,
-      body: schema.careNotes.body,
-      restorationCaseId: schema.careNotes.restorationCaseId,
-      authorFirst: schema.people.firstName,
-      authorLast: schema.people.lastName,
-    })
-    .from(schema.careNotes)
-    .innerJoin(schema.people, eq(schema.people.id, schema.careNotes.authorId))
-    .where(
-      and(
-        eq(schema.careNotes.personId, personId),
-        eq(schema.careNotes.churchId, viewer.churchId)
+      // Scoped to the viewer's church, so a guessed id from elsewhere finds nothing.
+      .where(
+        and(
+          eq(schema.people.id, personId),
+          eq(schema.people.churchId, viewer.churchId)
+        )
       )
-    )
-    .orderBy(desc(schema.careNotes.occurredAt))
+      .limit(1)
 
-  const notes: CareNoteRecord[] = noteRows.map((row) => ({
-    id: row.id,
-    personId: row.personId,
-    authorId: row.authorId,
-    authorName: `${row.authorFirst} ${row.authorLast}`,
-    occurredAt: row.occurredAt,
-    visibilityTier: row.visibilityTier,
-    body: row.body,
-    restorationCaseId: row.restorationCaseId,
-  }))
+    if (!person) return null
 
-  return {
-    id: person.id,
-    fullName: `${person.firstName} ${person.lastName}`,
-    initials: `${person.firstName[0] ?? ''}${person.lastName[0] ?? ''}`,
-    since: `In the directory since ${person.createdAt.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })}`,
-    foldLabel:
-      person.foldName ??
-      'No fold. This is an open pastoral matter, not a data gap.',
-    foldIsUnassigned: person.foldName === null,
-    isMember: person.isMember,
-    household: person.householdName ? [person.householdName] : [],
-    serving: 'Not recorded yet',
-    groups: 'Not recorded yet',
-    care: buildCareTimeline(viewer, notes),
-    writableTiers: writableTiers(viewer).map((tier) => ({
-      tier,
-      label: tierName(tier),
-    })),
-    logNoteCheck: permissionCheck(viewer, 'care.log_note'),
+    const noteRows = await db
+      .select({
+        id: schema.careNotes.id,
+        personId: schema.careNotes.personId,
+        authorId: schema.careNotes.authorId,
+        occurredAt: schema.careNotes.occurredAt,
+        visibilityTier: schema.careNotes.visibilityTier,
+        body: schema.careNotes.body,
+        restorationCaseId: schema.careNotes.restorationCaseId,
+        authorFirst: schema.people.firstName,
+        authorLast: schema.people.lastName,
+      })
+      .from(schema.careNotes)
+      .innerJoin(schema.people, eq(schema.people.id, schema.careNotes.authorId))
+      .where(
+        and(
+          eq(schema.careNotes.personId, personId),
+          eq(schema.careNotes.churchId, viewer.churchId)
+        )
+      )
+      .orderBy(desc(schema.careNotes.occurredAt))
+
+    const notes: CareNoteRecord[] = noteRows.map((row) => ({
+      id: row.id,
+      personId: row.personId,
+      authorId: row.authorId,
+      authorName: `${row.authorFirst} ${row.authorLast}`,
+      occurredAt: row.occurredAt,
+      visibilityTier: row.visibilityTier,
+      body: row.body,
+      restorationCaseId: row.restorationCaseId,
+    }))
+
+    return {
+      id: person.id,
+      fullName: `${person.firstName} ${person.lastName}`,
+      initials: `${person.firstName[0] ?? ''}${person.lastName[0] ?? ''}`,
+      since: `In the directory since ${person.createdAt.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })}`,
+      foldLabel:
+        person.foldName ??
+        'No fold. This is an open pastoral matter, not a data gap.',
+      foldIsUnassigned: person.foldName === null,
+      isMember: person.isMember,
+      household: person.householdName ? [person.householdName] : [],
+      serving: 'Not recorded yet',
+      groups: 'Not recorded yet',
+      care: buildCareTimeline(viewer, notes),
+      writableTiers: writableTiers(viewer).map((tier) => ({
+        tier,
+        label: tierName(tier),
+      })),
+      logNoteCheck: permissionCheck(viewer, 'care.log_note'),
+    }
   }
-}
+)
 
 /** The people this viewer can see, for choosing whose record to open. */
 export type PersonListRow = {
@@ -339,7 +341,7 @@ export type PersonListRow = {
   isUnfolded: boolean
 }
 
-export async function listPeople(): Promise<PersonListRow[]> {
+export const listPeople = cache(async (): Promise<PersonListRow[]> => {
   const viewer = await getViewer()
   const rows = await db
     .select({
@@ -363,63 +365,65 @@ export async function listPeople(): Promise<PersonListRow[]> {
       (row.isMember ? 'No fold — an open pastoral matter' : 'Not yet a member'),
     isUnfolded: row.foldName === null && row.isMember,
   }))
-}
+})
 
 /* ─────────────────────────── Restoration cases ─────────────────────────── */
 
-export async function getRestorationCases(): Promise<RestorationCaseView[]> {
-  const viewer = await getViewer()
+export const getRestorationCases = cache(
+  async (): Promise<RestorationCaseView[]> => {
+    const viewer = await getViewer()
 
-  const rows = await db
-    .select()
-    .from(schema.restorationCases)
-    .where(eq(schema.restorationCases.churchId, viewer.churchId))
-    .orderBy(desc(schema.restorationCases.openedAt))
+    const rows = await db
+      .select()
+      .from(schema.restorationCases)
+      .where(eq(schema.restorationCases.churchId, viewer.churchId))
+      .orderBy(desc(schema.restorationCases.openedAt))
 
-  if (rows.length === 0) return []
+    if (rows.length === 0) return []
 
-  // Names for the person and the two elders, resolved in one query.
-  const ids = [
-    ...new Set(
-      rows.flatMap((r) => [r.personId, r.leadElderId, r.secondElderId])
-    ),
-  ]
-  const nameRows = await db
-    .select({
-      id: schema.people.id,
-      firstName: schema.people.firstName,
-      lastName: schema.people.lastName,
+    // Names for the person and the two elders, resolved in one query.
+    const ids = [
+      ...new Set(
+        rows.flatMap((r) => [r.personId, r.leadElderId, r.secondElderId])
+      ),
+    ]
+    const nameRows = await db
+      .select({
+        id: schema.people.id,
+        firstName: schema.people.firstName,
+        lastName: schema.people.lastName,
+      })
+      .from(schema.people)
+      .where(inArray(schema.people.id, ids))
+    const nameOf = new Map(
+      nameRows.map((row) => [row.id, `${row.firstName} ${row.lastName}`])
+    )
+
+    return rows.map((row) => {
+      const record: RestorationCaseRecord = {
+        id: row.id,
+        personId: row.personId,
+        personName: nameOf.get(row.personId) ?? 'Unknown',
+        foldName: '',
+        openedAt: row.openedAt,
+        leadElderId: row.leadElderId,
+        secondElderId: row.secondElderId,
+        leadElderName: nameOf.get(row.leadElderId) ?? 'Unknown',
+        secondElderName: nameOf.get(row.secondElderId) ?? 'Unknown',
+        step: row.step,
+        stepLabel: row.stepLabel,
+        status: row.status,
+        closedAt: row.closedAt,
+        outcome: row.outcome,
+        plan: row.plan,
+        knows: row.knows,
+        doesNotKnow: row.doesNotKnow,
+        decisionQuestion: row.decisionQuestion,
+      }
+      return viewRestorationCase(viewer, record)
     })
-    .from(schema.people)
-    .where(inArray(schema.people.id, ids))
-  const nameOf = new Map(
-    nameRows.map((row) => [row.id, `${row.firstName} ${row.lastName}`])
-  )
-
-  return rows.map((row) => {
-    const record: RestorationCaseRecord = {
-      id: row.id,
-      personId: row.personId,
-      personName: nameOf.get(row.personId) ?? 'Unknown',
-      foldName: '',
-      openedAt: row.openedAt,
-      leadElderId: row.leadElderId,
-      secondElderId: row.secondElderId,
-      leadElderName: nameOf.get(row.leadElderId) ?? 'Unknown',
-      secondElderName: nameOf.get(row.secondElderId) ?? 'Unknown',
-      step: row.step,
-      stepLabel: row.stepLabel,
-      status: row.status,
-      closedAt: row.closedAt,
-      outcome: row.outcome,
-      plan: row.plan,
-      knows: row.knows,
-      doesNotKnow: row.doesNotKnow,
-      decisionQuestion: row.decisionQuestion,
-    }
-    return viewRestorationCase(viewer, record)
-  })
-}
+  }
+)
 
 /* ──────────────────────────── The tier table ──────────────────────────── */
 
@@ -434,7 +438,7 @@ export type TierOverviewRow = {
   viewerIsAtThisTier: boolean
 }
 
-export async function getTierOverview(): Promise<TierOverviewRow[]> {
+export const getTierOverview = cache(async (): Promise<TierOverviewRow[]> => {
   const viewer = await getViewer()
   const viewerClearance = clearanceFor(viewer)
   // Counted from the leader rows, never written as a literal (§8.1).
@@ -450,14 +454,14 @@ export async function getTierOverview(): Promise<TierOverviewRow[]> {
       viewerIsAtThisTier: viewerClearance === tier,
     }
   })
-}
+})
 
-export async function getPermission(
-  permission: Permission
-): Promise<PermissionCheck> {
-  const viewer = await getViewer()
-  return permissionCheck(viewer, permission)
-}
+export const getPermission = cache(
+  async (permission: Permission): Promise<PermissionCheck> => {
+    const viewer = await getViewer()
+    return permissionCheck(viewer, permission)
+  }
+)
 
 /* ───────────────────────── Access beyond role ───────────────────────── */
 
@@ -481,80 +485,82 @@ export type GrantedExceptionRow = {
  * since an administrator raising their own clearance is both legitimate and the
  * obvious abuse path.
  */
-export async function getGrantedExceptions(): Promise<GrantedExceptionRow[]> {
-  const viewer = await getViewer()
-  const principals = await loadPrincipals(viewer.churchId)
-  const nameOf = new Map(principals.map((p) => [p.personId, p.fullName]))
+export const getGrantedExceptions = cache(
+  async (): Promise<GrantedExceptionRow[]> => {
+    const viewer = await getViewer()
+    const principals = await loadPrincipals(viewer.churchId)
+    const nameOf = new Map(principals.map((p) => [p.personId, p.fullName]))
 
-  const when = (date: Date) =>
-    date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      timeZone: 'UTC',
+    const when = (date: Date) =>
+      date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: 'UTC',
+      })
+
+    return grantedExceptions(principals).flatMap((exception) => {
+      const rows: GrantedExceptionRow[] = []
+      const personName = nameOf.get(exception.personId) ?? exception.personId
+
+      if (exception.clearance) {
+        rows.push({
+          grantId: exception.clearance.id,
+          kind: 'clearance',
+          personName,
+          what: `${tierName(exception.clearance.tier)} clearance`,
+          grantedByName:
+            nameOf.get(exception.clearance.grantedById) ??
+            exception.clearance.grantedById,
+          grantedAt: when(exception.clearance.grantedAt),
+          reason: exception.clearance.reason,
+          selfGranted: exception.clearance.grantedById === exception.personId,
+        })
+      }
+      for (const grant of exception.permissions) {
+        rows.push({
+          grantId: grant.id,
+          kind: 'permission',
+          personName,
+          what: grant.permission,
+          grantedByName: nameOf.get(grant.grantedById) ?? grant.grantedById,
+          grantedAt: when(grant.grantedAt),
+          reason: grant.reason,
+          selfGranted: grant.grantedById === exception.personId,
+        })
+      }
+      return rows
     })
-
-  return grantedExceptions(principals).flatMap((exception) => {
-    const rows: GrantedExceptionRow[] = []
-    const personName = nameOf.get(exception.personId) ?? exception.personId
-
-    if (exception.clearance) {
-      rows.push({
-        grantId: exception.clearance.id,
-        kind: 'clearance',
-        personName,
-        what: `${tierName(exception.clearance.tier)} clearance`,
-        grantedByName:
-          nameOf.get(exception.clearance.grantedById) ??
-          exception.clearance.grantedById,
-        grantedAt: when(exception.clearance.grantedAt),
-        reason: exception.clearance.reason,
-        selfGranted: exception.clearance.grantedById === exception.personId,
-      })
-    }
-    for (const grant of exception.permissions) {
-      rows.push({
-        grantId: grant.id,
-        kind: 'permission',
-        personName,
-        what: grant.permission,
-        grantedByName: nameOf.get(grant.grantedById) ?? grant.grantedById,
-        grantedAt: when(grant.grantedAt),
-        reason: grant.reason,
-        selfGranted: grant.grantedById === exception.personId,
-      })
-    }
-    return rows
-  })
-}
+  }
+)
 
 /* ──────────────────────── Members with no fold ──────────────────────── */
 
 /** An open pastoral matter, not a data gap (§2). */
-export async function getUnfoldedMembers(): Promise<
-  { id: string; fullName: string }[]
-> {
-  const viewer = await getViewer()
-  const rows = await db
-    .select({
-      id: schema.people.id,
-      firstName: schema.people.firstName,
-      lastName: schema.people.lastName,
-    })
-    .from(schema.people)
-    .where(
-      and(
-        eq(schema.people.churchId, viewer.churchId),
-        eq(schema.people.isMember, true),
-        isNull(schema.people.foldId)
+export const getUnfoldedMembers = cache(
+  async (): Promise<{ id: string; fullName: string }[]> => {
+    const viewer = await getViewer()
+    const rows = await db
+      .select({
+        id: schema.people.id,
+        firstName: schema.people.firstName,
+        lastName: schema.people.lastName,
+      })
+      .from(schema.people)
+      .where(
+        and(
+          eq(schema.people.churchId, viewer.churchId),
+          eq(schema.people.isMember, true),
+          isNull(schema.people.foldId)
+        )
       )
-    )
-    .orderBy(asc(schema.people.lastName))
-  return rows.map((row) => ({
-    id: row.id,
-    fullName: `${row.firstName} ${row.lastName}`,
-  }))
-}
+      .orderBy(asc(schema.people.lastName))
+    return rows.map((row) => ({
+      id: row.id,
+      fullName: `${row.firstName} ${row.lastName}`,
+    }))
+  }
+)
 
 /* ──────────────────────────── Care journeys ──────────────────────────── */
 
@@ -589,156 +595,156 @@ export type JourneyRow =
  * person's name stays visible, because the product's premise is that nobody
  * disappears quietly, and hiding that someone is receiving care would defeat it.
  */
-export async function getJourneys(
-  asOf: Date = new Date()
-): Promise<JourneyRow[]> {
-  const viewer = await getViewer()
-  const clearance = clearanceFor(viewer)
+export const getJourneys = cache(
+  async (asOf: Date = new Date()): Promise<JourneyRow[]> => {
+    const viewer = await getViewer()
+    const clearance = clearanceFor(viewer)
 
-  const instanceRows = await db
-    .select({
-      id: schema.journeyInstances.id,
-      templateId: schema.journeyInstances.templateId,
-      personId: schema.journeyInstances.personId,
-      startedAt: schema.journeyInstances.startedAt,
-      ownerId: schema.journeyInstances.ownerId,
-      closedAt: schema.journeyInstances.closedAt,
-      closedReason: schema.journeyInstances.closedReason,
-    })
-    .from(schema.journeyInstances)
-    .where(eq(schema.journeyInstances.churchId, viewer.churchId))
+    const instanceRows = await db
+      .select({
+        id: schema.journeyInstances.id,
+        templateId: schema.journeyInstances.templateId,
+        personId: schema.journeyInstances.personId,
+        startedAt: schema.journeyInstances.startedAt,
+        ownerId: schema.journeyInstances.ownerId,
+        closedAt: schema.journeyInstances.closedAt,
+        closedReason: schema.journeyInstances.closedReason,
+      })
+      .from(schema.journeyInstances)
+      .where(eq(schema.journeyInstances.churchId, viewer.churchId))
 
-  if (instanceRows.length === 0) return []
+    if (instanceRows.length === 0) return []
 
-  const templateIds = [...new Set(instanceRows.map((r) => r.templateId))]
-  const [templateRows, stepRows, completionRows, peopleRows] =
-    await Promise.all([
-      db
-        .select()
-        .from(schema.journeyTemplates)
-        .where(inArray(schema.journeyTemplates.id, templateIds)),
-      db
-        .select()
-        .from(schema.journeySteps)
-        .where(inArray(schema.journeySteps.templateId, templateIds))
-        .orderBy(asc(schema.journeySteps.position)),
-      db
-        .select()
-        .from(schema.journeyStepCompletions)
-        .where(
-          inArray(
-            schema.journeyStepCompletions.instanceId,
-            instanceRows.map((r) => r.id)
-          )
-        ),
-      db
-        .select({
-          id: schema.people.id,
-          firstName: schema.people.firstName,
-          lastName: schema.people.lastName,
-        })
-        .from(schema.people)
-        .where(eq(schema.people.churchId, viewer.churchId)),
-    ])
+    const templateIds = [...new Set(instanceRows.map((r) => r.templateId))]
+    const [templateRows, stepRows, completionRows, peopleRows] =
+      await Promise.all([
+        db
+          .select()
+          .from(schema.journeyTemplates)
+          .where(inArray(schema.journeyTemplates.id, templateIds)),
+        db
+          .select()
+          .from(schema.journeySteps)
+          .where(inArray(schema.journeySteps.templateId, templateIds))
+          .orderBy(asc(schema.journeySteps.position)),
+        db
+          .select()
+          .from(schema.journeyStepCompletions)
+          .where(
+            inArray(
+              schema.journeyStepCompletions.instanceId,
+              instanceRows.map((r) => r.id)
+            )
+          ),
+        db
+          .select({
+            id: schema.people.id,
+            firstName: schema.people.firstName,
+            lastName: schema.people.lastName,
+          })
+          .from(schema.people)
+          .where(eq(schema.people.churchId, viewer.churchId)),
+      ])
 
-  const nameOf = new Map(
-    peopleRows.map((row) => [row.id, `${row.firstName} ${row.lastName}`])
-  )
-  const templates = new Map<string, JourneyTemplate>(
-    templateRows.map((row) => [
-      row.id,
-      {
+    const nameOf = new Map(
+      peopleRows.map((row) => [row.id, `${row.firstName} ${row.lastName}`])
+    )
+    const templates = new Map<string, JourneyTemplate>(
+      templateRows.map((row) => [
+        row.id,
+        {
+          id: row.id,
+          name: row.name,
+          trigger: row.trigger,
+          visibilityTier: row.visibilityTier,
+          isSystemDefault: row.isSystemDefault,
+          steps: stepRows
+            .filter((step) => step.templateId === row.id)
+            .map((step) => ({
+              id: step.id,
+              title: step.title,
+              window: step.window,
+              ownerRole: step.ownerRole as Role,
+              guidanceNote: step.guidanceNote,
+            })),
+        },
+      ])
+    )
+
+    return instanceRows.flatMap((row): JourneyRow[] => {
+      const template = templates.get(row.templateId)
+      if (!template) return []
+
+      const personName = nameOf.get(row.personId) ?? 'Unknown person'
+      const tierLabel = tierName(template.visibilityTier)
+
+      if (!canReadJourney(clearance, template)) {
+        return [
+          {
+            access: 'withheld',
+            instanceId: row.id,
+            personName,
+            tierLabel,
+            disclosure: JOURNEY_WITHHELD_DISCLOSURE,
+          },
+        ]
+      }
+
+      const instance: JourneyInstance = {
         id: row.id,
-        name: row.name,
-        trigger: row.trigger,
-        visibilityTier: row.visibilityTier,
-        isSystemDefault: row.isSystemDefault,
-        steps: stepRows
-          .filter((step) => step.templateId === row.id)
-          .map((step) => ({
-            id: step.id,
-            title: step.title,
-            window: step.window,
-            ownerRole: step.ownerRole as Role,
-            guidanceNote: step.guidanceNote,
-          })),
-      },
-    ])
-  )
+        templateId: row.templateId,
+        personId: row.personId,
+        startedAt: row.startedAt,
+        ownerId: row.ownerId,
+        ownerName: nameOf.get(row.ownerId) ?? 'Unknown',
+        completions: completionRows
+          .filter((c) => c.instanceId === row.id)
+          .map((c) =>
+            c.kind === 'done'
+              ? {
+                  stepId: c.stepId,
+                  completedAt: c.completedAt,
+                  byId: c.byId,
+                  byName: nameOf.get(c.byId) ?? 'Unknown',
+                  kind: 'done' as const,
+                  outcome: c.outcome ?? '',
+                }
+              : {
+                  stepId: c.stepId,
+                  completedAt: c.completedAt,
+                  byId: c.byId,
+                  byName: nameOf.get(c.byId) ?? 'Unknown',
+                  kind: 'skipped' as const,
+                  skipReason: c.skipReason ?? '',
+                }
+          ),
+        closedAt: row.closedAt,
+        closedReason: row.closedReason,
+      }
 
-  return instanceRows.flatMap((row): JourneyRow[] => {
-    const template = templates.get(row.templateId)
-    if (!template) return []
-
-    const personName = nameOf.get(row.personId) ?? 'Unknown person'
-    const tierLabel = tierName(template.visibilityTier)
-
-    if (!canReadJourney(clearance, template)) {
+      const progress = journeyProgress(template, instance, asOf)
       return [
         {
-          access: 'withheld',
+          access: 'visible',
           instanceId: row.id,
           personName,
+          templateName: template.name,
+          trigger: template.trigger,
           tierLabel,
-          disclosure: JOURNEY_WITHHELD_DISCLOSURE,
+          stepLabel: progress.stepLabel,
+          nextStepTitle: progress.currentStep?.title ?? null,
+          guidanceNote: progress.currentStep?.guidanceNote ?? null,
+          dueLabel: progress.currentStep
+            ? WINDOW_LABELS[progress.currentStep.window]
+            : null,
+          isOverdue: progress.isOverdue,
+          ownerName: instance.ownerName,
+          summary: progress.summary,
         },
       ]
-    }
-
-    const instance: JourneyInstance = {
-      id: row.id,
-      templateId: row.templateId,
-      personId: row.personId,
-      startedAt: row.startedAt,
-      ownerId: row.ownerId,
-      ownerName: nameOf.get(row.ownerId) ?? 'Unknown',
-      completions: completionRows
-        .filter((c) => c.instanceId === row.id)
-        .map((c) =>
-          c.kind === 'done'
-            ? {
-                stepId: c.stepId,
-                completedAt: c.completedAt,
-                byId: c.byId,
-                byName: nameOf.get(c.byId) ?? 'Unknown',
-                kind: 'done' as const,
-                outcome: c.outcome ?? '',
-              }
-            : {
-                stepId: c.stepId,
-                completedAt: c.completedAt,
-                byId: c.byId,
-                byName: nameOf.get(c.byId) ?? 'Unknown',
-                kind: 'skipped' as const,
-                skipReason: c.skipReason ?? '',
-              }
-        ),
-      closedAt: row.closedAt,
-      closedReason: row.closedReason,
-    }
-
-    const progress = journeyProgress(template, instance, asOf)
-    return [
-      {
-        access: 'visible',
-        instanceId: row.id,
-        personName,
-        templateName: template.name,
-        trigger: template.trigger,
-        tierLabel,
-        stepLabel: progress.stepLabel,
-        nextStepTitle: progress.currentStep?.title ?? null,
-        guidanceNote: progress.currentStep?.guidanceNote ?? null,
-        dueLabel: progress.currentStep
-          ? WINDOW_LABELS[progress.currentStep.window]
-          : null,
-        isOverdue: progress.isOverdue,
-        ownerName: instance.ownerName,
-        summary: progress.summary,
-      },
-    ]
-  })
-}
+    })
+  }
+)
 
 /**
  * The journey templates the church has, whether or not any are running.
@@ -764,51 +770,53 @@ export type JourneyTemplateRow = {
   deleteRefusal: string | null
 }
 
-export async function getJourneyTemplates(): Promise<JourneyTemplateRow[]> {
-  const viewer = await getViewer()
-  const clearance = clearanceFor(viewer)
+export const getJourneyTemplates = cache(
+  async (): Promise<JourneyTemplateRow[]> => {
+    const viewer = await getViewer()
+    const clearance = clearanceFor(viewer)
 
-  const rows = await db
-    .select()
-    .from(schema.journeyTemplates)
-    .where(eq(schema.journeyTemplates.churchId, viewer.churchId))
-    .orderBy(asc(schema.journeyTemplates.name))
+    const rows = await db
+      .select()
+      .from(schema.journeyTemplates)
+      .where(eq(schema.journeyTemplates.churchId, viewer.churchId))
+      .orderBy(asc(schema.journeyTemplates.name))
 
-  if (rows.length === 0) return []
+    if (rows.length === 0) return []
 
-  const steps = await db
-    .select({ templateId: schema.journeySteps.templateId })
-    .from(schema.journeySteps)
-    .where(
-      inArray(
-        schema.journeySteps.templateId,
-        rows.map((r) => r.id)
+    const steps = await db
+      .select({ templateId: schema.journeySteps.templateId })
+      .from(schema.journeySteps)
+      .where(
+        inArray(
+          schema.journeySteps.templateId,
+          rows.map((r) => r.id)
+        )
       )
-    )
 
-  return rows.map((row) => {
-    const template: JourneyTemplate = {
-      id: row.id,
-      name: row.name,
-      trigger: row.trigger,
-      visibilityTier: row.visibilityTier,
-      isSystemDefault: row.isSystemDefault,
-      steps: [],
-    }
-    const stepCount = steps.filter((s) => s.templateId === row.id).length
-    return {
-      id: row.id,
-      name: row.name,
-      trigger: row.trigger,
-      tierLabel: tierName(row.visibilityTier),
-      stepCount,
-      stepCountLabel: `${stepCount} ${stepCount === 1 ? 'step' : 'steps'}`,
-      isSystemDefault: row.isSystemDefault,
-      readable: canReadJourney(clearance, template),
-      deleteRefusal: deleteTemplateRefusal(template),
-    }
-  })
-}
+    return rows.map((row) => {
+      const template: JourneyTemplate = {
+        id: row.id,
+        name: row.name,
+        trigger: row.trigger,
+        visibilityTier: row.visibilityTier,
+        isSystemDefault: row.isSystemDefault,
+        steps: [],
+      }
+      const stepCount = steps.filter((s) => s.templateId === row.id).length
+      return {
+        id: row.id,
+        name: row.name,
+        trigger: row.trigger,
+        tierLabel: tierName(row.visibilityTier),
+        stepCount,
+        stepCountLabel: `${stepCount} ${stepCount === 1 ? 'step' : 'steps'}`,
+        isSystemDefault: row.isSystemDefault,
+        readable: canReadJourney(clearance, template),
+        deleteRefusal: deleteTemplateRefusal(template),
+      }
+    })
+  }
+)
 
 /* ────────────────────────── Planning Center ────────────────────────── */
 
@@ -823,7 +831,7 @@ export type SyncCategoryRow = {
   conflictNote: string | null
 }
 
-export async function getSyncCategories(): Promise<SyncCategoryRow[]> {
+export const getSyncCategories = cache(async (): Promise<SyncCategoryRow[]> => {
   const viewer = await getViewer()
 
   const stored = await db
@@ -854,7 +862,7 @@ export async function getSyncCategories(): Promise<SyncCategoryRow[]> {
             : null,
     }
   })
-}
+})
 
 /** Re-exported so the screen can name the signed-in person without a second call. */
 export type { Viewer }

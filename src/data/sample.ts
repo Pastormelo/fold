@@ -255,7 +255,15 @@ export function samplePrincipals(): Principal[] {
   )
 }
 
-/** A stand-in church id for the demo path, which never touches the database. */
+/**
+ * A stand-in church id for the demo path.
+ *
+ * Reads scoped to it return nothing, because no row carries it. Writes are
+ * refused outright by `getWriter` in ./viewer — an earlier version of this
+ * comment claimed the demo path never touched the database, which was true of
+ * reads and false of writes, and a sync toggle under a demo session got as far
+ * as Postgres before failing.
+ */
 export const SAMPLE_CHURCH_ID = '00000000-0000-0000-0000-000000000000'
 
 export function sampleViewers(): Viewer[] {

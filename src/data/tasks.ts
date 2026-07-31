@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { cache } from 'react'
+
 import { type Role, ROLE_LABELS } from '@/domain/roles'
 
 import { getGuestsPage } from './guests'
@@ -62,129 +64,129 @@ const SOURCE_ORDER: Record<TaskSource, number> = {
 
 const URGENCY_ORDER = { overdue: 0, soon: 1, open: 2 } as const
 
-export async function getTasksPage(
-  asOf: Date = new Date()
-): Promise<TasksPage> {
-  const viewer = await getViewer()
+export const getTasksPage = cache(
+  async (asOf: Date = new Date()): Promise<TasksPage> => {
+    const viewer = await getViewer()
 
-  // Every one of these is the same call the corresponding page makes. That is the
-  // point: this page cannot show a task the page it links to disagrees with.
-  const [journeys, unfolded, guests, milestones, prayer] = await Promise.all([
-    getJourneys(asOf),
-    getUnfoldedMembers(),
-    getGuestsPage(asOf),
-    getMilestonesPage(asOf),
-    getPrayerPage(),
-  ])
+    // Every one of these is the same call the corresponding page makes. That is the
+    // point: this page cannot show a task the page it links to disagrees with.
+    const [journeys, unfolded, guests, milestones, prayer] = await Promise.all([
+      getJourneys(asOf),
+      getUnfoldedMembers(),
+      getGuestsPage(asOf),
+      getMilestonesPage(asOf),
+      getPrayerPage(),
+    ])
 
-  const rows: TaskRow[] = []
+    const rows: TaskRow[] = []
 
-  /* ── Journey steps that are due ── */
-  let othersCount = 0
-  for (const journey of journeys) {
-    if (journey.access !== 'visible') continue
-    if (!journey.nextStepTitle) continue
+    /* ── Journey steps that are due ── */
+    let othersCount = 0
+    for (const journey of journeys) {
+      if (journey.access !== 'visible') continue
+      if (!journey.nextStepTitle) continue
 
-    rows.push({
-      id: `journey-${journey.instanceId}`,
-      source: 'journey',
-      what: journey.nextStepTitle,
-      about: `${journey.personName} · ${journey.templateName}`,
-      clearedBy: 'Logging the contact against the step',
-      href: '/journeys',
-      urgency: journey.isOverdue ? 'overdue' : 'soon',
-      when: journey.dueLabel ?? 'No due date',
-    })
-  }
-  // Counted, not listed. A step owned by a role you do not hold is somebody
-  // else's, and putting it on your list makes the list less trustworthy.
-  othersCount = journeys.filter(
-    (journey) => journey.access === 'withheld'
-  ).length
-
-  /* ── Members under nobody ── */
-  for (const person of unfolded) {
-    rows.push({
-      id: `unfolded-${person.id}`,
-      source: 'unfolded',
-      what: 'Name an elder for them',
-      about: person.fullName,
-      clearedBy: 'Putting them in a fold with a named elder',
-      href: `/people/${person.id}`,
-      // Not overdue, because there is no clock on it — and not "open" either.
-      // A member with no shepherd is the product's central failure.
-      urgency: 'overdue',
-      when: 'No fold',
-    })
-  }
-
-  /* ── Guests nobody is carrying ── */
-  for (const guest of guests.rows) {
-    if (!guest.unowned) continue
-    rows.push({
-      id: `guest-${guest.personId}`,
-      source: 'unowned_guest',
-      what: 'Assign somebody to carry them',
-      about: guest.fullName,
-      clearedBy: 'Naming a connector on their placement',
-      href: '/guests',
-      urgency: guest.isOverdue ? 'overdue' : 'soon',
-      when: guest.contactLabel,
-    })
-  }
-
-  /* ── Milestones today and this week ── */
-  for (const group of milestones.groups) {
-    if (group.key === 'coming_up') continue
-    for (const item of group.items) {
       rows.push({
-        id: `milestone-${item.id}`,
-        source: 'milestone',
-        what: item.sombre ? 'Reach out — this one is hard' : 'Mark the day',
-        about: `${item.personName} · ${item.description}`,
-        clearedBy: 'Logging the call or the visit',
-        href: '/milestones',
-        urgency: group.key === 'today' ? 'soon' : 'open',
-        when: group.label,
+        id: `journey-${journey.instanceId}`,
+        source: 'journey',
+        what: journey.nextStepTitle,
+        about: `${journey.personName} · ${journey.templateName}`,
+        clearedBy: 'Logging the contact against the step',
+        href: '/journeys',
+        urgency: journey.isOverdue ? 'overdue' : 'soon',
+        when: journey.dueLabel ?? 'No due date',
       })
     }
-  }
+    // Counted, not listed. A step owned by a role you do not hold is somebody
+    // else's, and putting it on your list makes the list less trustworthy.
+    othersCount = journeys.filter(
+      (journey) => journey.access === 'withheld'
+    ).length
 
-  /* ── Open prayer requests nobody has prayed for ── */
-  for (const request of prayer.rows) {
-    if (request.access !== 'visible') continue
-    if (request.standing !== 'open') continue
-    if (request.mine > 0) continue
-    rows.push({
-      id: `prayer-${request.id}`,
-      source: 'prayer',
-      what: 'Pray for this',
-      about: `${request.personName} · ${request.body}`,
-      clearedBy: 'Praying, and saying so',
-      href: '/prayer',
-      urgency: 'open',
-      when: request.askedLabel,
+    /* ── Members under nobody ── */
+    for (const person of unfolded) {
+      rows.push({
+        id: `unfolded-${person.id}`,
+        source: 'unfolded',
+        what: 'Name an elder for them',
+        about: person.fullName,
+        clearedBy: 'Putting them in a fold with a named elder',
+        href: `/people/${person.id}`,
+        // Not overdue, because there is no clock on it — and not "open" either.
+        // A member with no shepherd is the product's central failure.
+        urgency: 'overdue',
+        when: 'No fold',
+      })
+    }
+
+    /* ── Guests nobody is carrying ── */
+    for (const guest of guests.rows) {
+      if (!guest.unowned) continue
+      rows.push({
+        id: `guest-${guest.personId}`,
+        source: 'unowned_guest',
+        what: 'Assign somebody to carry them',
+        about: guest.fullName,
+        clearedBy: 'Naming a connector on their placement',
+        href: '/guests',
+        urgency: guest.isOverdue ? 'overdue' : 'soon',
+        when: guest.contactLabel,
+      })
+    }
+
+    /* ── Milestones today and this week ── */
+    for (const group of milestones.groups) {
+      if (group.key === 'coming_up') continue
+      for (const item of group.items) {
+        rows.push({
+          id: `milestone-${item.id}`,
+          source: 'milestone',
+          what: item.sombre ? 'Reach out — this one is hard' : 'Mark the day',
+          about: `${item.personName} · ${item.description}`,
+          clearedBy: 'Logging the call or the visit',
+          href: '/milestones',
+          urgency: group.key === 'today' ? 'soon' : 'open',
+          when: group.label,
+        })
+      }
+    }
+
+    /* ── Open prayer requests nobody has prayed for ── */
+    for (const request of prayer.rows) {
+      if (request.access !== 'visible') continue
+      if (request.standing !== 'open') continue
+      if (request.mine > 0) continue
+      rows.push({
+        id: `prayer-${request.id}`,
+        source: 'prayer',
+        what: 'Pray for this',
+        about: `${request.personName} · ${request.body}`,
+        clearedBy: 'Praying, and saying so',
+        href: '/prayer',
+        urgency: 'open',
+        when: request.askedLabel,
+      })
+    }
+
+    rows.sort((a, b) => {
+      const byUrgency = URGENCY_ORDER[a.urgency] - URGENCY_ORDER[b.urgency]
+      if (byUrgency !== 0) return byUrgency
+      return SOURCE_ORDER[a.source] - SOURCE_ORDER[b.source]
     })
+
+    const overdueCount = rows.filter((row) => row.urgency === 'overdue').length
+
+    return {
+      rows,
+      overdueCount,
+      roleLabels: viewer.roles.map((role) => ROLE_LABELS[role as Role]),
+      othersCount,
+      emptyNote:
+        rows.length === 0
+          ? 'Nothing is owed. Every journey step is inside its window, every member is under an elder, and every guest has somebody carrying them.'
+          : '',
+      derivationNote:
+        'Nothing here can be ticked off. Each item is a consequence of something being true, so it disappears when you do the thing — log the call, name the elder, assign the connector. A tick would let this list disagree with the records it describes.',
+    }
   }
-
-  rows.sort((a, b) => {
-    const byUrgency = URGENCY_ORDER[a.urgency] - URGENCY_ORDER[b.urgency]
-    if (byUrgency !== 0) return byUrgency
-    return SOURCE_ORDER[a.source] - SOURCE_ORDER[b.source]
-  })
-
-  const overdueCount = rows.filter((row) => row.urgency === 'overdue').length
-
-  return {
-    rows,
-    overdueCount,
-    roleLabels: viewer.roles.map((role) => ROLE_LABELS[role as Role]),
-    othersCount,
-    emptyNote:
-      rows.length === 0
-        ? 'Nothing is owed. Every journey step is inside its window, every member is under an elder, and every guest has somebody carrying them.'
-        : '',
-    derivationNote:
-      'Nothing here can be ticked off. Each item is a consequence of something being true, so it disappears when you do the thing — log the call, name the elder, assign the connector. A tick would let this list disagree with the records it describes.',
-  }
-}
+)

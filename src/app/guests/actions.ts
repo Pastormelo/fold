@@ -5,7 +5,7 @@ import { and, eq, isNull } from 'drizzle-orm'
 
 import { permissionCheck } from '@/domain/roles'
 import { db, schema } from '@/db/client'
-import { getViewer } from '@/data/viewer'
+import { getWriter } from '@/data/viewer'
 
 /**
  * Moving a guest through the pathway.
@@ -55,7 +55,7 @@ export async function placeGuest(formData: FormData): Promise<ActionOutcome> {
     return { ok: false, message: 'Say who, and which stage.' }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'care.view_people')
   if (!gate.allowed) return { ok: false, message: gate.note }
 
@@ -174,7 +174,7 @@ export async function exitPathway(formData: FormData): Promise<ActionOutcome> {
     }
   }
 
-  const viewer = await getViewer()
+  const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'care.view_people')
   if (!gate.allowed) return { ok: false, message: gate.note }
 

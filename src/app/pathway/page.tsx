@@ -1,6 +1,7 @@
 import { ActionForm } from '@/components/action-form'
 import { AppShell } from '@/components/app-shell'
 import { getPathwayOverview, getPathwayVersions } from '@/data/pathway'
+import { PATHWAY_STATES, describeState } from '@/domain/pathway'
 
 import {
   acknowledgeFinding,
@@ -12,6 +13,50 @@ import {
 } from './actions'
 
 export const metadata = { title: 'Pathway · Fold' }
+
+/**
+ * What a stage records, in the order the editor asks for it.
+ *
+ * The field names are the keys of `EditableStage`, so this list and the thing it
+ * describes cannot drift apart without the diff noticing. The questions are the
+ * design's own wording.
+ */
+const STAGE_PROMPTS = [
+  { field: 'Name', asks: 'What this church calls the stage internally.' },
+  {
+    field: 'Public name',
+    asks: 'What a guest is told it is called, which is often gentler.',
+  },
+  { field: 'Purpose', asks: 'Why the stage exists at all.' },
+  { field: 'Outcome', asks: 'What is different about the person afterwards.' },
+  { field: 'Entry condition', asks: 'What puts somebody into this stage.' },
+  {
+    field: 'Owner',
+    asks: 'Which job carries it. A stage nobody owns does not happen.',
+  },
+  {
+    field: 'Required actions',
+    asks: 'What has to happen before the stage is complete.',
+  },
+  { field: 'Optional actions', asks: 'What helps but is not required.' },
+  {
+    field: 'Completion condition',
+    asks: 'How you know somebody is ready to move on.',
+  },
+  {
+    field: 'Stopping rule',
+    asks: 'When follow-up ends. Without this it ends arbitrarily, depending on who is holding it.',
+  },
+  {
+    field: 'Reactivation rule',
+    asks: 'What happens if they come back after follow-up stopped.',
+  },
+  {
+    field: 'Escalation rule',
+    asks: 'When this stops being a volunteer’s job.',
+  },
+  { field: 'Milestones', asks: 'What gets recorded against the person.' },
+] as const
 
 /**
  * Pathway — the versioned document that says how this church receives people.
@@ -33,24 +78,103 @@ export default async function PathwayPage() {
   if (overview.kind === 'none') {
     return (
       <AppShell eyebrow="Nothing published" title="Pathway">
-        <div className="flex max-w-[640px] flex-col gap-4">
-          <p style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}>
-            A pathway is how this church says it receives someone — the stages
-            between a first visit and being known by name, who owns each one,
-            and when follow-up stops. Nothing here is filled in for you: a
-            four-step pathway is one church&rsquo;s answer, not the
-            product&rsquo;s.
-          </p>
-          <ActionForm
-            action={beginPathway}
-            label="Begin a draft"
-            variant="primary"
-            disabled={!overview.offer.available}
-            disabledReason={overview.offer.reason}
-          />
-          {overview.offer.inferredNote && (
-            <Inferred note={overview.offer.inferredNote} />
-          )}
+        <div className="flex flex-col gap-8">
+          <div className="flex max-w-[680px] flex-col gap-4">
+            <p style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}>
+              A pathway is how this church says it receives someone — the stages
+              between a first visit and being known by name, who owns each one,
+              and when follow-up stops. Nothing here is filled in for you: a
+              four-step pathway is one church&rsquo;s answer, not the
+              product&rsquo;s.
+            </p>
+            <ActionForm
+              action={beginPathway}
+              label="Begin a draft"
+              variant="primary"
+              disabled={!overview.offer.available}
+              disabledReason={overview.offer.reason}
+            />
+            {overview.offer.inferredNote && (
+              <Inferred note={overview.offer.inferredNote} />
+            )}
+          </div>
+
+          {/* An empty page with one button teaches nothing. These two sections
+              are the real shape of what a draft will hold, read out of the
+              domain rather than described in prose that could drift from it. */}
+          <section className="flex flex-col gap-3">
+            <h2 style={{ fontSize: '1.125rem' }}>What each stage will ask</h2>
+            <p
+              className="text-[0.9375rem]"
+              style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}
+            >
+              Not every stage needs every field. A stage left deliberately empty
+              is marked as such and stops being flagged — a decision not to have
+              a rule is a different thing from forgetting one.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {STAGE_PROMPTS.map((prompt) => (
+                <div
+                  key={prompt.field}
+                  style={{
+                    background: 'var(--surface-card)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '14px 16px',
+                  }}
+                >
+                  <span className="eyebrow" style={{ fontSize: '0.5625rem' }}>
+                    {prompt.field}
+                  </span>
+                  <p
+                    className="mt-2 text-[0.9375rem]"
+                    style={{ textWrap: 'pretty' }}
+                  >
+                    {prompt.asks}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-3">
+            <h2 style={{ fontSize: '1.125rem' }}>
+              What it goes through before it is live
+            </h2>
+            <p
+              className="text-[0.9375rem]"
+              style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}
+            >
+              A pathway moves when somebody does something — submits it,
+              requests changes, approves it, publishes it. There is no way to
+              set a state directly, and publishing needs a recorded approval,
+              every blocking health finding either resolved or acknowledged with
+              a reason, and a decision about the people already mid-pathway.
+            </p>
+            <ol className="flex flex-wrap gap-2">
+              {PATHWAY_STATES.map((state, index) => (
+                <li
+                  key={state}
+                  className="flex items-center gap-2 text-[0.9375rem]"
+                >
+                  <span
+                    style={{
+                      background: 'var(--surface-card)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-pill)',
+                      padding: '5px 13px',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {describeState(state)}
+                  </span>
+                  {index < PATHWAY_STATES.length - 1 && (
+                    <span style={{ color: 'var(--text-muted)' }}>→</span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </section>
         </div>
       </AppShell>
     )

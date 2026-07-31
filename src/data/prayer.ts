@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { cache } from 'react'
+
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 
 import { canReadTier, readableTiers } from '@/domain/access'
@@ -79,7 +81,7 @@ const WHEN = new Intl.DateTimeFormat('en-US', {
 const WITHHELD =
   'This request is above your tier. You can see that they asked for prayer, not what for.'
 
-export async function getPrayerPage(): Promise<PrayerPage> {
+export const getPrayerPage = cache(async (): Promise<PrayerPage> => {
   const viewer = await getViewer()
 
   const [rows, people] = await Promise.all([
@@ -233,4 +235,4 @@ export async function getPrayerPage(): Promise<PrayerPage> {
         ? 'No prayer requests yet. Answered ones stay here once there are, rather than being cleared out.'
         : '',
   }
-}
+})
