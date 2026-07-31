@@ -1,9 +1,13 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { ActionForm } from '@/components/action-form'
 import { AppShell } from '@/components/app-shell'
 import { CareTimeline } from '@/components/care-timeline'
+import { getDirectoryOptions } from '@/data/admin'
 import { getPersonRecord } from '@/data/records'
+
+import { assignFold, setMembership } from '../actions'
 
 /**
  * A person's record — the drawer from `Fold Web.dc.html`, as its own page.
@@ -17,7 +21,10 @@ export default async function PersonPage(
   props: PageProps<'/people/[personId]'>
 ) {
   const { personId } = await props.params
-  const person = await getPersonRecord(personId)
+  const [person, options] = await Promise.all([
+    getPersonRecord(personId),
+    getDirectoryOptions(),
+  ])
   if (!person) notFound()
 
   return (
@@ -70,6 +77,66 @@ export default async function PersonPage(
               </p>
             </div>
           </div>
+
+          {/* Moving somebody is done from their own record, because that is
+              where you are when you notice nobody is carrying them. */}
+          {options.managePeople.allowed && (
+            <div className="mt-4 flex flex-wrap gap-6">
+              <ActionForm
+                action={assignFold}
+                fields={{ personId: person.id }}
+                label={
+                  person.foldIsUnassigned ? 'Put them in a fold' : 'Move them'
+                }
+                variant={person.foldIsUnassigned ? 'primary' : 'secondary'}
+                disabled={options.folds.length === 0}
+                disabledReason={
+                  options.folds.length === 0
+                    ? 'There are no folds yet. Create one on the Family page first.'
+                    : null
+                }
+              >
+                {options.folds.length > 0 && (
+                  <select
+                    name="foldId"
+                    defaultValue=""
+                    style={{
+                      font: 'inherit',
+                      fontSize: '0.9375rem',
+                      padding: '9px 11px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--border-default)',
+                      background: 'var(--surface-card)',
+                    }}
+                  >
+                    <option value="" disabled>
+                      Which fold
+                    </option>
+                    {options.folds.map((fold) => (
+                      <option key={fold.id} value={fold.id}>
+                        {fold.name} — {fold.elderName}
+                      </option>
+                    ))}
+                    {/* A legal destination, not an error. Sometimes the honest
+                        state is that nobody is carrying them, and a stale
+                        assignment reads as coverage. */}
+                    <option value="">No fold — nobody is carrying them</option>
+                  </select>
+                )}
+              </ActionForm>
+
+              <ActionForm
+                action={setMembership}
+                fields={{
+                  personId: person.id,
+                  isMember: person.isMember ? 'guest' : 'member',
+                }}
+                label={
+                  person.isMember ? 'Move to Guests' : 'Make them a member'
+                }
+              />
+            </div>
+          )}
 
           <dl className="mt-5 grid gap-4 sm:grid-cols-3">
             <div>

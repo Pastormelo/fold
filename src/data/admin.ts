@@ -10,14 +10,17 @@ import {
   FOLD_LIST_LABELS,
   type FoldList,
 } from '@/domain/planning-center'
+import { canOwnFold } from '@/domain/directory'
 import {
   type Permission,
+  type PermissionCheck,
   type Role,
   PERMISSIONS,
   ROLES,
   ROLE_LABELS,
   can,
   clearanceFor,
+  permissionCheck,
   principalOf,
   resolveClearance,
   roleClearance,
@@ -295,3 +298,121 @@ export const getFoldLists = cache(async (): Promise<FoldListRow[]> => {
     }
   })
 })
+
+/* ──────────────────────── Folds, and who may own one ──────────────────────── */
+
+export type FoldSummary = {
+  id: string
+  name: string
+  elderId: string
+  elderName: string
+  memberCount: number
+  memberCountLabel: string
+}
+
+export type DirectoryOptions = {
+  folds: readonly FoldSummary[]
+  /**
+   * People who may be named as a fold's elder — filtered by `canOwnFold`, so the
+   * select offers only what `createFold` would accept. Offering everybody and
+   * refusing on submit is the §8.4 failure.
+   */
+  possibleElders: readonly { id: string; fullName: string; roleLabel: string }[]
+  /** Whether this viewer may create folds and name their elders. */
+  manageFolds: PermissionCheck
+  /** Whether this viewer may add people and move them between folds. */
+  managePeople: PermissionCheck
+  /** Said out loud when there is nobody who could own a fold yet. */
+  elderNote: string
+}
+
+export const getDirectoryOptions = cache(
+  async (): Promise<DirectoryOptions> => {
+    const viewer = await getViewer()
+
+    const [foldRows, peopleRows, roleRows] = await Promise.all([
+      db
+        .select({
+          id: schema.folds.id,
+          name: schema.folds.name,
+          elderId: schema.folds.elderId,
+        })
+        .from(schema.folds)
+        .where(eq(schema.folds.churchId, viewer.churchId))
+        .orderBy(asc(schema.folds.name)),
+      db
+        .select({
+          id: schema.people.id,
+          firstName: schema.people.firstName,
+          lastName: schema.people.lastName,
+          foldId: schema.people.foldId,
+          isMember: schema.people.isMember,
+        })
+        .from(schema.people)
+        .where(eq(schema.people.churchId, viewer.churchId))
+        .orderBy(asc(schema.people.lastName), asc(schema.people.firstName)),
+      db
+        .select({
+          personId: schema.leaderRoles.personId,
+          role: schema.leaderRoles.role,
+        })
+        .from(schema.leaderRoles)
+        .where(eq(schema.leaderRoles.churchId, viewer.churchId)),
+    ])
+
+    const nameOf = new Map(
+      peopleRows.map((person) => [
+        person.id,
+        `${person.firstName} ${person.lastName}`,
+      ])
+    )
+
+    const rolesByPerson = new Map<string, Role[]>()
+    for (const row of roleRows) {
+      const list = rolesByPerson.get(row.personId) ?? []
+      list.push(row.role as Role)
+      rolesByPerson.set(row.personId, list)
+    }
+
+    const possibleElders = peopleRows
+      .filter((person) =>
+        canOwnFold({
+          personId: person.id,
+          roles: rolesByPerson.get(person.id) ?? [],
+        })
+      )
+      .map((person) => {
+        const roles = rolesByPerson.get(person.id) ?? []
+        return {
+          id: person.id,
+          fullName: `${person.firstName} ${person.lastName}`,
+          roleLabel: roles.map((role) => ROLE_LABELS[role]).join(' · '),
+        }
+      })
+
+    return {
+      folds: foldRows.map((fold): FoldSummary => {
+        const count = peopleRows.filter(
+          (person) => person.foldId === fold.id && person.isMember
+        ).length
+        return {
+          id: fold.id,
+          name: fold.name,
+          elderId: fold.elderId,
+          elderName: nameOf.get(fold.elderId) ?? 'Somebody no longer listed',
+          memberCount: count,
+          memberCountLabel: `${count} ${count === 1 ? 'person' : 'people'}`,
+        }
+      }),
+      possibleElders,
+      manageFolds: permissionCheck(viewer, 'admin.manage_roles'),
+      managePeople: permissionCheck(viewer, 'care.view_people'),
+      // The likely first-run state, and worth naming rather than showing an
+      // empty select somebody has to guess about.
+      elderNote:
+        possibleElders.length === 0
+          ? 'Nobody in this church holds a role that can own a fold. Give somebody Pastor or elder, Lead pastor, or Pastoral staff in Setup first — a fold whose shepherd cannot read the notes about its people would look covered while being nothing of the kind.'
+          : '',
+    }
+  }
+)
