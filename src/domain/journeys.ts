@@ -357,3 +357,168 @@ export function overdueJourneys(
     .filter((entry) => entry.progress.isOverdue)
     .sort((a, b) => b.progress.daysOverdue - a.progress.daysOverdue)
 }
+
+/* ──────────────────── Recording that a step happened ──────────────────── */
+
+export type StepAttempt =
+  | {
+      ok: true
+      /** What to write. `outcome` and `skipReason` are never both present. */
+      completion:
+        | { kind: 'done'; stepId: string; outcome: string }
+        | { kind: 'skipped'; stepId: string; skipReason: string }
+      /** Said back to the person, naming what happens next. */
+      note: string
+    }
+  | { ok: false; refusal: string }
+
+/**
+ * Complete or skip a step.
+ *
+ * Two rules, both of which exist because the alternative corrupts the arithmetic
+ * everything else depends on.
+ *
+ * **Steps are recorded in order.** `journeyProgress` finds the current step as the
+ * first one with no completion, so writing step three while step two is open would
+ * leave step two permanently current — the journey would sit there reading "Step 2
+ * of 4, overdue" forever while somebody had in fact done step three. The refusal
+ * names the step that is actually waiting.
+ *
+ * **Skipping needs a reason and completing needs an outcome.** A skipped step with
+ * no reason is indistinguishable from a step nobody got to, which is exactly the
+ * §8.8 distinction the pathway makes for absent fields. And "done" with nothing
+ * written is a tick: the point of a care journey is the record of what was said,
+ * not that a box was checked.
+ */
+export function recordStep(input: {
+  template: JourneyTemplate
+  instance: JourneyInstance
+  stepId: string
+  kind: 'done' | 'skipped'
+  detail: string
+}): StepAttempt {
+  if (input.instance.closedAt !== null) {
+    return {
+      ok: false,
+      refusal:
+        'This journey was closed early. Reopen it before recording anything else against it.',
+    }
+  }
+
+  const step = input.template.steps.find((s) => s.id === input.stepId)
+  if (!step) {
+    return { ok: false, refusal: 'That step is not part of this journey.' }
+  }
+
+  const alreadyDone = input.instance.completions.some(
+    (completion) => completion.stepId === input.stepId
+  )
+  if (alreadyDone) {
+    // §8.5: an action that reports success must have done something.
+    return {
+      ok: false,
+      refusal: `“${step.title}” is already recorded. Nothing to do.`,
+    }
+  }
+
+  const finished = new Set(
+    input.instance.completions.map((completion) => completion.stepId)
+  )
+  const waiting = input.template.steps.find((s) => !finished.has(s.id))
+  if (waiting && waiting.id !== input.stepId) {
+    return {
+      ok: false,
+      refusal: `“${waiting.title}” is the step that is waiting. Record that one first, or skip it with a reason — otherwise it stays open and this journey reads as overdue forever.`,
+    }
+  }
+
+  const detail = input.detail.trim()
+  if (detail === '') {
+    return {
+      ok: false,
+      refusal:
+        input.kind === 'done'
+          ? 'Say what happened. The record of the conversation is the point; a tick is not.'
+          : 'Say why it is being skipped. A skipped step with no reason cannot be told apart from one nobody got to.',
+    }
+  }
+
+  // Whether this was the last step, which changes what to say next.
+  const remaining = input.template.steps.filter(
+    (s) => !finished.has(s.id) && s.id !== input.stepId
+  )
+  const next = remaining[0]
+
+  return {
+    ok: true,
+    completion:
+      input.kind === 'done'
+        ? { kind: 'done', stepId: input.stepId, outcome: detail }
+        : { kind: 'skipped', stepId: input.stepId, skipReason: detail },
+    note: next
+      ? `Recorded. Next is “${next.title}”, due ${WINDOW_LABELS[next.window].toLowerCase()}.`
+      : // The stopping rule, reached. §8: a journey's last step is where follow-up
+        // ends visibly rather than by being forgotten.
+        'Recorded, and that was the last step. Follow-up on this journey ends here rather than being forgotten.',
+  }
+}
+
+/* ───────────────────────── Starting and closing ───────────────────────── */
+
+export type StartAttempt =
+  { ok: true; note: string } | { ok: false; refusal: string }
+
+/**
+ * Whether a journey can be started on this person.
+ *
+ * Refuses a second live instance of the same template. Two Grief journeys running
+ * on one person means two due dates for the same call, and whichever one somebody
+ * clears the other keeps reading overdue.
+ */
+export function canStartJourney(input: {
+  template: JourneyTemplate
+  personName: string
+  /** Template ids already running on this person, not yet closed or finished. */
+  liveTemplateIds: readonly string[]
+}): StartAttempt {
+  if (input.template.steps.length === 0) {
+    return {
+      ok: false,
+      refusal: `“${input.template.name}” has no steps, so starting it would ask nobody to do anything. Give it steps first.`,
+    }
+  }
+  if (input.liveTemplateIds.includes(input.template.id)) {
+    return {
+      ok: false,
+      refusal: `${input.personName} already has ${input.template.name} running. Two of the same journey means two due dates for the same call.`,
+    }
+  }
+
+  const first = input.template.steps[0]!
+  return {
+    ok: true,
+    note: `${input.template.name} started for ${input.personName}. First step is “${first.title}”, due ${WINDOW_LABELS[first.window].toLowerCase()}.`,
+  }
+}
+
+export type CloseAttempt =
+  { ok: true; reason: string } | { ok: false; refusal: string }
+
+/**
+ * End a journey before its steps are done.
+ *
+ * The reason is required and kept. A journey abandoned without one leaves the next
+ * person unable to tell whether care finished, was declined, or was dropped — and
+ * those are three very different things to read a year later.
+ */
+export function closeJourneyEarly(reason: string): CloseAttempt {
+  const trimmed = reason.trim()
+  if (trimmed === '') {
+    return {
+      ok: false,
+      refusal:
+        'Say why it is ending early. Otherwise nobody can tell later whether care finished, was declined, or was simply dropped.',
+    }
+  }
+  return { ok: true, reason: trimmed }
+}

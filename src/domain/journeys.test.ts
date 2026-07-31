@@ -9,9 +9,12 @@ import {
   WINDOW_LABELS,
   canDeleteTemplate,
   canReadJourney,
+  canStartJourney,
+  closeJourneyEarly,
   deleteTemplateRefusal,
   dueDateFor,
   journeyProgress,
+  recordStep,
   overdueJourneys,
   templateIssues,
   windowRank,
@@ -425,5 +428,206 @@ describe('a journey is visible at its template’s tier', () => {
 
   it('withholds everything from a reader with no clearance', () => {
     expect(canReadJourney(null, template())).toBe(false)
+  })
+})
+
+/* ─────────────────── Recording that a step happened ─────────────────── */
+
+describe('recording a step', () => {
+  it('records the first step with its outcome, trimmed', () => {
+    const attempt = recordStep({
+      template: template(),
+      instance: instance(),
+      stepId: 's1',
+      kind: 'done',
+      detail: '  Sat with her for an hour  ',
+    })
+    expect(attempt.ok).toBe(true)
+    expect(attempt.ok && attempt.completion).toEqual({
+      kind: 'done',
+      stepId: 's1',
+      outcome: 'Sat with her for an hour',
+    })
+    // Names what is next, so the person who just logged a call knows what they owe.
+    expect(attempt.ok && attempt.note).toContain('Visit in person')
+  })
+
+  it('refuses a later step while an earlier one is still waiting', () => {
+    // `journeyProgress` treats the first step with no completion as current, so
+    // writing out of order would leave step one current and overdue forever
+    // while somebody had in fact done step three.
+    const attempt = recordStep({
+      template: template(),
+      instance: instance(),
+      stepId: 's3',
+      kind: 'done',
+      detail: 'Checked in',
+    })
+    expect(attempt.ok).toBe(false)
+    expect(!attempt.ok && attempt.refusal).toContain('Call the same day')
+    expect(!attempt.ok && attempt.refusal).toContain('overdue forever')
+  })
+
+  it('lets a documented skip unblock the step after it', () => {
+    const attempt = recordStep({
+      template: template(),
+      instance: instance(),
+      stepId: 's1',
+      kind: 'skipped',
+      detail: 'Family asked for space',
+    })
+    expect(attempt.ok && attempt.completion).toEqual({
+      kind: 'skipped',
+      stepId: 's1',
+      skipReason: 'Family asked for space',
+    })
+  })
+
+  it('refuses a skip with no reason', () => {
+    // §8.8 in another guise: a deliberate omission has to be distinguishable
+    // from one nobody got to.
+    const attempt = recordStep({
+      template: template(),
+      instance: instance(),
+      stepId: 's1',
+      kind: 'skipped',
+      detail: '   ',
+    })
+    expect(attempt.ok).toBe(false)
+    expect(!attempt.ok && attempt.refusal).toContain('cannot be told apart')
+  })
+
+  it('refuses “done” with nothing written', () => {
+    const attempt = recordStep({
+      template: template(),
+      instance: instance(),
+      stepId: 's1',
+      kind: 'done',
+      detail: '',
+    })
+    expect(attempt.ok).toBe(false)
+    expect(!attempt.ok && attempt.refusal).toContain('a tick is not')
+  })
+
+  it('refuses recording the same step twice', () => {
+    const attempt = recordStep({
+      template: template(),
+      instance: instance({ completions: [done('s1', '2026-07-01T10:00:00Z')] }),
+      stepId: 's1',
+      kind: 'done',
+      detail: 'Again',
+    })
+    expect(attempt.ok).toBe(false)
+    expect(!attempt.ok && attempt.refusal).toContain('already recorded')
+  })
+
+  it('says follow-up ends when the last step is recorded', () => {
+    // §8: a journey's last step is its stopping rule, and reaching it should be
+    // visible rather than silent.
+    const attempt = recordStep({
+      template: template(),
+      instance: instance({
+        completions: [
+          done('s1', '2026-07-01T10:00:00Z'),
+          done('s2', '2026-07-03T10:00:00Z'),
+          done('s3', '2026-07-15T10:00:00Z'),
+        ],
+      }),
+      stepId: 's4',
+      kind: 'done',
+      detail: 'Said Hector’s name',
+    })
+    expect(attempt.ok && attempt.note).toContain(
+      'ends here rather than being forgotten'
+    )
+  })
+
+  it('refuses anything on a journey that was closed early', () => {
+    const attempt = recordStep({
+      template: template(),
+      instance: instance({
+        closedAt: new Date('2026-07-10T00:00:00Z'),
+        closedReason: 'The family moved away.',
+      }),
+      stepId: 's1',
+      kind: 'done',
+      detail: 'Called',
+    })
+    expect(attempt.ok).toBe(false)
+    expect(!attempt.ok && attempt.refusal).toContain('closed early')
+  })
+
+  it('refuses a step that is not part of this journey', () => {
+    const attempt = recordStep({
+      template: template(),
+      instance: instance(),
+      stepId: 'somebody-elses-step',
+      kind: 'done',
+      detail: 'Called',
+    })
+    expect(attempt.ok).toBe(false)
+  })
+})
+
+describe('starting a journey', () => {
+  it('names the first step and when it is due', () => {
+    const attempt = canStartJourney({
+      template: template(),
+      personName: 'Ellis Bramlett',
+      liveTemplateIds: [],
+    })
+    expect(attempt.ok).toBe(true)
+    expect(attempt.ok && attempt.note).toContain('Call the same day')
+    expect(attempt.ok && attempt.note).toContain('Ellis Bramlett')
+  })
+
+  it('refuses a second copy of the same journey on one person', () => {
+    // Two due dates for the same call, and clearing one leaves the other reading
+    // overdue.
+    const attempt = canStartJourney({
+      template: template(),
+      personName: 'Ellis Bramlett',
+      liveTemplateIds: ['jt-grief'],
+    })
+    expect(attempt.ok).toBe(false)
+    expect(!attempt.ok && attempt.refusal).toContain('two due dates')
+  })
+
+  it('allows a different journey on somebody who already has one', () => {
+    const attempt = canStartJourney({
+      template: template({ id: 'jt-hospital', name: 'Hospital' }),
+      personName: 'Ellis Bramlett',
+      liveTemplateIds: ['jt-grief'],
+    })
+    expect(attempt.ok).toBe(true)
+  })
+
+  it('refuses a template with no steps', () => {
+    const attempt = canStartJourney({
+      template: template({ steps: [] }),
+      personName: 'Ellis Bramlett',
+      liveTemplateIds: [],
+    })
+    expect(attempt.ok).toBe(false)
+    expect(!attempt.ok && attempt.refusal).toContain(
+      'ask nobody to do anything'
+    )
+  })
+})
+
+describe('closing a journey early', () => {
+  it('requires a reason', () => {
+    // A year later, "closed" with no reason cannot be told apart from care that
+    // finished, care that was declined, and care that was dropped.
+    const attempt = closeJourneyEarly('   ')
+    expect(attempt.ok).toBe(false)
+    expect(!attempt.ok && attempt.refusal).toContain('was simply dropped')
+  })
+
+  it('keeps the reason, trimmed', () => {
+    expect(closeJourneyEarly('  Family declined further contact  ')).toEqual({
+      ok: true,
+      reason: 'Family declined further contact',
+    })
   })
 })
