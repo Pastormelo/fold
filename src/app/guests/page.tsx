@@ -111,7 +111,7 @@ export default async function GuestsPage() {
                   </span>
                   {guest.stageName ? (
                     <span
-                      className="overline"
+                      className="eyebrow"
                       style={{
                         fontSize: '0.5rem',
                         background: 'var(--brand-soft)',

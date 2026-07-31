@@ -104,7 +104,7 @@ export default async function SetupPage() {
                   </span>
                   {exception.selfGranted && (
                     <span
-                      className="overline"
+                      className="eyebrow"
                       style={{
                         fontSize: '0.5rem',
                         color: 'var(--ofc-orange-700)',
@@ -162,7 +162,7 @@ export default async function SetupPage() {
                   <span className="font-semibold">{leader.fullName}</span>
                   {leader.isViewer && (
                     <span
-                      className="overline"
+                      className="eyebrow"
                       style={{
                         fontSize: '0.5rem',
                         color: 'var(--on-brand)',
@@ -336,7 +336,7 @@ export default async function SetupPage() {
                 }}
               >
                 <span
-                  className="overline"
+                  className="eyebrow"
                   style={{
                     fontSize: '0.5625rem',
                     color: TIER_ACCENT[tier.tier],

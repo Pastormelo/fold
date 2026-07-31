@@ -11,22 +11,29 @@ import {
   sectionForPath,
 } from '@/domain/navigation'
 
+import { FoldLogo } from './logo'
+
 /**
  * The left rail, from `Fold Web.dc.html`.
  *
  * A Client Component only because it needs `usePathname` to mark the current
  * section. Everything it renders was decided on the server: which sections this
- * viewer may see, and what each badge counts.
+ * viewer may see, what each badge counts, and who they are.
+ *
+ * The footer is a person, not the church. The design puts an avatar, a name and a
+ * role there, which is the useful thing — the question a leader has while looking
+ * at pastoral records is "what am I seeing this as", and the church name never
+ * changes.
  */
 export function Rail({
   sections,
   badges,
-  churchName,
+  viewer,
 }: {
   sections: readonly RailSection[]
   /** Counts computed from live data. A section absent here shows no badge. */
   badges: Partial<Record<RailSection, number>>
-  churchName: string
+  viewer: { name: string; initials: string; roleLine: string }
 }) {
   const current = sectionForPath(usePathname())
 
@@ -43,24 +50,14 @@ export function Rail({
       }}
     >
       <div style={{ padding: '26px 24px 22px' }}>
+        <FoldLogo fontSize={26} tone="inverse" />
         <div
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 22,
-            fontWeight: 800,
-            letterSpacing: '0.04em',
-            color: 'var(--ofc-paper)',
-          }}
-        >
-          F<span style={{ color: 'var(--brand)' }}>O</span>LD
-        </div>
-        <div
-          className="overline"
+          className="eyebrow"
           style={{
             fontSize: '0.5625rem',
             letterSpacing: '0.16em',
             color: 'var(--ofc-n-500)',
-            marginTop: 4,
+            marginTop: 6,
           }}
         >
           Church care platform
@@ -130,13 +127,59 @@ export function Rail({
 
       <div
         style={{
-          padding: '18px 24px 22px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 11,
+          padding: '16px 20px 20px',
           borderTop: '1px solid var(--border-inverse)',
-          fontSize: '0.8125rem',
-          color: 'var(--ofc-n-500)',
         }}
       >
-        {churchName}
+        <span
+          aria-hidden="true"
+          style={{
+            display: 'grid',
+            placeItems: 'center',
+            width: 34,
+            height: 34,
+            flexShrink: 0,
+            borderRadius: 'var(--radius-pill)',
+            background: 'var(--surface-inverse-2)',
+            color: 'var(--ofc-n-300)',
+            fontFamily: 'var(--font-display)',
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            letterSpacing: '0.04em',
+          }}
+        >
+          {viewer.initials}
+        </span>
+        <span style={{ minWidth: 0 }}>
+          <span
+            style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              color: 'var(--ofc-paper)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {viewer.name}
+          </span>
+          <span
+            style={{
+              display: 'block',
+              fontSize: '0.75rem',
+              color: 'var(--ofc-n-500)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {viewer.roleLine}
+          </span>
+        </span>
       </div>
     </nav>
   )

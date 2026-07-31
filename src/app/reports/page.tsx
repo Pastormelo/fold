@@ -59,7 +59,7 @@ export default async function ReportsPage() {
                 padding: '16px 18px',
               }}
             >
-              <span className="overline" style={{ fontSize: '0.5625rem' }}>
+              <span className="eyebrow" style={{ fontSize: '0.5625rem' }}>
                 {stat.label}
               </span>
               <p

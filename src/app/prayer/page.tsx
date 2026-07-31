@@ -149,13 +149,13 @@ export default async function PrayerPage() {
                     {row.personName}
                   </a>
                   <span
-                    className="overline"
+                    className="eyebrow"
                     style={{ fontSize: '0.5rem', color: TIER_ACCENT[row.tier] }}
                   >
                     {row.tierLabel}
                   </span>
                   <span
-                    className="overline"
+                    className="eyebrow"
                     style={{
                       fontSize: '0.5rem',
                       color:

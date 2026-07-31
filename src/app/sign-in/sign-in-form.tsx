@@ -118,7 +118,7 @@ export function SignInForm({
 
       <form action={submit} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1">
-          <span className="overline" style={{ fontSize: '0.625rem' }}>
+          <span className="eyebrow" style={{ fontSize: '0.625rem' }}>
             Email
           </span>
           <input
@@ -132,7 +132,7 @@ export function SignInForm({
 
         {mode === 'password' && (
           <label className="flex flex-col gap-1">
-            <span className="overline" style={{ fontSize: '0.625rem' }}>
+            <span className="eyebrow" style={{ fontSize: '0.625rem' }}>
               Password
             </span>
             <input
@@ -167,7 +167,7 @@ export function SignInForm({
               }}
             />
             <span
-              className="overline"
+              className="eyebrow"
               style={{ fontSize: '0.5625rem', letterSpacing: '0.14em' }}
             >
               or

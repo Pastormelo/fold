@@ -15,7 +15,7 @@ export default async function SignInPage(props: PageProps<'/sign-in'>) {
   return (
     <main className="mx-auto flex w-full max-w-[26rem] flex-col gap-6 px-6 py-16">
       <header className="flex flex-col gap-2">
-        <span className="overline">Fold</span>
+        <span className="eyebrow">Fold</span>
         <h1 style={{ fontSize: 'clamp(1.75rem, 1.4rem + 1.4vw, 2.25rem)' }}>
           Sign in
         </h1>

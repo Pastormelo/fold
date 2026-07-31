@@ -138,7 +138,7 @@ export default async function PathwayPage() {
                     )}
                     {stageDiff && stageDiff.status !== 'unchanged' && (
                       <span
-                        className="overline"
+                        className="eyebrow"
                         style={{
                           fontSize: '0.5rem',
                           background: 'var(--brand-soft)',
@@ -207,7 +207,7 @@ export default async function PathwayPage() {
                   {stageDiff && stageDiff.changes.length > 0 && (
                     <div className="mt-4 flex flex-col gap-2">
                       <span
-                        className="overline"
+                        className="eyebrow"
                         style={{ fontSize: '0.5625rem' }}
                       >
                         Changed since version {overview.live?.versionNumber}
@@ -393,10 +393,7 @@ export default async function PathwayPage() {
                   }}
                 >
                   <div className="flex flex-wrap items-baseline gap-3">
-                    <span
-                      className="overline"
-                      style={{ fontSize: '0.5625rem' }}
-                    >
+                    <span className="eyebrow" style={{ fontSize: '0.5625rem' }}>
                       {finding.category}
                     </span>
                     <span
@@ -488,7 +485,7 @@ export default async function PathwayPage() {
             )}
 
             <div className="flex flex-col gap-3">
-              <span className="overline" style={{ fontSize: '0.5625rem' }}>
+              <span className="eyebrow" style={{ fontSize: '0.5625rem' }}>
                 People already in the pathway
               </span>
               <p
@@ -684,7 +681,7 @@ function Field({
   if (!value && !deliberatelyAbsent) return null
   return (
     <div>
-      <dt className="overline" style={{ fontSize: '0.5625rem' }}>
+      <dt className="eyebrow" style={{ fontSize: '0.5625rem' }}>
         {label}
       </dt>
       <dd
@@ -704,7 +701,7 @@ function Field({
 function List({ label, items }: { label: string; items: readonly string[] }) {
   return (
     <div className="mt-4">
-      <span className="overline" style={{ fontSize: '0.5625rem' }}>
+      <span className="eyebrow" style={{ fontSize: '0.5625rem' }}>
         {label}
       </span>
       <ul className="mt-1 list-disc pl-5 text-[0.9375rem]">

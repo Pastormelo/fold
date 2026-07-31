@@ -90,7 +90,7 @@ export default async function MilestonesPage() {
                       {item.personName}
                     </a>
                     <span
-                      className="overline"
+                      className="eyebrow"
                       style={{ fontSize: '0.5rem', color: 'var(--text-muted)' }}
                     >
                       {item.label}

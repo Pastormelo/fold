@@ -34,7 +34,7 @@ export default async function FamilyPage() {
               padding: '16px 18px',
             }}
           >
-            <p className="overline" style={{ fontSize: '0.5625rem' }}>
+            <p className="eyebrow" style={{ fontSize: '0.5625rem' }}>
               Under no named elder
             </p>
             <p className="mt-2 text-[0.9375rem]" style={{ textWrap: 'pretty' }}>

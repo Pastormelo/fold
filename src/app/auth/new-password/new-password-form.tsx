@@ -25,7 +25,7 @@ export function NewPasswordForm() {
       className="flex flex-col gap-3"
     >
       <label className="flex flex-col gap-1">
-        <span className="overline" style={{ fontSize: '0.625rem' }}>
+        <span className="eyebrow" style={{ fontSize: '0.625rem' }}>
           New password
         </span>
         <input
@@ -38,7 +38,7 @@ export function NewPasswordForm() {
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="overline" style={{ fontSize: '0.625rem' }}>
+        <span className="eyebrow" style={{ fontSize: '0.625rem' }}>
           Again, to be sure
         </span>
         <input

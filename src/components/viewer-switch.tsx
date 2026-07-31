@@ -53,7 +53,7 @@ export async function ViewerSwitch() {
 
       <div className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-x-5 gap-y-3 px-6 py-3">
         <span
-          className="overline"
+          className="eyebrow"
           style={{ color: 'var(--ofc-n-400)', fontSize: '0.6875rem' }}
         >
           Viewing as · {deployed ? 'demo' : 'dev only'}

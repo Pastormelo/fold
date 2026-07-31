@@ -73,7 +73,7 @@ export default async function PersonPage(
 
           <dl className="mt-5 grid gap-4 sm:grid-cols-3">
             <div>
-              <dt className="overline" style={{ fontSize: '0.5625rem' }}>
+              <dt className="eyebrow" style={{ fontSize: '0.5625rem' }}>
                 Household
               </dt>
               <dd className="mt-1 text-[0.9375rem]">
@@ -83,13 +83,13 @@ export default async function PersonPage(
               </dd>
             </div>
             <div>
-              <dt className="overline" style={{ fontSize: '0.5625rem' }}>
+              <dt className="eyebrow" style={{ fontSize: '0.5625rem' }}>
                 Serving
               </dt>
               <dd className="mt-1 text-[0.9375rem]">{person.serving}</dd>
             </div>
             <div>
-              <dt className="overline" style={{ fontSize: '0.5625rem' }}>
+              <dt className="eyebrow" style={{ fontSize: '0.5625rem' }}>
                 Groups
               </dt>
               <dd className="mt-1 text-[0.9375rem]">{person.groups}</dd>

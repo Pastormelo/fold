@@ -91,7 +91,7 @@ export function CareTimeline({ care }: { care: CareTimelineData }) {
                   })}
                 </time>
                 <span
-                  className="overline"
+                  className="eyebrow"
                   style={{
                     fontSize: '0.5625rem',
                     color: TIER_ACCENT[note.visibilityTier],

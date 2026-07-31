@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* ── One Family Church design tokens ──────────────────────────
    Ported from the design system shipped with the Fold handoff
@@ -97,9 +97,12 @@
 
   /* Shadows — cool slate tint, never neutral gray or black */
   --shadow-xs: 0 1px 2px rgba(32, 36, 42, 0.06);
-  --shadow-sm: 0 1px 2px rgba(32, 36, 42, 0.06), 0 2px 6px rgba(32, 36, 42, 0.06);
-  --shadow-md: 0 2px 4px rgba(32, 36, 42, 0.05), 0 8px 20px rgba(32, 36, 42, 0.08);
-  --shadow-lg: 0 4px 8px rgba(32, 36, 42, 0.06), 0 18px 40px rgba(32, 36, 42, 0.12);
+  --shadow-sm:
+    0 1px 2px rgba(32, 36, 42, 0.06), 0 2px 6px rgba(32, 36, 42, 0.06);
+  --shadow-md:
+    0 2px 4px rgba(32, 36, 42, 0.05), 0 8px 20px rgba(32, 36, 42, 0.08);
+  --shadow-lg:
+    0 4px 8px rgba(32, 36, 42, 0.06), 0 18px 40px rgba(32, 36, 42, 0.12);
   --shadow-brand: 0 8px 24px rgba(255, 149, 62, 0.32);
 
   /* Motion */
@@ -151,7 +154,15 @@ h4 {
 }
 
 /* Tracked uppercase label, echoing the "ONE FAMILY / CHURCH" lockup. */
-.overline {
+/*
+ * Tracked uppercase labels.
+ *
+ * Named `eyebrow`, not `overline`, because Tailwind ships an `overline` utility
+ * that sets `text-decoration-line: overline` — so a class of that name drew a
+ * literal rule above every label in the application. The design has no such
+ * rule anywhere. A custom class must not share a name with a Tailwind utility.
+ */
+.eyebrow {
   font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 700;

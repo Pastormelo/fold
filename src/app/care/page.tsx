@@ -59,7 +59,7 @@ export default async function ConfidentialPage() {
                   </h3>
                   {entry.sealed && (
                     <span
-                      className="overline"
+                      className="eyebrow"
                       style={{
                         fontSize: '0.5625rem',
                         border: '1px solid var(--border-default)',
@@ -90,7 +90,7 @@ export default async function ConfidentialPage() {
                     {entry.plan.length > 0 && (
                       <div>
                         <span
-                          className="overline"
+                          className="eyebrow"
                           style={{ fontSize: '0.5625rem' }}
                         >
                           The plan
@@ -110,7 +110,7 @@ export default async function ConfidentialPage() {
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
                         <span
-                          className="overline"
+                          className="eyebrow"
                           style={{ fontSize: '0.5625rem' }}
                         >
                           Knows
@@ -121,7 +121,7 @@ export default async function ConfidentialPage() {
                       </div>
                       <div>
                         <span
-                          className="overline"
+                          className="eyebrow"
                           style={{ fontSize: '0.5625rem' }}
                         >
                           Deliberately does not know
@@ -186,7 +186,7 @@ export default async function ConfidentialPage() {
               >
                 <div className="flex items-center justify-between gap-2">
                   <span
-                    className="overline"
+                    className="eyebrow"
                     style={{
                       fontSize: '0.5625rem',
                       color: TIER_ACCENT[tier.tier],
@@ -196,7 +196,7 @@ export default async function ConfidentialPage() {
                   </span>
                   {tier.viewerIsAtThisTier && (
                     <span
-                      className="overline"
+                      className="eyebrow"
                       style={{
                         fontSize: '0.5rem',
                         color: 'var(--on-brand)',

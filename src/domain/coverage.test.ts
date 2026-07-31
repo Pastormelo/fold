@@ -6,6 +6,8 @@ import {
   WARNING_WINDOW_DAYS,
   assessContact,
   concerningFolds,
+  coverageSegments,
+  foldStanding,
   summariseCoverage,
 } from './coverage'
 
@@ -218,5 +220,67 @@ describe('which folds to raise at a meeting', () => {
       lastContactAt: daysAgo(1),
     }))
     expect(concerningFolds([fold('Eastside', 'Tanya', exactly)])).toEqual([])
+  })
+})
+
+describe('the word under a fold’s bar', () => {
+  function summary(recent: number, warning: number, overdue: number) {
+    return summariseCoverage(
+      [
+        ...Array.from({ length: recent }, (_, i) => ({
+          personId: `r${i}`,
+          lastContactAt: daysAgo(2),
+        })),
+        ...Array.from({ length: warning }, (_, i) => ({
+          personId: `w${i}`,
+          lastContactAt: daysAgo(50),
+        })),
+        ...Array.from({ length: overdue }, (_, i) => ({
+          personId: `o${i}`,
+          lastContactAt: daysAgo(90),
+        })),
+      ],
+      NOW
+    )
+  }
+
+  it('is covered when everyone is comfortably inside the window', () => {
+    expect(foldStanding(summary(20, 0, 0))).toBe('covered')
+  })
+
+  it('is thin when a few have slipped past', () => {
+    expect(foldStanding(summary(20, 0, 1))).toBe('thin')
+  })
+
+  it('is thin when a quarter are in the warning band with none overdue', () => {
+    expect(foldStanding(summary(15, 5, 0))).toBe('thin')
+  })
+
+  it('needs help when a quarter or more are past the window', () => {
+    // Seven of nineteen, the design's own worst fold.
+    expect(foldStanding(summary(12, 0, 7))).toBe('needs_help')
+  })
+
+  it('judges by share rather than count', () => {
+    // The same seven overdue people, in a fold big enough to absorb them.
+    expect(foldStanding(summary(393, 0, 7))).toBe('thin')
+  })
+
+  it('does not call an empty fold a failure', () => {
+    expect(foldStanding(summary(0, 0, 0))).toBe('covered')
+  })
+
+  it('builds a bar that always fills', () => {
+    const segments = coverageSegments(summary(12, 0, 7))
+    const total = segments.recent + segments.warning + segments.overdue
+    expect(Math.round(total)).toBe(100)
+  })
+
+  it('leaves an empty fold with no bar rather than a full one', () => {
+    expect(coverageSegments(summary(0, 0, 0))).toEqual({
+      recent: 0,
+      warning: 0,
+      overdue: 0,
+    })
   })
 })

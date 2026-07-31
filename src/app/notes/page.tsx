@@ -56,7 +56,7 @@ export default async function NotesPage() {
               }}
             >
               <span
-                className="overline"
+                className="eyebrow"
                 style={{
                   fontSize: '0.5625rem',
                   color: TIER_ACCENT[tier.tier],
@@ -213,7 +213,7 @@ export default async function NotesPage() {
                     {personName}
                   </a>
                   <span
-                    className="overline"
+                    className="eyebrow"
                     style={{
                       fontSize: '0.5rem',
                       color: TIER_ACCENT[view.visibilityTier],

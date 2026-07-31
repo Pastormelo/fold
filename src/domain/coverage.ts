@@ -240,3 +240,58 @@ export function concerningFolds(folds: readonly FoldCoverage[]): FoldConcern[] {
     return overdueOf(b) - overdueOf(a)
   })
 }
+
+/* ─────────────────────── Naming a fold's standing ─────────────────────── */
+
+export type FoldStanding = 'covered' | 'thin' | 'needs_help'
+
+export const STANDING_LABELS: Record<FoldStanding, string> = {
+  covered: 'Covered',
+  thin: 'Thin',
+  needs_help: 'Needs help',
+}
+
+/**
+ * The word the design puts under a fold's coverage bar.
+ *
+ * Three words rather than a percentage, because a shepherd reads "Needs help" and
+ * knows to speak up where they read "71%" and wonder whether that is bad. The
+ * thresholds are here and tested rather than inline in a component, so the bar and
+ * the word cannot come from different arithmetic.
+ *
+ * `needs_help` is deliberately about the *share* of people past the window rather
+ * than the count. Seven overdue out of nineteen is a fold in trouble; seven out of
+ * four hundred is a Tuesday.
+ */
+export function foldStanding(coverage: CoverageSummary): FoldStanding {
+  if (coverage.total === 0) return 'covered'
+
+  const overdueShare = coverage.overdue / coverage.total
+  if (overdueShare >= 0.25) return 'needs_help'
+  if (coverage.overdue > 0 || coverage.warning / coverage.total >= 0.25) {
+    return 'thin'
+  }
+  return 'covered'
+}
+
+/**
+ * The three-segment bar: reached recently, in the warning band, past the window.
+ *
+ * Returned as percentages that sum to 100 so a component can lay them out without
+ * doing its own division — and so the bar always fills, rather than leaving a gap
+ * that reads as missing data.
+ */
+export function coverageSegments(coverage: CoverageSummary): {
+  recent: number
+  warning: number
+  overdue: number
+} {
+  if (coverage.total === 0) return { recent: 0, warning: 0, overdue: 0 }
+
+  const pct = (n: number) => (n / coverage.total) * 100
+  const recent = pct(coverage.recent)
+  const warning = pct(coverage.warning)
+  // The remainder rather than its own division, so rounding cannot leave a sliver
+  // of unexplained bar at the end.
+  return { recent, warning, overdue: 100 - recent - warning }
+}

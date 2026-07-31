@@ -70,14 +70,14 @@ export default async function JourneysPage() {
                     </span>
                   )}
                   <span
-                    className="overline"
+                    className="eyebrow"
                     style={{ fontSize: '0.5625rem', letterSpacing: '0.1em' }}
                   >
                     {journey.tierLabel}
                   </span>
                   {journey.access === 'visible' && journey.isOverdue && (
                     <span
-                      className="overline"
+                      className="eyebrow"
                       style={{
                         fontSize: '0.5625rem',
                         color: 'var(--ofc-paper)',
@@ -142,14 +142,14 @@ export default async function JourneysPage() {
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span style={{ fontWeight: 600 }}>{template.name}</span>
                 <span
-                  className="overline"
+                  className="eyebrow"
                   style={{ fontSize: '0.5625rem', letterSpacing: '0.1em' }}
                 >
                   {template.tierLabel}
                 </span>
                 {template.isSystemDefault && (
                   <span
-                    className="overline"
+                    className="eyebrow"
                     style={{
                       fontSize: '0.5625rem',
                       border: '1px solid var(--border-default)',
