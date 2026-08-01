@@ -228,3 +228,201 @@ select:hover,
 textarea:hover {
   border-color: var(--border-strong);
 }
+
+/* ─────────────────────────── Phone and desktop ─────────────────────────── */
+
+/*
+ * One breakpoint, at 860px.
+ *
+ * Below it the 232px rail would eat two thirds of a 375px screen, so it is
+ * replaced by a bottom tab bar — reachable one-handed, which is the actual
+ * situation: a leader standing in a foyer on a Sunday logging a visit.
+ *
+ * Both navigations are always in the DOM and CSS picks one. That is deliberate:
+ * choosing in JavaScript from a width would render the wrong one on the server
+ * and correct it after hydration, which flashes.
+ */
+
+.fold-rail {
+  width: 232px;
+  flex-shrink: 0;
+  background: var(--surface-inverse);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.fold-rail-name {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ofc-paper);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fold-rail-role {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--ofc-n-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fold-tabbar,
+.fold-sheet,
+.fold-sheet-scrim {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .fold-rail {
+    display: none;
+  }
+
+  .fold-tabbar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-header);
+    background: var(--surface-inverse);
+    border-top: 1px solid var(--border-inverse);
+    /* Clears the home indicator on a notched phone. */
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .fold-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    /* 56px, which is a target a thumb hits without aiming. */
+    min-height: 56px;
+    padding: 8px 4px;
+    background: transparent;
+    border: none;
+    font: inherit;
+    text-decoration: none;
+    color: var(--ofc-n-400);
+    cursor: pointer;
+  }
+
+  .fold-tab[aria-current='page'],
+  .fold-tab[aria-expanded='true'] {
+    color: var(--ofc-paper);
+    box-shadow: inset 0 2px 0 var(--brand);
+  }
+
+  .fold-tab-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .fold-sheet-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-overlay);
+    background: rgba(32, 36, 42, 0.5);
+    border: none;
+    cursor: pointer;
+  }
+
+  .fold-sheet {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-modal);
+    max-height: 78vh;
+    overflow-y: auto;
+    background: var(--surface-inverse);
+    border-top-left-radius: var(--radius-xl);
+    border-top-right-radius: var(--radius-xl);
+    padding: 20px 16px calc(76px + env(safe-area-inset-bottom, 0));
+  }
+
+  .fold-sheet-head {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding-bottom: 16px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border-inverse);
+  }
+
+  .fold-sheet-links {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .fold-sheet-links a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 48px;
+    padding: 12px 8px;
+    text-decoration: none;
+    font-size: 1rem;
+    color: var(--ofc-n-400);
+  }
+
+  .fold-sheet-links a[aria-current='page'] {
+    color: var(--ofc-paper);
+    font-weight: 700;
+  }
+
+  .fold-sheet-signout {
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    width: 100%;
+    margin-top: 12px;
+    padding: 13px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-inverse);
+    background: transparent;
+    color: var(--ofc-n-400);
+    cursor: pointer;
+  }
+
+  /* The body must clear the fixed tab bar, or the last row of every list sits
+     underneath it and cannot be tapped. */
+  .fold-main {
+    padding: 20px 16px calc(84px + env(safe-area-inset-bottom, 0)) !important;
+  }
+
+  /* Search is disabled and takes the most room; the pill repeats what the
+     numbers already say. Both go, and Log care stays — it is the reason
+     somebody has their phone out. */
+  .fold-topbar-desktop-only {
+    display: none;
+  }
+
+  .fold-topbar {
+    padding: 10px 16px !important;
+  }
+}
+
+/* The logo in the top bar is the phone's only copy of it; hidden on desktop,
+   where the rail carries it. */
+.fold-topbar-phone-only {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .fold-topbar-phone-only {
+    display: inline-flex;
+    align-items: center;
+  }
+}

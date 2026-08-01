@@ -4,10 +4,12 @@ import {
   BADGED_SECTIONS,
   CARE_SECTIONS,
   RAIL_LABELS,
+  PHONE_SECTIONS,
   RAIL_SECTIONS,
   isRailSection,
   pathForSection,
   sectionForPath,
+  sectionsBehindMore,
 } from './navigation'
 
 describe('the rail', () => {
@@ -92,5 +94,46 @@ describe('badges and care sections', () => {
     for (const section of CARE_SECTIONS) {
       expect(RAIL_SECTIONS).toContain(section)
     }
+  })
+})
+
+describe('the phone tab bar', () => {
+  it('holds four sections, leaving a fifth slot for More', () => {
+    // Six targets on a 375px screen are too small to hit accurately.
+    expect(PHONE_SECTIONS).toHaveLength(4)
+  })
+
+  it('is every one a real rail section', () => {
+    for (const section of PHONE_SECTIONS) {
+      expect(RAIL_SECTIONS).toContain(section)
+    }
+  })
+
+  it('puts everything else behind More, in rail order', () => {
+    const behind = sectionsBehindMore(RAIL_SECTIONS)
+    expect(behind).toEqual([
+      'pathway',
+      'care',
+      'guests',
+      'notes',
+      'prayer',
+      'milestones',
+      'reports',
+      'admin',
+    ])
+  })
+
+  it('accounts for every section exactly once between the two', () => {
+    // A section in neither place would be unreachable on a phone.
+    const behind = sectionsBehindMore(RAIL_SECTIONS)
+    const all = [...PHONE_SECTIONS, ...behind].sort()
+    expect(all).toEqual([...RAIL_SECTIONS].sort())
+  })
+
+  it('drops from More whatever the viewer was not offered', () => {
+    // A viewer with no care clearance is not given Confidential in the rail, so
+    // it must not reappear in the More sheet.
+    const withoutCare = RAIL_SECTIONS.filter((s) => s !== 'care')
+    expect(sectionsBehindMore(withoutCare)).not.toContain('care')
   })
 })

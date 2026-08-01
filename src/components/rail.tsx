@@ -2,28 +2,31 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState } from 'react'
 
 import {
   BADGED_SECTIONS,
+  PHONE_SECTIONS,
   RAIL_LABELS,
   type RailSection,
   pathForSection,
   sectionForPath,
+  sectionsBehindMore,
 } from '@/domain/navigation'
 
 import { FoldLogo } from './logo'
 
 /**
- * The left rail, from `Fold Web.dc.html`.
+ * Navigation, in two shapes from one source.
  *
- * A Client Component only because it needs `usePathname` to mark the current
- * section. Everything it renders was decided on the server: which sections this
- * viewer may see, what each badge counts, and who they are.
+ * On a desktop it is the 232px ink rail from `Fold Web.dc.html`. On a phone the
+ * rail is useless — it would eat two thirds of a 375px screen — so it becomes a
+ * bottom tab bar, which is what a leader can reach one-handed while standing in a
+ * foyer. Both are rendered from the same section list and the same badges, so
+ * neither can offer something the other does not.
  *
- * The footer is a person, not the church. The design puts an avatar, a name and a
- * role there, which is the useful thing — the question a leader has while looking
- * at pastoral records is "what am I seeing this as", and the church name never
- * changes.
+ * Which four sections get a tab is decided in `@/domain/navigation` and tested,
+ * rather than picked here.
  */
 export function Rail({
   sections,
@@ -36,151 +39,225 @@ export function Rail({
   viewer: { name: string; initials: string; roleLine: string }
 }) {
   const current = sectionForPath(usePathname())
+  const [moreOpen, setMoreOpen] = useState(false)
+
+  const phoneTabs = sections.filter((section) =>
+    (PHONE_SECTIONS as readonly string[]).includes(section)
+  )
+  const behindMore = sectionsBehindMore(sections)
+
+  const badgeFor = (section: RailSection) =>
+    BADGED_SECTIONS.includes(section) ? badges[section] : undefined
+
+  /** A count worth showing on More, so what is hidden is not silently hidden. */
+  const moreBadge = behindMore.reduce(
+    (sum, section) => sum + (badgeFor(section) ?? 0),
+    0
+  )
 
   return (
-    <nav
-      aria-label="Sections"
-      style={{
-        width: 232,
-        flexShrink: 0,
-        background: 'var(--surface-inverse)',
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100vh',
-      }}
-    >
-      <div style={{ padding: '26px 24px 22px' }}>
-        <FoldLogo fontSize={26} tone="inverse" />
+    <>
+      {/* ── Desktop rail ── */}
+      <nav aria-label="Sections" className="fold-rail">
+        <div style={{ padding: '26px 24px 22px' }}>
+          <FoldLogo fontSize={26} tone="inverse" />
+          <div
+            className="eyebrow"
+            style={{
+              fontSize: '0.5625rem',
+              letterSpacing: '0.16em',
+              color: 'var(--ofc-n-500)',
+              marginTop: 6,
+            }}
+          >
+            Church care platform
+          </div>
+        </div>
+
         <div
-          className="eyebrow"
           style={{
-            fontSize: '0.5625rem',
-            letterSpacing: '0.16em',
-            color: 'var(--ofc-n-500)',
-            marginTop: 6,
+            padding: '0 12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
           }}
         >
-          Church care platform
+          {sections.map((section) => {
+            const isCurrent = section === current
+            const badge = badgeFor(section)
+            return (
+              <Link
+                key={section}
+                href={pathForSection(section)}
+                aria-current={isCurrent ? 'page' : undefined}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                  padding: '9px 12px',
+                  borderRadius: 'var(--radius-sm)',
+                  textDecoration: 'none',
+                  fontSize: '0.9375rem',
+                  fontWeight: isCurrent ? 700 : 500,
+                  background: isCurrent
+                    ? 'var(--surface-inverse-2)'
+                    : 'transparent',
+                  color: isCurrent ? 'var(--ofc-paper)' : 'var(--ofc-n-400)',
+                }}
+              >
+                <span>{RAIL_LABELS[section]}</span>
+                {/* Never a zero — a badge reading 0 is noise pretending to be
+                    information. */}
+                {badge !== undefined && badge > 0 && <Badge count={badge} />}
+              </Link>
+            )
+          })}
         </div>
-      </div>
 
-      <div
-        style={{
-          padding: '0 12px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-        }}
-      >
-        {sections.map((section) => {
+        <div style={{ flex: 1 }} />
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 11,
+            padding: '16px 20px 20px',
+            borderTop: '1px solid var(--border-inverse)',
+          }}
+        >
+          <Avatar initials={viewer.initials} />
+          <span style={{ minWidth: 0 }}>
+            <span className="fold-rail-name">{viewer.name}</span>
+            <span className="fold-rail-role">{viewer.roleLine}</span>
+          </span>
+        </div>
+      </nav>
+
+      {/* ── Phone tab bar ── */}
+      <nav aria-label="Sections" className="fold-tabbar">
+        {phoneTabs.map((section) => {
           const isCurrent = section === current
-          const badge = BADGED_SECTIONS.includes(section)
-            ? badges[section]
-            : undefined
+          const badge = badgeFor(section)
           return (
             <Link
               key={section}
               href={pathForSection(section)}
               aria-current={isCurrent ? 'page' : undefined}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 8,
-                padding: '9px 12px',
-                borderRadius: 'var(--radius-sm)',
-                textDecoration: 'none',
-                fontSize: '0.9375rem',
-                fontWeight: isCurrent ? 700 : 500,
-                background: isCurrent
-                  ? 'var(--surface-inverse-2)'
-                  : 'transparent',
-                color: isCurrent ? 'var(--ofc-paper)' : 'var(--ofc-n-400)',
-              }}
+              className="fold-tab"
+              onClick={() => setMoreOpen(false)}
             >
-              <span>{RAIL_LABELS[section]}</span>
-              {/* Only when there is something to count, and never a zero — a
-                  badge reading 0 is noise pretending to be information. */}
+              <span className="fold-tab-label">{RAIL_LABELS[section]}</span>
               {badge !== undefined && badge > 0 && (
-                <span
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '0.6875rem',
-                    fontWeight: 700,
-                    minWidth: 20,
-                    textAlign: 'center',
-                    padding: '2px 6px',
-                    borderRadius: 'var(--radius-pill)',
-                    background: 'var(--brand)',
-                    color: 'var(--on-brand)',
-                  }}
-                >
-                  {badge}
-                </span>
+                <Badge count={badge} small />
               )}
             </Link>
           )
         })}
-      </div>
 
-      <div style={{ flex: 1 }} />
+        {behindMore.length > 0 && (
+          <button
+            type="button"
+            className="fold-tab"
+            aria-expanded={moreOpen}
+            onClick={() => setMoreOpen((open) => !open)}
+          >
+            <span className="fold-tab-label">
+              {moreOpen ? 'Close' : 'More'}
+            </span>
+            {/* What is behind More still counts, so nothing is hidden silently. */}
+            {moreBadge > 0 && <Badge count={moreBadge} small />}
+          </button>
+        )}
+      </nav>
 
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 11,
-          padding: '16px 20px 20px',
-          borderTop: '1px solid var(--border-inverse)',
-        }}
-      >
-        <span
-          aria-hidden="true"
-          style={{
-            display: 'grid',
-            placeItems: 'center',
-            width: 34,
-            height: 34,
-            flexShrink: 0,
-            borderRadius: 'var(--radius-pill)',
-            background: 'var(--surface-inverse-2)',
-            color: 'var(--ofc-n-300)',
-            fontFamily: 'var(--font-display)',
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            letterSpacing: '0.04em',
-          }}
-        >
-          {viewer.initials}
-        </span>
-        <span style={{ minWidth: 0 }}>
-          <span
-            style={{
-              display: 'block',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              color: 'var(--ofc-paper)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {viewer.name}
-          </span>
-          <span
-            style={{
-              display: 'block',
-              fontSize: '0.75rem',
-              color: 'var(--ofc-n-500)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {viewer.roleLine}
-          </span>
-        </span>
-      </div>
-    </nav>
+      {/* ── The More sheet ── */}
+      {moreOpen && (
+        <>
+          <button
+            type="button"
+            aria-label="Close menu"
+            className="fold-sheet-scrim"
+            onClick={() => setMoreOpen(false)}
+          />
+          <div className="fold-sheet" role="dialog" aria-label="More sections">
+            <div className="fold-sheet-head">
+              <Avatar initials={viewer.initials} />
+              <span style={{ minWidth: 0 }}>
+                <span className="fold-rail-name">{viewer.name}</span>
+                <span className="fold-rail-role">{viewer.roleLine}</span>
+              </span>
+            </div>
+            <div className="fold-sheet-links">
+              {behindMore.map((section) => {
+                const badge = badgeFor(section)
+                return (
+                  <Link
+                    key={section}
+                    href={pathForSection(section)}
+                    aria-current={section === current ? 'page' : undefined}
+                    onClick={() => setMoreOpen(false)}
+                  >
+                    <span>{RAIL_LABELS[section]}</span>
+                    {badge !== undefined && badge > 0 && (
+                      <Badge count={badge} small />
+                    )}
+                  </Link>
+                )
+              })}
+            </div>
+            <form action="/auth/sign-out" method="post">
+              <button type="submit" className="fold-sheet-signout">
+                Sign out
+              </button>
+            </form>
+          </div>
+        </>
+      )}
+    </>
+  )
+}
+
+function Badge({ count, small }: { count: number; small?: boolean }) {
+  return (
+    <span
+      style={{
+        fontFamily: 'var(--font-display)',
+        fontSize: small ? '0.625rem' : '0.6875rem',
+        fontWeight: 700,
+        minWidth: small ? 18 : 20,
+        textAlign: 'center',
+        padding: '2px 6px',
+        borderRadius: 'var(--radius-pill)',
+        background: 'var(--brand)',
+        color: 'var(--on-brand)',
+      }}
+    >
+      {count}
+    </span>
+  )
+}
+
+function Avatar({ initials }: { initials: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: 'grid',
+        placeItems: 'center',
+        width: 34,
+        height: 34,
+        flexShrink: 0,
+        borderRadius: 'var(--radius-pill)',
+        background: 'var(--surface-inverse-2)',
+        color: 'var(--ofc-n-300)',
+        fontFamily: 'var(--font-display)',
+        fontSize: '0.75rem',
+        fontWeight: 700,
+        letterSpacing: '0.04em',
+      }}
+    >
+      {initials}
+    </span>
   )
 }

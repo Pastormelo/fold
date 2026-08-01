@@ -6,6 +6,7 @@ import {
 import { CONTACT_WINDOW_DAYS } from '@/domain/coverage'
 import { getRailBadges, getViewerSummary } from '@/data/records'
 
+import { FoldLogo } from './logo'
 import { Rail } from './rail'
 
 /**
@@ -75,6 +76,7 @@ export async function AppShell({
         }}
       >
         <header
+          className="fold-topbar"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -84,6 +86,11 @@ export async function AppShell({
             background: 'var(--surface-card)',
           }}
         >
+          {/* The logo only appears here on a phone, where the rail that
+              normally carries it is replaced by the bottom tab bar. */}
+          <span className="fold-topbar-phone-only">
+            <FoldLogo fontSize={19} tone="ink" />
+          </span>
           {/* Not wired to anything yet, and disabled rather than pretending.
               A search box that swallows what you type is worse than none. */}
           <input
@@ -91,6 +98,7 @@ export async function AppShell({
             placeholder="Search is not built yet"
             disabled
             aria-label="Search"
+            className="fold-topbar-desktop-only"
             style={{
               font: 'inherit',
               fontSize: '0.9375rem',
@@ -107,7 +115,7 @@ export async function AppShell({
           {/* The window every "overdue" on every screen is measured against,
               stated once so nobody has to guess what the numbers mean. */}
           <span
-            className="eyebrow"
+            className="eyebrow fold-topbar-desktop-only"
             style={{
               fontSize: '0.625rem',
               whiteSpace: 'nowrap',
@@ -142,7 +150,11 @@ export async function AppShell({
           {/* A form POST, not a link: ending a session has to replace the
               document, or the previous reader's payload stays in it. See
               @/auth/identity-change. */}
-          <form action="/auth/sign-out" method="post">
+          <form
+            action="/auth/sign-out"
+            method="post"
+            className="fold-topbar-desktop-only"
+          >
             <button
               type="submit"
               style={{
@@ -163,6 +175,7 @@ export async function AppShell({
         </header>
 
         <main
+          className="fold-main"
           style={{
             flex: 1,
             padding: '30px 32px 48px',

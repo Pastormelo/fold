@@ -93,3 +93,35 @@ export const CARE_SECTIONS: readonly RailSection[] = [
   'prayer',
   'milestones',
 ]
+
+/* ─────────────────────────── The phone's tab bar ─────────────────────────── */
+
+/**
+ * The four sections a phone shows in its bottom bar, plus everything else behind
+ * "More".
+ *
+ * Chosen rather than invented: these are the sections a leader opens while
+ * standing in a foyer. The overview answers "who needs me", Tasks is what is owed,
+ * Family is who somebody is, and Journeys is where a visit gets recorded. The other
+ * eight are things you do sitting down.
+ *
+ * Four and not five because the fifth slot is "More", and a bottom bar with six
+ * targets on a 375px screen has targets too small to hit accurately.
+ */
+export const PHONE_SECTIONS = [
+  'overview',
+  'tasks',
+  'people',
+  'journeys',
+] as const
+
+export type PhoneSection = (typeof PHONE_SECTIONS)[number]
+
+/** Everything not in the bottom bar, in rail order. */
+export function sectionsBehindMore(
+  available: readonly RailSection[]
+): RailSection[] {
+  return available.filter(
+    (section) => !(PHONE_SECTIONS as readonly string[]).includes(section)
+  )
+}
