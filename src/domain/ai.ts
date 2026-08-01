@@ -163,6 +163,49 @@ export function parseDiscoveryAnswer(
   return parseWith(discoveryAnswerSchema, raw)
 }
 
+/**
+ * A question the AI wants to ask.
+ *
+ * `why` is required for the same reason `humanJudgment` is required on a
+ * recommendation: a church being interviewed about its own polity is entitled to
+ * know what a question is for before answering it. A question with no stated
+ * purpose reads as a form to complete rather than a conversation, and the
+ * answers get worse.
+ *
+ * The id is assigned by whoever stores the question, not by the model — an
+ * identifier a model invented is one nothing can be joined on reliably.
+ */
+export const discoveryQuestionSchema = z.object({
+  section: z.enum(DISCOVERY_SECTIONS),
+  question: required('The question'),
+  why: required('Why this is being asked'),
+})
+
+export type DiscoveryQuestion = z.infer<typeof discoveryQuestionSchema>
+
+export function parseDiscoveryQuestion(
+  raw: unknown
+): ParseResult<DiscoveryQuestion> {
+  return parseWith(discoveryQuestionSchema, raw)
+}
+
+/** Where a discovery session has got to. Derived, never stored. */
+export function discoveryProgress(answers: readonly DiscoveryAnswer[]): {
+  section: DiscoverySection
+  answered: number
+  /** The section the interview should be working on now. */
+  current: boolean
+}[] {
+  const firstUnfinished = DISCOVERY_SECTIONS.find(
+    (section) => !answers.some((answer) => answer.section === section)
+  )
+  return DISCOVERY_SECTIONS.map((section) => ({
+    section,
+    answered: answers.filter((answer) => answer.section === section).length,
+    current: section === firstUnfinished,
+  }))
+}
+
 /* ─────────────────────────── Church profile ─────────────────────────── */
 
 export const PROVENANCE = ['confirmed', 'imported', 'inferred'] as const
@@ -392,6 +435,55 @@ export function parseImportFinding(raw: unknown): ParseResult<ImportFinding> {
  */
 export function analysisMayModify(): AiActionCheck {
   return aiMayPerform('change_active_pathway')
+}
+
+/* ────────────────────────── Health findings ────────────────────────── */
+
+export const SEVERITIES = ['low', 'medium', 'high'] as const
+export type Severity = (typeof SEVERITIES)[number]
+
+/**
+ * A finding about the church's *own draft*, in the shape a health check returns.
+ *
+ * Note what is not in here: `blocksPublishing`. Whether a finding stands between
+ * a church and publishing is a rule, not an opinion, so it is derived below from
+ * severity rather than being a field the model fills in. A model that could set
+ * it would be a model that can block a church's pathway on its own reasoning,
+ * and §7 puts that decision on the other side of the line.
+ *
+ * `evidence` is required and must quote the draft, for the same reason
+ * `quotedLine` is required on an import finding: a finding a church cannot trace
+ * back to its own words is one they have no way to check.
+ */
+export const healthFindingProposalSchema = z.object({
+  category: z.enum(ANALYSIS_CONCERNS),
+  severity: z.enum(SEVERITIES),
+  evidence: required('The part of the draft this came from'),
+  why: required('Why it matters'),
+  options: z
+    .array(required('An option'))
+    .min(1, 'A finding offers at least one possible response'),
+  humanJudgment: required('Which part is the church’s judgment'),
+})
+
+export type HealthFindingProposal = z.infer<typeof healthFindingProposalSchema>
+
+export function parseHealthFindingProposal(
+  raw: unknown
+): ParseResult<HealthFindingProposal> {
+  return parseWith(healthFindingProposalSchema, raw)
+}
+
+/**
+ * Which findings stand in the way of publishing.
+ *
+ * One line, and it is the whole rule: high severity blocks, everything else is
+ * advice. It lives here so it is inspectable and tested rather than being a
+ * value a model chose, and §4 still lets a church publish past it by
+ * acknowledging it with a reason.
+ */
+export function blocksPublishing(severity: Severity): boolean {
+  return severity === 'high'
 }
 
 /* ─────────────────────────── Proposals ─────────────────────────── */

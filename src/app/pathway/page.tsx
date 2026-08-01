@@ -1,5 +1,7 @@
 import { ActionForm } from '@/components/action-form'
 import { AppShell } from '@/components/app-shell'
+import { PathwayAi } from '@/components/pathway-ai'
+import { getAiAudit, getDiscovery, getRecommendations } from '@/data/ai'
 import { getPathwayOverview, getPathwayVersions } from '@/data/pathway'
 import { PATHWAY_STATES, describeState } from '@/domain/pathway'
 
@@ -76,9 +78,20 @@ export default async function PathwayPage() {
   const overview = await getPathwayOverview()
 
   if (overview.kind === 'none') {
+    // Discovery comes *before* a draft — it is the first of §4's states, and the
+    // interview is how a church gets to a draft in the first place. Rendering the
+    // AI block here too means a church with nothing yet can start answering
+    // questions; Blueprint, the health check and Review each say plainly that
+    // there is no draft to work on, which is true and is the next thing to do.
+    const [discovery, review, audit] = await Promise.all([
+      getDiscovery(),
+      getRecommendations(),
+      getAiAudit(),
+    ])
+
     return (
       <AppShell eyebrow="Nothing published" title="Pathway">
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-9">
           <div className="flex max-w-[680px] flex-col gap-4">
             <p style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}>
               A pathway is how this church says it receives someone — the stages
@@ -98,6 +111,16 @@ export default async function PathwayPage() {
               <Inferred note={overview.offer.inferredNote} />
             )}
           </div>
+
+          {/* The interview, before there is anything to interview about. A church
+              with no pathway is exactly who discovery is for. */}
+          <PathwayAi
+            discovery={discovery}
+            review={review}
+            audit={audit}
+            hasDraft={false}
+            stageCount={0}
+          />
 
           {/* An empty page with one button teaches nothing. These two sections
               are the real shape of what a draft will hold, read out of the
@@ -180,7 +203,14 @@ export default async function PathwayPage() {
     )
   }
 
-  const versions = await getPathwayVersions()
+  // Four reads in parallel rather than in sequence: they are independent, and on
+  // a page this size sequential round trips are what a slow page is made of.
+  const [versions, discovery, review, audit] = await Promise.all([
+    getPathwayVersions(),
+    getDiscovery(),
+    getRecommendations(),
+    getAiAudit(),
+  ])
   const { diff, readiness } = overview
 
   return (
@@ -574,6 +604,20 @@ export default async function PathwayPage() {
             })}
           </section>
         )}
+
+        {/* ── The AI parts: discovery, blueprint, health check, review ──
+            Placed after the draft itself and before the publish gate, which is
+            the order they matter in: what the draft says, then what the AI has
+            noticed about it, then whether it can go live. Every control inside
+            carries its own reason for being unavailable, so this block renders
+            whether or not an API key is configured. */}
+        <PathwayAi
+          discovery={discovery}
+          review={review}
+          audit={audit}
+          hasDraft={overview.isWorkingVersion}
+          stageCount={overview.stages.length}
+        />
 
         {/* ── The publish gate ── */}
         {readiness && (

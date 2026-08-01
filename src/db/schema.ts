@@ -26,7 +26,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 
-import { AUDITED_AI_EVENTS, VERDICTS } from '@/domain/ai'
+import { AUDITED_AI_EVENTS, DISCOVERY_SECTIONS, VERDICTS } from '@/domain/ai'
 import { CARE_WINDOWS } from '@/domain/journeys'
 import { MILESTONE_KINDS } from '@/domain/milestones'
 import {
@@ -88,6 +88,10 @@ export const owningSystem = pgEnum('owning_system', ['fold', 'planning_center'])
 export const verdictKind = pgEnum('verdict_kind', VERDICTS)
 
 export const aiAuditEvent = pgEnum('ai_audit_event', AUDITED_AI_EVENTS)
+
+/** §2's seven sections, declared from the domain so the interview cannot be
+ * resumed into a section the code has never heard of. */
+export const discoverySection = pgEnum('discovery_section', DISCOVERY_SECTIONS)
 
 /* ─────────────────────────────── Church ─────────────────────────────── */
 
@@ -800,6 +804,61 @@ export const possibleDuplicates = pgTable(
   ]
 )
 
+/* ─────────────────────────── Discovery ─────────────────────────── */
+
+/**
+ * The discovery interview: a question, and its answer once there is one.
+ *
+ * One table rather than two, because an asked-but-unanswered question is the
+ * normal state of half this table and the interview is resumable (§2) — a church
+ * answers a few questions on a Tuesday and comes back on Thursday. Splitting
+ * questions from answers would mean joining them on every read to work out where
+ * the interview had got to.
+ *
+ * `why` is stored, not just displayed. A church rereading its own discovery
+ * session a year later is entitled to see what a question was for; without it
+ * the record is a list of answers to questions nobody remembers the point of.
+ *
+ * Answers are never deleted. The blueprint's stages cite these rows by id, and a
+ * deleted answer would leave a stage claiming to rest on something nobody can
+ * read — the "looks grounded" failure §7 is most concerned about.
+ */
+export const discoveryQuestions = pgTable(
+  'discovery_questions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id, { onDelete: 'restrict' }),
+    section: discoverySection('section').notNull(),
+    question: text('question').notNull(),
+    /** Why the AI asked. Shown with the question, and kept with the answer. */
+    why: text('why').notNull(),
+    answer: text('answer'),
+    answeredById: uuid('answered_by_id').references(
+      (): AnyPgColumn => people.id,
+      { onDelete: 'restrict' }
+    ),
+    answeredAt: timestamp('answered_at', { withTimezone: true }),
+    askedAt: timestamp('asked_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('discovery_church_idx').on(table.churchId, table.section),
+    /**
+     * All three or none. A row with an answer but no author is one nobody can be
+     * asked about later, and a blank answer with a timestamp reads as answered
+     * while telling a reader nothing.
+     */
+    check(
+      'discovery_answer_is_complete',
+      sql`(${table.answer} IS NULL AND ${table.answeredById} IS NULL AND ${table.answeredAt} IS NULL)
+          OR (btrim(${table.answer}) <> '' AND ${table.answeredById} IS NOT NULL AND ${table.answeredAt} IS NOT NULL)`
+    ),
+  ]
+)
+
 /* ──────────────────────── AI recommendations ──────────────────────── */
 
 /**
@@ -831,13 +890,19 @@ export const aiRecommendations = pgTable(
   },
   (table) => [
     index('ai_recommendations_church_idx').on(table.churchId),
-    check(
-      'recommendation_offers_an_option',
-      sql`array_length(${table.options}, 1) >= 1`
-    ),
+    /**
+     * `cardinality`, not `array_length`.
+     *
+     * `array_length('{}', 1)` returns NULL rather than 0, and a CHECK constraint
+     * passes on NULL — so the obvious `array_length(x, 1) >= 1` accepts exactly
+     * the empty array it was written to reject. Both of these were decorative
+     * until a script tried to insert past them. `cardinality` returns 0 for an
+     * empty array, so the comparison is a comparison.
+     */
+    check('recommendation_offers_an_option', sql`cardinality(${table.options}) >= 1`),
     check(
       'recommendation_cites_the_church',
-      sql`array_length(${table.citedAnswerIds}, 1) >= 1`
+      sql`cardinality(${table.citedAnswerIds}) >= 1`
     ),
     check(
       'human_judgment_is_not_blank',

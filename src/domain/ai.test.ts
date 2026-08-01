@@ -6,17 +6,24 @@ import {
   ANALYSIS_CONCERNS,
   type AiRecommendation,
   DISCOVERY_SECTIONS,
+  type DiscoveryAnswer,
+  type DiscoverySection,
   PROVENANCE,
   VERDICTS,
+  SEVERITIES,
   aiMayPerform,
   analysisMayModify,
+  blocksPublishing,
   danglingCitations,
+  discoveryProgress,
   inferenceWarning,
   isPolicyGrade,
   parseAuditEntry,
   parseChurchProfileEntry,
   parseCommunicationPlan,
   parseDiscoveryAnswer,
+  parseDiscoveryQuestion,
+  parseHealthFindingProposal,
   parseImportFinding,
   parsePathwayProposal,
   parseRecommendation,
@@ -543,5 +550,144 @@ describe('discovery', () => {
         answeredAt: '2026-07-26T00:00:00Z',
       }).ok
     ).toBe(false)
+  })
+})
+
+describe('asking a discovery question', () => {
+  it('requires the question to say why it is being asked', () => {
+    // A church being interviewed about its own polity is entitled to know what a
+    // question is for. Without it the interview reads as a form to complete, and
+    // the answers get worse.
+    expect(
+      parseDiscoveryQuestion({
+        section: 'membership_and_theology',
+        question: 'Does baptism gate membership?',
+        why: '   ',
+      }).ok
+    ).toBe(false)
+  })
+
+  it('accepts a question with its reason', () => {
+    expect(
+      parseDiscoveryQuestion({
+        section: 'membership_and_theology',
+        question: 'Does baptism gate membership?',
+        why: 'It changes whether membership can be decided in one conversation.',
+      }).ok
+    ).toBe(true)
+  })
+
+  it('has no id — an identifier a model invented joins to nothing', () => {
+    const parsed = parseDiscoveryQuestion({
+      section: 'discipleship',
+      question: 'q',
+      why: 'w',
+    })
+    expect(parsed.ok && 'id' in parsed.value).toBe(false)
+  })
+})
+
+describe('where a discovery interview has got to', () => {
+  const answer = (section: DiscoverySection, id: string): DiscoveryAnswer => ({
+    id,
+    section,
+    question: 'q',
+    answer: 'a',
+    answeredAt: new Date('2026-07-26T00:00:00Z'),
+  })
+
+  it('starts on the first section when nothing is answered', () => {
+    const progress = discoveryProgress([])
+    expect(progress.find((entry) => entry.current)?.section).toBe(
+      'church_and_context'
+    )
+    expect(progress.every((entry) => entry.answered === 0)).toBe(true)
+  })
+
+  it('moves to the first section with no answers, not the next one in order', () => {
+    // A church that answered something in section three and nothing in section
+    // two should be taken back to two, not forward.
+    const progress = discoveryProgress([
+      answer('church_and_context', 'a1'),
+      answer('membership_and_theology', 'a2'),
+    ])
+    expect(progress.find((entry) => entry.current)?.section).toBe(
+      'what_happens_now'
+    )
+  })
+
+  it('has no current section once every one has an answer', () => {
+    const every = DISCOVERY_SECTIONS.map((section, index) =>
+      answer(section, `a${index}`)
+    )
+    expect(discoveryProgress(every).some((entry) => entry.current)).toBe(false)
+  })
+
+  it('counts every answer in a section, not just the first', () => {
+    const progress = discoveryProgress([
+      answer('church_and_context', 'a1'),
+      answer('church_and_context', 'a2'),
+    ])
+    expect(
+      progress.find((entry) => entry.section === 'church_and_context')?.answered
+    ).toBe(2)
+  })
+})
+
+describe('a health finding on the church’s own draft', () => {
+  const finding = (overrides: Record<string, unknown> = {}) => ({
+    category: 'absent_stopping_rule',
+    severity: 'high',
+    evidence: '“Follow up until they respond.”',
+    why: 'Follow-up with no end ends whenever whoever is holding it gives up.',
+    options: ['Set a number of attempts', 'Set a date'],
+    humanJudgment: 'How long your church wants to keep reaching out.',
+    ...overrides,
+  })
+
+  it('requires evidence from the draft', () => {
+    // A finding a church cannot trace back to its own words is one they have no
+    // way to check.
+    expect(parseHealthFindingProposal(finding({ evidence: '' })).ok).toBe(false)
+  })
+
+  it('requires the church’s-judgment part', () => {
+    expect(
+      parseHealthFindingProposal(finding({ humanJudgment: '  ' })).ok
+    ).toBe(false)
+  })
+
+  it('requires at least one option, so a finding is never only a verdict', () => {
+    expect(parseHealthFindingProposal(finding({ options: [] })).ok).toBe(false)
+  })
+
+  it('refuses a category nobody has thought about', () => {
+    expect(
+      parseHealthFindingProposal(finding({ category: 'vibes' })).ok
+    ).toBe(false)
+  })
+
+  it('has no blocksPublishing field for the model to set', () => {
+    // Whether a finding stands between a church and publishing is a rule, not an
+    // opinion. A model that could set it would be a model that can block a
+    // church's pathway on its own reasoning.
+    const parsed = parseHealthFindingProposal(
+      finding({ blocksPublishing: false })
+    )
+    expect(parsed.ok && 'blocksPublishing' in parsed.value).toBe(false)
+  })
+})
+
+describe('what blocks publishing', () => {
+  it('is high severity and nothing else', () => {
+    expect(blocksPublishing('high')).toBe(true)
+    expect(blocksPublishing('medium')).toBe(false)
+    expect(blocksPublishing('low')).toBe(false)
+  })
+
+  it('covers every severity the schema allows', () => {
+    // So adding a severity fails here rather than defaulting to non-blocking,
+    // which is the direction that quietly lets a real problem through.
+    expect([...SEVERITIES]).toEqual(['low', 'medium', 'high'])
   })
 })
