@@ -11,9 +11,11 @@ import {
   type RestorationCaseView,
   type Viewer,
   buildCareTimeline,
+  canReadTier,
   viewRestorationCase,
   writableTiers,
 } from '@/domain/access'
+import { canCarryCase } from '@/domain/restoration'
 import {
   DIRECTION_LABELS,
   SYNC_CATEGORIES,
@@ -866,3 +868,96 @@ export const getSyncCategories = cache(async (): Promise<SyncCategoryRow[]> => {
 
 /** Re-exported so the screen can name the signed-in person without a second call. */
 export type { Viewer }
+
+/* ─────────────────── Opening and working restoration cases ─────────────────── */
+
+export type RestorationOptions = {
+  /** Whether this viewer reaches the tier at all. Everything else follows. */
+  isElder: boolean
+  /** Said plainly rather than as a bare refusal. */
+  refusal: string
+  /** Everybody, since a case can be about anyone. */
+  people: readonly { id: string; fullName: string }[]
+  /**
+   * Only people holding `restoration.be_assigned` — so the select offers exactly
+   * what `pairElders` would accept, rather than offering everybody and refusing
+   * on submit (§8.4).
+   */
+  elders: readonly { id: string; fullName: string; roleLabel: string }[]
+  /** Named when there are not two, because one elder cannot carry a case. */
+  elderNote: string
+}
+
+export const getRestorationOptions = cache(
+  async (): Promise<RestorationOptions> => {
+    const viewer = await getViewer()
+
+    if (!canReadTier(viewer, 'elders_only')) {
+      return {
+        isElder: false,
+        refusal:
+          'Restoration cases are elders-only. You can see that a case exists and how it ended, and nothing inside it.',
+        people: [],
+        elders: [],
+        elderNote: '',
+      }
+    }
+
+    const [peopleRows, roleRows] = await Promise.all([
+      db
+        .select({
+          id: schema.people.id,
+          firstName: schema.people.firstName,
+          lastName: schema.people.lastName,
+        })
+        .from(schema.people)
+        .where(eq(schema.people.churchId, viewer.churchId))
+        .orderBy(asc(schema.people.lastName), asc(schema.people.firstName)),
+      db
+        .select({
+          personId: schema.leaderRoles.personId,
+          role: schema.leaderRoles.role,
+        })
+        .from(schema.leaderRoles)
+        .where(eq(schema.leaderRoles.churchId, viewer.churchId)),
+    ])
+
+    const rolesByPerson = new Map<string, Role[]>()
+    for (const row of roleRows) {
+      const list = rolesByPerson.get(row.personId) ?? []
+      if (isRole(row.role)) list.push(row.role)
+      rolesByPerson.set(row.personId, list)
+    }
+
+    const elders = peopleRows
+      .filter((person) =>
+        canCarryCase({
+          personId: person.id,
+          roles: rolesByPerson.get(person.id) ?? [],
+        })
+      )
+      .map((person) => ({
+        id: person.id,
+        fullName: `${person.firstName} ${person.lastName}`,
+        roleLabel: (rolesByPerson.get(person.id) ?? [])
+          .map((role) => ROLE_LABELS[role])
+          .join(' · '),
+      }))
+
+    return {
+      isElder: true,
+      refusal: '',
+      people: peopleRows.map((person) => ({
+        id: person.id,
+        fullName: `${person.firstName} ${person.lastName}`,
+      })),
+      elders,
+      // The likely first-run state, and worth naming: one elder cannot carry a
+      // case, so two is the minimum before anything can be opened.
+      elderNote:
+        elders.length < 2
+          ? `A case needs two elders, and this church has ${elders.length === 0 ? 'nobody' : 'only one person'} who can carry one. Give somebody Pastor or elder in Setup first — the rule is two present, never one, and it protects the person as much as the church.`
+          : '',
+    }
+  }
+)
