@@ -1,5 +1,6 @@
 import { ActionForm } from '@/components/action-form'
 import { AppShell } from '@/components/app-shell'
+import { PlanningCenterImport } from '@/components/planning-center-import'
 import {
   getFoldLists,
   getIntegrationState,
@@ -11,7 +12,13 @@ import {
   getSyncCategories,
   getTierOverview,
 } from '@/data/records'
-import { NEVER_SYNC_CONTENT, neverSyncReason } from '@/domain/planning-center'
+import { getIntegrationView } from '@/data/planning-center'
+import {
+  FOLD_LISTS,
+  FOLD_LIST_LABELS,
+  NEVER_SYNC_CONTENT,
+  neverSyncReason,
+} from '@/domain/planning-center'
 import { ROLES, ROLE_LABELS } from '@/domain/roles'
 import { TIER_ORDER, tierName } from '@/domain/tiers'
 
@@ -22,6 +29,7 @@ import {
   revokeRole,
   setSyncCategory,
 } from './actions'
+import { mapList, resolveDuplicate } from './pc-actions'
 
 export const metadata = { title: 'Setup · Fold' }
 
@@ -43,7 +51,7 @@ const TIER_ACCENT = {
  * way this gets abused.
  */
 export default async function SetupPage() {
-  const [roles, leaders, exceptions, tiers, sync, lists, integration] =
+  const [roles, leaders, exceptions, tiers, sync, lists, integration, pcView] =
     await Promise.all([
       getRoleMatrix(),
       getLeaders(),
@@ -52,6 +60,7 @@ export default async function SetupPage() {
       getSyncCategories(),
       getFoldLists(),
       getIntegrationState(),
+      getIntegrationView(),
     ])
 
   return (
@@ -450,6 +459,191 @@ export default async function SetupPage() {
           >
             {integration.note}
           </p>
+
+          {/* ── Importing the directory ──
+              Placed above the category list because it is the thing a church
+              actually comes here to do; the categories describe the scope that
+              would apply, which is context for this rather than a task. */}
+          <div
+            className="flex flex-col gap-3"
+            style={{
+              background: 'var(--surface-card)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-md)',
+              padding: '16px 18px',
+            }}
+          >
+            <h3 style={{ fontSize: '1rem' }}>Import your directory</h3>
+            <p
+              className="max-w-[680px] text-[0.9375rem]"
+              style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}
+            >
+              Reads the people in Planning Center and shows exactly what would
+              change — who would be added, who is already here, and who Fold
+              cannot tell apart from somebody. Nothing is written until you press
+              the second button. Fold only ever reads: it never creates a person,
+              a field, or a list in Planning Center.
+            </p>
+            <p
+              className="max-w-[680px] text-[0.875rem]"
+              style={{ color: 'var(--text-muted)', textWrap: 'pretty' }}
+            >
+              {pcView.linkedCount === 0
+                ? `${pcView.peopleCount} ${pcView.peopleCount === 1 ? 'person is' : 'people are'} in Fold, none linked to Planning Center yet.`
+                : `${pcView.linkedCount} of ${pcView.peopleCount} people in Fold are linked to a Planning Center record, so a re-run will recognise them rather than adding a second copy.`}
+            </p>
+
+            <PlanningCenterImport
+              disabled={!pcView.configured || !pcView.gate.allowed}
+              disabledReason={
+                !pcView.gate.allowed
+                  ? pcView.gate.note
+                  : (pcView.configurationNote ?? null)
+              }
+            />
+          </div>
+
+          {/* ── Where Family and Guests land ── */}
+          <div
+            className="flex flex-col gap-3"
+            style={{
+              background: 'var(--surface-card)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-md)',
+              padding: '16px 18px',
+            }}
+          >
+            <h3 style={{ fontSize: '1rem' }}>Family and Guests</h3>
+            <p
+              className="max-w-[680px] text-[0.9375rem]"
+              style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}
+            >
+              An imported person arrives as a guest unless their Planning Center
+              membership value matches the one you map to Family. Membership is
+              the church&rsquo;s decision, so Fold will not conclude it from a
+              directory export. Run the preview once and it will tell you which
+              membership values Planning Center is actually using.
+            </p>
+            {FOLD_LISTS.map((list) => {
+              const mapping = pcView.listMappings[list]
+              return (
+                <div key={list} className="flex flex-col gap-2">
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <span className="font-semibold">
+                      {FOLD_LIST_LABELS[list]}
+                    </span>
+                    <span
+                      className="text-[0.8125rem]"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      {mapping.state === 'mapped'
+                        ? `maps to “${mapping.externalFieldId}”`
+                        : mapping.state === 'fold_only'
+                          ? `kept in Fold — ${mapping.reason}`
+                          : 'not mapped yet'}
+                    </span>
+                  </div>
+                  <ActionForm
+                    action={mapList}
+                    fields={{ list }}
+                    label="Map this list"
+                    disabled={!pcView.gate.allowed}
+                    disabledReason={
+                      pcView.gate.allowed ? null : pcView.gate.note
+                    }
+                  >
+                    <input
+                      name="externalFieldId"
+                      defaultValue={
+                        mapping.state === 'mapped' ? mapping.externalFieldId : ''
+                      }
+                      placeholder="The Planning Center membership value, e.g. Member"
+                      style={{
+                        font: 'inherit',
+                        fontSize: '0.875rem',
+                        maxWidth: 460,
+                        padding: '8px 11px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--border-default)',
+                        background: 'var(--surface-card)',
+                      }}
+                    />
+                  </ActionForm>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* ── Near matches waiting on a person ── */}
+          {pcView.openDuplicates.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <h3 style={{ fontSize: '1rem' }}>
+                {pcView.openDuplicates.length} possible{' '}
+                {pcView.openDuplicates.length === 1
+                  ? 'duplicate'
+                  : 'duplicates'}
+              </h3>
+              <p
+                className="max-w-[680px] text-[0.9375rem]"
+                style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}
+              >
+                Fold will not merge these and does not have a merge. Say what you
+                decided and the records are left as they are with your reason
+                attached.
+              </p>
+              {pcView.openDuplicates.map((duplicate) => (
+                <div
+                  key={duplicate.id}
+                  style={{
+                    background: 'var(--surface-card)',
+                    borderLeft: '3px solid var(--ofc-warning)',
+                    borderTop: '1px solid var(--border-subtle)',
+                    borderRight: '1px solid var(--border-subtle)',
+                    borderBottom: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '12px 16px',
+                  }}
+                >
+                  <p style={{ textWrap: 'pretty' }}>
+                    <strong>{duplicate.personName}</strong> and{' '}
+                    <strong>{duplicate.otherPersonName}</strong>
+                  </p>
+                  <p
+                    className="mt-1 text-[0.8125rem]"
+                    style={{ color: 'var(--text-muted)', textWrap: 'pretty' }}
+                  >
+                    {duplicate.matchedOn}
+                  </p>
+                  <div className="mt-3">
+                    <ActionForm
+                      action={resolveDuplicate}
+                      fields={{ duplicateId: duplicate.id }}
+                      label="Record what you decided"
+                      disabled={!pcView.gate.allowed}
+                      disabledReason={
+                        pcView.gate.allowed ? null : pcView.gate.note
+                      }
+                    >
+                      <input
+                        name="resolution"
+                        placeholder="e.g. Same person — kept the older record. Or: different people, cousins."
+                        style={{
+                          font: 'inherit',
+                          fontSize: '0.875rem',
+                          width: '100%',
+                          maxWidth: 560,
+                          padding: '8px 11px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border-default)',
+                          background: 'var(--surface-card)',
+                        }}
+                      />
+                    </ActionForm>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             {sync.map((category) => (
