@@ -677,6 +677,29 @@ export const integrationCredentials = pgTable(
     secretEncrypted: text('secret_encrypted').notNull(),
     /** The last four characters, so the stored token is recognisable. */
     secretHint: text('secret_hint').notNull(),
+    /**
+     * How this connection was made: `token` for a pasted Personal Access Token,
+     * `oauth` for "Sign in with Planning Center".
+     *
+     * Stored rather than inferred from which columns are filled. The screen says
+     * different things for the two — a pasted token shows an Application ID to
+     * recognise, an OAuth connection shows who authorised it and when it renews —
+     * and guessing from column emptiness would be one bug away from showing a
+     * church the wrong story about its own connection.
+     */
+    kind: text('kind').notNull().default('token'),
+    /**
+     * OAuth only. The refresh token, encrypted like the secret beside it.
+     *
+     * Planning Center issues a new refresh token every time one is used and
+     * invalidates the old one, so this column is rewritten on every refresh. Both
+     * halves have to be stored together or the connection dies in two hours with
+     * no way back except reconnecting by hand.
+     */
+    refreshEncrypted: text('refresh_encrypted'),
+    /** When the access token stops working. Null for a Personal Access Token,
+     * which does not expire. */
+    accessExpiresAt: timestamp('access_expires_at', { withTimezone: true }),
     connectedById: uuid('connected_by_id')
       .notNull()
       .references(() => people.id, { onDelete: 'restrict' }),
@@ -693,6 +716,16 @@ export const integrationCredentials = pgTable(
     check(
       'credential_secret_not_blank',
       sql`btrim(${table.secretEncrypted}) <> ''`
+    ),
+    check('credential_kind', sql`${table.kind} IN ('token', 'oauth')`),
+    /**
+     * An OAuth row carries both a refresh token and an expiry, or it is not an
+     * OAuth row. Half of one is a connection that will stop working in two hours
+     * and cannot be renewed — and it would look connected the whole time.
+     */
+    check(
+      'oauth_credential_is_complete',
+      sql`${table.kind} <> 'oauth' or (${table.refreshEncrypted} is not null and ${table.accessExpiresAt} is not null)`
     ),
   ]
 )

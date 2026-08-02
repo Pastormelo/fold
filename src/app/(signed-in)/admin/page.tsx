@@ -38,6 +38,20 @@ import {
 
 export const metadata = { title: 'Setup · Fold' }
 
+/** Planning Center's own blue, so the button reads as theirs rather than ours. */
+const PC_BUTTON = {
+  display: 'inline-block',
+  font: 'inherit',
+  fontSize: '0.9375rem',
+  fontWeight: 600,
+  textDecoration: 'none',
+  padding: '11px 18px',
+  borderRadius: 'var(--radius-sm)',
+  border: '1px solid #2f6fed',
+  background: '#2f6fed',
+  color: '#fff',
+} as const
+
 const CREDENTIAL_INPUT = {
   font: 'inherit',
   fontSize: '0.875rem',
@@ -67,7 +81,21 @@ const TIER_ACCENT = {
  * administrator raising their own clearance is both legitimate and the obvious
  * way this gets abused.
  */
-export default async function SetupPage() {
+/**
+ * `searchParams` is read for one reason: the Planning Center callback is a Route
+ * Handler on another path, so the only way it can report back is a redirect
+ * carrying the outcome. Rendering it here is what turns "the browser came back
+ * from Planning Center" into a sentence somebody can act on.
+ */
+export default async function SetupPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const params = await searchParams
+  const pcError = typeof params.pc_error === 'string' ? params.pc_error : null
+  const pcConnected = params.pc_connected === '1'
+
   const [roles, leaders, exceptions, tiers, sync, lists, integration, pcView] =
     await Promise.all([
       getRoleMatrix(),
@@ -494,6 +522,34 @@ export default async function SetupPage() {
           >
             <h3 style={{ fontSize: '1rem' }}>Connection</h3>
 
+            {/* What came back from Planning Center, if the browser just did. */}
+            {pcConnected && (
+              <p
+                className="max-w-[680px] text-[0.9375rem]"
+                style={{
+                  borderLeft: '3px solid var(--ofc-success)',
+                  paddingLeft: 12,
+                  textWrap: 'pretty',
+                }}
+              >
+                Connected. Press &ldquo;See what would change&rdquo; below to
+                find out what importing your directory would do — nothing is
+                written until you say so.
+              </p>
+            )}
+            {pcError && (
+              <p
+                className="max-w-[680px] text-[0.9375rem]"
+                style={{
+                  borderLeft: '3px solid var(--ofc-danger)',
+                  paddingLeft: 12,
+                  textWrap: 'pretty',
+                }}
+              >
+                {pcError}
+              </p>
+            )}
+
             {pcView.credential.state === 'environment' && (
               <p
                 className="max-w-[680px] text-[0.9375rem]"
@@ -545,66 +601,192 @@ export default async function SetupPage() {
               </p>
             )}
 
-            {pcView.credential.state === 'none' && (
-              <p
-                className="max-w-[680px] text-[0.9375rem]"
-                style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}
-              >
-                Create a <strong>Personal Access Token</strong> at{' '}
-                api.planningcenteronline.com/oauth/applications — scroll to
-                Personal Access Tokens and make one. Planning Center gives you an
-                Application ID and a Secret; paste both below. The token needs
-                access to People.
-              </p>
+            {/* ── Connected by signing in ── */}
+            {pcView.credential.state === 'oauth' && (
+              <>
+                <p
+                  className="max-w-[680px] text-[0.9375rem]"
+                  style={{ textWrap: 'pretty' }}
+                >
+                  Connected to Planning Center, authorised by{' '}
+                  <strong>{pcView.credential.connectedByName}</strong>. There is
+                  no credential for you to hold or rotate — Fold renews its own
+                  access.
+                </p>
+                {pcView.credential.needsReauthorising && (
+                  <p
+                    className="max-w-[680px] text-[0.9375rem]"
+                    style={{
+                      borderLeft: '3px solid var(--ofc-warning)',
+                      paddingLeft: 12,
+                      textWrap: 'pretty',
+                    }}
+                  >
+                    Access has lapsed and could not be renewed, which usually
+                    means Fold&rsquo;s access was revoked in Planning Center.
+                    Sign in again below.
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-3">
+                  <a href="/auth/planning-center/start" style={PC_BUTTON}>
+                    {pcView.credential.needsReauthorising
+                      ? 'Sign in to Planning Center again'
+                      : 'Reconnect'}
+                  </a>
+                  <ActionForm
+                    action={disconnectPlanningCenter}
+                    label="Disconnect"
+                    disabled={!pcView.gate.allowed}
+                    disabledReason={
+                      pcView.gate.allowed ? null : pcView.gate.note
+                    }
+                  />
+                </div>
+              </>
             )}
 
-            {pcView.credential.state !== 'environment' && (
-              <ActionForm
-                action={connectPlanningCenter}
-                label={
-                  pcView.credential.state === 'stored'
-                    ? 'Replace the token'
-                    : 'Connect Planning Center'
-                }
-                variant={
-                  pcView.credential.state === 'stored' ? 'secondary' : 'primary'
-                }
-                disabled={!pcView.gate.allowed}
-                disabledReason={pcView.gate.allowed ? null : pcView.gate.note}
-              >
-                <input
-                  name="appId"
-                  defaultValue={
-                    pcView.credential.state === 'stored' ||
-                    pcView.credential.state === 'unreadable'
-                      ? pcView.credential.appId
-                      : ''
+            {/* ── Nothing connected yet ── */}
+            {pcView.credential.state === 'none' && (
+              <>
+                {pcView.credential.oauthAvailable ? (
+                  <>
+                    <p
+                      className="max-w-[680px] text-[0.9375rem]"
+                      style={{
+                        color: 'var(--text-secondary)',
+                        textWrap: 'pretty',
+                      }}
+                    >
+                      Press the button, sign in to Planning Center, and approve
+                      the request. Fold asks for read access to People and
+                      nothing else — you will see exactly that on their screen.
+                      There is no key to copy and nothing to paste.
+                    </p>
+                    <div>
+                      <a
+                        href="/auth/planning-center/start"
+                        style={{
+                          ...PC_BUTTON,
+                          opacity: pcView.gate.allowed ? 1 : 0.55,
+                        }}
+                        aria-disabled={!pcView.gate.allowed}
+                      >
+                        Sign in with Planning Center
+                      </a>
+                    </div>
+                    {!pcView.gate.allowed && (
+                      <p
+                        className="text-[0.8125rem]"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
+                        {pcView.gate.note}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p
+                    className="max-w-[680px] text-[0.9375rem]"
+                    style={{
+                      color: 'var(--text-secondary)',
+                      textWrap: 'pretty',
+                    }}
+                  >
+                    Signing in is not available on this deployment — no Planning
+                    Center application is registered for it, which is a one-time
+                    setup by whoever runs Fold rather than anything you can do
+                    here. In the meantime you can connect with a{' '}
+                    <strong>Personal Access Token</strong>: make one at
+                    api.planningcenteronline.com/oauth/applications, under
+                    Personal Access Tokens, and paste both halves below.
+                  </p>
+                )}
+              </>
+            )}
+
+            {/*
+                The token form, kept but demoted.
+                When signing in is available this is a disclosure rather than a
+                second competing control — two ways to connect side by side asks a
+                church to make a decision it has no basis for. It stays reachable
+                because it is the only route on a deployment with no registered
+                application, and because it is genuinely easier for a developer
+                testing the API.
+            */}
+            {pcView.credential.state !== 'environment' &&
+              pcView.credential.state !== 'oauth' && (
+                <details
+                  open={
+                    pcView.credential.state !== 'none' ||
+                    !pcView.credential.oauthAvailable
                   }
-                  placeholder="Application ID"
-                  autoComplete="off"
-                  style={CREDENTIAL_INPUT}
-                />
-                {/* type=password so it is not shoulder-read or auto-saved as a
+                >
+                  <summary
+                    className="text-[0.875rem]"
+                    style={{
+                      cursor: 'pointer',
+                      color: 'var(--text-secondary)',
+                    }}
+                  >
+                    Connect with a Personal Access Token instead
+                  </summary>
+                  <div className="mt-3">
+                    <ActionForm
+                      action={connectPlanningCenter}
+                      label={
+                        pcView.credential.state === 'stored'
+                          ? 'Replace the token'
+                          : 'Connect Planning Center'
+                      }
+                      variant={
+                        pcView.credential.state === 'stored'
+                          ? 'secondary'
+                          : 'primary'
+                      }
+                      disabled={!pcView.gate.allowed}
+                      disabledReason={
+                        pcView.gate.allowed ? null : pcView.gate.note
+                      }
+                    >
+                      <input
+                        name="appId"
+                        defaultValue={
+                          pcView.credential.state === 'stored' ||
+                          pcView.credential.state === 'unreadable'
+                            ? pcView.credential.appId
+                            : ''
+                        }
+                        placeholder="Application ID"
+                        autoComplete="off"
+                        style={CREDENTIAL_INPUT}
+                      />
+                      {/* type=password so it is not shoulder-read or auto-saved as a
                     plain field. It is a token, not a password, but every
                     browser affordance for one is the right one here. */}
-                <input
-                  name="secret"
-                  type="password"
-                  placeholder="Secret"
-                  autoComplete="off"
-                  style={CREDENTIAL_INPUT}
-                />
-              </ActionForm>
-            )}
+                      <input
+                        name="secret"
+                        type="password"
+                        placeholder="Secret"
+                        autoComplete="off"
+                        style={CREDENTIAL_INPUT}
+                      />
+                    </ActionForm>
+                  </div>
+                </details>
+              )}
 
-            <p
-              className="max-w-[680px] text-[0.8125rem]"
-              style={{ color: 'var(--text-muted)', textWrap: 'pretty' }}
-            >
-              The token is checked against Planning Center before it is saved, so
-              &ldquo;connected&rdquo; here means it actually authenticated and
-              could read People — not merely that something was typed.
-            </p>
+            {(pcView.credential.state === 'none' ||
+              pcView.credential.state === 'stored' ||
+              pcView.credential.state === 'unreadable') && (
+              <p
+                className="max-w-[680px] text-[0.8125rem]"
+                style={{ color: 'var(--text-muted)', textWrap: 'pretty' }}
+              >
+                A pasted token is checked against Planning Center before it is
+                saved, so &ldquo;connected&rdquo; here means it actually
+                authenticated and could read People — not merely that something
+                was typed.
+              </p>
+            )}
 
             {pcView.credential.state === 'stored' && (
               <ActionForm
@@ -636,9 +818,9 @@ export default async function SetupPage() {
             >
               Reads the people in Planning Center and shows exactly what would
               change — who would be added, who is already here, and who Fold
-              cannot tell apart from somebody. Nothing is written until you press
-              the second button. Fold only ever reads: it never creates a person,
-              a field, or a list in Planning Center.
+              cannot tell apart from somebody. Nothing is written until you
+              press the second button. Fold only ever reads: it never creates a
+              person, a field, or a list in Planning Center.
             </p>
             <p
               className="max-w-[680px] text-[0.875rem]"
@@ -711,7 +893,9 @@ export default async function SetupPage() {
                     <input
                       name="externalFieldId"
                       defaultValue={
-                        mapping.state === 'mapped' ? mapping.externalFieldId : ''
+                        mapping.state === 'mapped'
+                          ? mapping.externalFieldId
+                          : ''
                       }
                       placeholder="The Planning Center membership value, e.g. Member"
                       style={{
@@ -743,9 +927,9 @@ export default async function SetupPage() {
                 className="max-w-[680px] text-[0.9375rem]"
                 style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}
               >
-                Fold will not merge these and does not have a merge. Say what you
-                decided and the records are left as they are with your reason
-                attached.
+                Fold will not merge these and does not have a merge. Say what
+                you decided and the records are left as they are with your
+                reason attached.
               </p>
               {pcView.openDuplicates.map((duplicate) => (
                 <div
