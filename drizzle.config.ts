@@ -10,12 +10,40 @@ import { defineConfig } from 'drizzle-kit'
  */
 config({ path: ['.env.local', '.env'] })
 
+/**
+ * Migrations may connect as a different role than the app does.
+ *
+ * `fold_app` holds every privilege on every table, but ALTER TABLE requires
+ * *ownership* rather than privileges, and `postgres` owns the 22 tables created by
+ * pasting migrations 0000–0007 into the Supabase SQL editor. So a migration that
+ * alters one of those fails with `42501: must be owner of table …` — and
+ * drizzle-kit swallows it: no message, nothing recorded, exit 1. A migration
+ * appears to run and silently does not, which is the worst way for a schema change
+ * to fail.
+ *
+ * Two ways out, and this supports both:
+ *
+ * 1. Hand ownership to `fold_app` — `drizzle/0012a_hand_over_table_ownership.sql`,
+ *    pasted into the SQL editor as `postgres`. Then `DATABASE_URL` alone is enough
+ *    and nothing else changes.
+ * 2. Set `MIGRATION_DATABASE_URL` to a connection string for a role that owns the
+ *    tables (Supabase's `postgres` user, from Settings → Database). The app keeps
+ *    connecting as `fold_app`; only this command uses the privileged role. This is
+ *    the ordinary shape — migrations run privileged, the application does not — and
+ *    it leaves table ownership, and therefore who bypasses row-level security,
+ *    exactly as it is.
+ *
+ * The app never reads this variable: `src/db/client.ts` uses `DATABASE_URL` only,
+ * so a privileged string here cannot leak into a request path.
+ */
+const url = process.env.MIGRATION_DATABASE_URL ?? process.env.DATABASE_URL
+
 export default defineConfig({
   schema: './src/db/schema.ts',
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    url: url!,
     /** Supabase requires TLS. */
     ssl: 'require',
   },
