@@ -1,5 +1,5 @@
 import { ActionForm } from '@/components/action-form'
-import { AppShell } from '@/components/app-shell'
+import { PageShell } from '@/components/page-shell'
 import { getMilestonesPage } from '@/data/milestones'
 import { MILESTONE_KINDS, MILESTONE_LABELS } from '@/domain/milestones'
 
@@ -35,7 +35,7 @@ export default async function MilestonesPage() {
   const page = await getMilestonesPage()
 
   return (
-    <AppShell
+    <PageShell
       eyebrow={
         page.totalInWindow === 0
           ? 'Next thirty days'
@@ -177,6 +177,6 @@ export default async function MilestonesPage() {
           )}
         </section>
       </div>
-    </AppShell>
+    </PageShell>
   )
 }

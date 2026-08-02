@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useLinkStatus } from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 
@@ -110,6 +111,10 @@ export function Rail({
                 {/* Never a zero — a badge reading 0 is noise pretending to be
                     information. */}
                 {badge !== undefined && badge > 0 && <Badge count={badge} />}
+                {/* Marks the item you pressed while its page loads. Has to be a
+                    child of the Link: `useLinkStatus` reads the status of the
+                    Link it is rendered inside. */}
+                <Pending />
               </Link>
             )
           })}
@@ -151,6 +156,7 @@ export function Rail({
               {badge !== undefined && badge > 0 && (
                 <Badge count={badge} small />
               )}
+              <Pending />
             </Link>
           )
         })}
@@ -216,6 +222,24 @@ export function Rail({
       )}
     </>
   )
+}
+
+/**
+ * Sets `data-pending` on the enclosing rail link while its page is loading.
+ *
+ * `useLinkStatus` reports the pending state of the `<Link>` this is rendered
+ * inside, so it must be a child of that Link rather than a sibling. It renders no
+ * box of its own — the styling hangs off the attribute in `globals.css`, because
+ * an element that appears mid-navigation would shift the label it sits beside.
+ *
+ * Next's own guidance is that route-level `loading.tsx` and prefetching come
+ * first, and both are now in place; this covers the gap they cannot, which is the
+ * moment between the click and the boundary appearing.
+ */
+function Pending() {
+  const { pending } = useLinkStatus()
+  if (!pending) return null
+  return <span aria-hidden="true" data-rail-pending="true" hidden />
 }
 
 function Badge({ count, small }: { count: number; small?: boolean }) {

@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 
 import type { ImportPlan } from '@/domain/pc-import'
-import { previewImport, runImport } from '@/app/admin/pc-actions'
+import { previewImport, runImport } from '@/app/(signed-in)/admin/pc-actions'
 
 /**
  * The import, in two deliberate steps.

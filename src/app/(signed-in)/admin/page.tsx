@@ -1,5 +1,5 @@
 import { ActionForm } from '@/components/action-form'
-import { AppShell } from '@/components/app-shell'
+import { PageShell } from '@/components/page-shell'
 import { PlanningCenterImport } from '@/components/planning-center-import'
 import {
   getFoldLists,
@@ -81,7 +81,7 @@ export default async function SetupPage() {
     ])
 
   return (
-    <AppShell
+    <PageShell
       eyebrow={`${leaders.length} ${leaders.length === 1 ? 'leader' : 'leaders'}`}
       title="Setup"
     >
@@ -919,6 +919,6 @@ export default async function SetupPage() {
           </div>
         </section>
       </div>
-    </AppShell>
+    </PageShell>
   )
 }

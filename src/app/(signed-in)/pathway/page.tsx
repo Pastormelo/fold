@@ -1,5 +1,5 @@
 import { ActionForm } from '@/components/action-form'
-import { AppShell } from '@/components/app-shell'
+import { PageShell } from '@/components/page-shell'
 import { PathwayAi } from '@/components/pathway-ai'
 import { getAiAudit, getDiscovery, getRecommendations } from '@/data/ai'
 import { getPathwayOverview, getPathwayVersions } from '@/data/pathway'
@@ -90,7 +90,7 @@ export default async function PathwayPage() {
     ])
 
     return (
-      <AppShell eyebrow="Nothing published" title="Pathway">
+      <PageShell eyebrow="Nothing published" title="Pathway">
         <div className="flex flex-col gap-9">
           <div className="flex max-w-[680px] flex-col gap-4">
             <p style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}>
@@ -199,7 +199,7 @@ export default async function PathwayPage() {
             </ol>
           </section>
         </div>
-      </AppShell>
+      </PageShell>
     )
   }
 
@@ -214,7 +214,7 @@ export default async function PathwayPage() {
   const { diff, readiness } = overview
 
   return (
-    <AppShell
+    <PageShell
       eyebrow={`Version ${overview.versionNumber} · ${overview.stateLabel}`}
       title={overview.internalName || 'Pathway'}
     >
@@ -833,7 +833,7 @@ export default async function PathwayPage() {
           </section>
         )}
       </div>
-    </AppShell>
+    </PageShell>
   )
 }
 

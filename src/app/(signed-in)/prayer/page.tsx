@@ -1,5 +1,5 @@
 import { ActionForm } from '@/components/action-form'
-import { AppShell } from '@/components/app-shell'
+import { PageShell } from '@/components/page-shell'
 import { getPrayerPage } from '@/data/prayer'
 
 import {
@@ -41,7 +41,7 @@ export default async function PrayerPage() {
   const page = await getPrayerPage()
 
   return (
-    <AppShell
+    <PageShell
       eyebrow={
         page.rows.length === 0
           ? 'Nothing yet'
@@ -245,6 +245,6 @@ export default async function PrayerPage() {
           )}
         </section>
       </div>
-    </AppShell>
+    </PageShell>
   )
 }

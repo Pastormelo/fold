@@ -10,7 +10,7 @@ import {
   runHealthCheck,
   runReview,
   summariseProfile,
-} from '@/app/pathway/ai-actions'
+} from '@/app/(signed-in)/pathway/ai-actions'
 
 /**
  * The four AI parts of the Pathway builder — Discovery, Blueprint, Health check,

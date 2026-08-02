@@ -1,5 +1,5 @@
 import { ActionForm } from '@/components/action-form'
-import { AppShell } from '@/components/app-shell'
+import { PageShell } from '@/components/page-shell'
 import {
   getRestorationCases,
   getRestorationOptions,
@@ -46,7 +46,7 @@ export default async function ConfidentialPage() {
   ])
 
   return (
-    <AppShell
+    <PageShell
       eyebrow={`${cases.length} ${cases.length === 1 ? 'case' : 'cases'}`}
       title="Confidential"
     >
@@ -492,6 +492,6 @@ export default async function ConfidentialPage() {
           </p>
         </section>
       </div>
-    </AppShell>
+    </PageShell>
   )
 }

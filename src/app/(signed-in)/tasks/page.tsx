@@ -1,4 +1,4 @@
-import { AppShell } from '@/components/app-shell'
+import { PageShell } from '@/components/page-shell'
 import { getTasksPage } from '@/data/tasks'
 
 export const metadata = { title: 'Tasks · Fold' }
@@ -22,7 +22,7 @@ export default async function TasksPage() {
   const page = await getTasksPage()
 
   return (
-    <AppShell
+    <PageShell
       eyebrow={
         page.rows.length === 0
           ? 'Nothing owed'
@@ -113,6 +113,6 @@ export default async function TasksPage() {
           </p>
         )}
       </div>
-    </AppShell>
+    </PageShell>
   )
 }

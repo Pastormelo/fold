@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { ActionForm } from '@/components/action-form'
-import { AppShell } from '@/components/app-shell'
+import { PageShell } from '@/components/page-shell'
 import { CareTimeline } from '@/components/care-timeline'
 import { getDirectoryOptions } from '@/data/admin'
 import { getPersonRecord } from '@/data/records'
@@ -28,7 +28,7 @@ export default async function PersonPage(
   if (!person) notFound()
 
   return (
-    <AppShell eyebrow={person.since} title={person.fullName}>
+    <PageShell eyebrow={person.since} title={person.fullName}>
       <div className="flex flex-col gap-6">
         <Link
           href="/people"
@@ -208,6 +208,6 @@ export default async function PersonPage(
           </div>
         </section>
       </div>
-    </AppShell>
+    </PageShell>
   )
 }

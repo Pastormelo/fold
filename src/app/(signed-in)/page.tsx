@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-import { AppShell } from '@/components/app-shell'
+import { PageShell } from '@/components/page-shell'
 import { getOverview } from '@/data/overview'
 
 const STANDING_COLOUR = {
@@ -22,7 +22,7 @@ export default async function OverviewPage() {
   const overview = await getOverview()
 
   return (
-    <AppShell eyebrow={overview.today} title="Care across the church">
+    <PageShell eyebrow={overview.today} title="Care across the church">
       <div className="flex flex-col gap-6">
         {/* ── The four figures ── */}
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -340,6 +340,6 @@ export default async function OverviewPage() {
           </section>
         </div>
       </div>
-    </AppShell>
+    </PageShell>
   )
 }

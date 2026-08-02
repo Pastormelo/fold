@@ -1,5 +1,5 @@
 import { ActionForm } from '@/components/action-form'
-import { AppShell } from '@/components/app-shell'
+import { PageShell } from '@/components/page-shell'
 import { getGuestsPage } from '@/data/guests'
 
 import { exitPathway, placeGuest } from './actions'
@@ -28,7 +28,7 @@ export default async function GuestsPage() {
   const page = await getGuestsPage()
 
   return (
-    <AppShell
+    <PageShell
       eyebrow={
         page.rows.length === 0
           ? 'Nobody yet'
@@ -226,6 +226,6 @@ export default async function GuestsPage() {
           )}
         </section>
       </div>
-    </AppShell>
+    </PageShell>
   )
 }

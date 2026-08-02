@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 import { ActionForm } from '@/components/action-form'
-import { AppShell } from '@/components/app-shell'
+import { PageShell } from '@/components/page-shell'
 import { getDirectoryOptions } from '@/data/admin'
 import { getUnfoldedMembers, listPeople } from '@/data/records'
 
@@ -34,7 +34,7 @@ export default async function FamilyPage() {
   const unfoldedIds = new Set(unfolded.map((m) => m.id))
 
   return (
-    <AppShell
+    <PageShell
       eyebrow={`${people.length} ${people.length === 1 ? 'person' : 'people'}`}
       title="Family"
     >
@@ -294,6 +294,6 @@ export default async function FamilyPage() {
           )}
         </section>
       </div>
-    </AppShell>
+    </PageShell>
   )
 }

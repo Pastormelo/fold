@@ -1,4 +1,4 @@
-import { AppShell } from '@/components/app-shell'
+import { PageShell } from '@/components/page-shell'
 import { getReportPage } from '@/data/reports'
 
 export const metadata = { title: 'Reports · Fold' }
@@ -18,7 +18,7 @@ export default async function ReportsPage() {
 
   if (!page.gate.allowed) {
     return (
-      <AppShell eyebrow="Not available to you" title="Reports">
+      <PageShell eyebrow="Not available to you" title="Reports">
         <p
           style={{
             color: 'var(--text-secondary)',
@@ -28,12 +28,12 @@ export default async function ReportsPage() {
         >
           {page.gate.note}
         </p>
-      </AppShell>
+      </PageShell>
     )
   }
 
   return (
-    <AppShell eyebrow={page.asOf} title="Shepherding report">
+    <PageShell eyebrow={page.asOf} title="Shepherding report">
       <div className="flex flex-col gap-9">
         <p
           style={{
@@ -238,6 +238,6 @@ export default async function ReportsPage() {
           </p>
         </section>
       </div>
-    </AppShell>
+    </PageShell>
   )
 }

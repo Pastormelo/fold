@@ -1,5 +1,5 @@
 import { ActionForm } from '@/components/action-form'
-import { AppShell } from '@/components/app-shell'
+import { PageShell } from '@/components/page-shell'
 import { getNotesPage } from '@/data/notes'
 
 import { logCareNote } from './actions'
@@ -31,7 +31,7 @@ export default async function NotesPage() {
   const page = await getNotesPage()
 
   return (
-    <AppShell
+    <PageShell
       eyebrow={
         page.hiddenCount > 0
           ? `${page.visibleCount} of ${page.visibleCount + page.hiddenCount} readable`
@@ -250,6 +250,6 @@ export default async function NotesPage() {
           )}
         </section>
       </div>
-    </AppShell>
+    </PageShell>
   )
 }

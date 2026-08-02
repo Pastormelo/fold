@@ -13,6 +13,14 @@ import { Rail } from './rail'
  * The frame every signed-in screen sits in — the rail, the top bar, and the
  * scrolling body. From `Fold Web.dc.html`.
  *
+ * Rendered once, by `(signed-in)/layout.tsx`, rather than by each page. That is
+ * the difference between a click that feels instant and one that appears to hang:
+ * a layout is not re-rendered on navigation, so the rail stays on screen and the
+ * viewer lookup and badge counts do not run again. When this was inside every
+ * page, every navigation re-queried both before anything could change, and the
+ * `loading.tsx` boundary had nowhere to sit that would not also blank the
+ * navigation.
+ *
  * The top bar is search, the quiet-window pill, and Log care. I had built a
  * header showing the viewer's name and a sign-out button instead, which put
  * identity in the wrong place twice and left no way to log care from anywhere but
@@ -23,19 +31,7 @@ import { Rail } from './rail'
  * only what the rail needs. The viewer object never crosses into a Client
  * Component.
  */
-export async function AppShell({
-  title,
-  eyebrow,
-  action,
-  children,
-}: {
-  title: string
-  /** The small tracked-uppercase line above the title. */
-  eyebrow?: string
-  /** Optional right-aligned control beside the title, e.g. "Reassign people". */
-  action?: React.ReactNode
-  children: React.ReactNode
-}) {
+export async function AppFrame({ children }: { children: React.ReactNode }) {
   const [viewer, badges] = await Promise.all([
     getViewerSummary(),
     getRailBadges(),
@@ -182,23 +178,7 @@ export async function AppShell({
             background: 'var(--surface-page)',
           }}
         >
-          <div style={{ maxWidth: 1240 }}>
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                {eyebrow && <p className="eyebrow">{eyebrow}</p>}
-                <h1
-                  style={{
-                    fontSize: 'clamp(1.75rem, 1.3rem + 1.6vw, 2rem)',
-                    margin: eyebrow ? '8px 0 0' : 0,
-                  }}
-                >
-                  {title}
-                </h1>
-              </div>
-              {action}
-            </div>
-            <div style={{ marginTop: 26 }}>{children}</div>
-          </div>
+          <div style={{ maxWidth: 1240 }}>{children}</div>
         </main>
       </div>
     </div>

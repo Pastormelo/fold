@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 import { ActionForm } from '@/components/action-form'
-import { AppShell } from '@/components/app-shell'
+import { PageShell } from '@/components/page-shell'
 import { getJourneyWorkspace } from '@/data/journeys'
 
 import { closeJourney, recordJourneyStep, startJourney } from './actions'
@@ -33,7 +33,7 @@ export default async function JourneysPage() {
   const workspace = await getJourneyWorkspace()
 
   return (
-    <AppShell
+    <PageShell
       eyebrow={
         workspace.overdueCount > 0
           ? `${workspace.overdueCount} overdue`
@@ -375,6 +375,6 @@ export default async function JourneysPage() {
           </div>
         </section>
       </div>
-    </AppShell>
+    </PageShell>
   )
 }
