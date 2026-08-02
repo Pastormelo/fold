@@ -71,6 +71,24 @@ ALTER TYPE public.verdict_kind OWNER TO fold_app;
 
 -- No sequences need transferring: every key in this schema is a uuid.
 
+-- ── Two CHECK constraints that never checked anything ──
+--
+-- Was migration 0011, folded in here because it alters a postgres-owned table and
+-- so could never be applied by `npm run db:migrate` — leaving it queued blocked
+-- every migration behind it. Run as postgres, these work.
+--
+-- `array_length('{}', 1)` returns NULL rather than 0, and a CHECK passes on NULL,
+-- so both of these accepted exactly the empty array they were written to reject.
+-- `cardinality` returns 0 for an empty array, so the comparison is a comparison.
+-- The application could never write such a row anyway — the domain parser refuses
+-- an option-less or citation-less recommendation first — but the second lock was
+-- not locked.
+
+ALTER TABLE public.ai_recommendations DROP CONSTRAINT IF EXISTS recommendation_offers_an_option;
+ALTER TABLE public.ai_recommendations DROP CONSTRAINT IF EXISTS recommendation_cites_the_church;
+ALTER TABLE public.ai_recommendations ADD CONSTRAINT recommendation_offers_an_option CHECK (cardinality(options) >= 1);
+ALTER TABLE public.ai_recommendations ADD CONSTRAINT recommendation_cites_the_church CHECK (cardinality(cited_answer_ids) >= 1);
+
 -- Then check. This should come back empty:
 --
 --   SELECT c.relname, pg_get_userbyid(c.relowner) AS owner
@@ -79,3 +97,4 @@ ALTER TYPE public.verdict_kind OWNER TO fold_app;
 --     AND pg_get_userbyid(c.relowner) <> 'fold_app';
 --
 -- Then, back in a terminal:  npm run db:migrate
+-- (which applies any new tables; the constraint work above is already done here)

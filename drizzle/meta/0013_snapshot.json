@@ -1,6 +1,6 @@
 {
-  "id": "21cb6c9d-cd72-44b3-a9b6-3208ac7ba88a",
-  "prevId": "f6a1ccbf-a86f-496f-b698-98bbd2c3cd08",
+  "id": "1ad836db-9d1c-4bb5-aa02-f226b6eb6774",
+  "prevId": "21cb6c9d-cd72-44b3-a9b6-3208ac7ba88a",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1255,6 +1255,127 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.integration_credentials": {
+      "name": "integration_credentials",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "church_id": {
+          "name": "church_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "app_id": {
+          "name": "app_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "secret_encrypted": {
+          "name": "secret_encrypted",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "secret_hint": {
+          "name": "secret_hint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "connected_by_id": {
+          "name": "connected_by_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "connected_at": {
+          "name": "connected_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "integration_credentials_provider_idx": {
+          "name": "integration_credentials_provider_idx",
+          "columns": [
+            {
+              "expression": "church_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "provider",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "integration_credentials_church_id_churches_id_fk": {
+          "name": "integration_credentials_church_id_churches_id_fk",
+          "tableFrom": "integration_credentials",
+          "tableTo": "churches",
+          "columnsFrom": [
+            "church_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "integration_credentials_connected_by_id_people_id_fk": {
+          "name": "integration_credentials_connected_by_id_people_id_fk",
+          "tableFrom": "integration_credentials",
+          "tableTo": "people",
+          "columnsFrom": [
+            "connected_by_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "credential_app_id_not_blank": {
+          "name": "credential_app_id_not_blank",
+          "value": "btrim(\"integration_credentials\".\"app_id\") <> ''"
+        },
+        "credential_secret_not_blank": {
+          "name": "credential_secret_not_blank",
+          "value": "btrim(\"integration_credentials\".\"secret_encrypted\") <> ''"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.integration_mappings": {

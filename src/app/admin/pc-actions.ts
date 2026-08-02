@@ -19,8 +19,13 @@ import { permissionCheck } from '@/domain/roles'
 import { db, schema } from '@/db/client'
 import { existingPeopleFor, listMappingsFor } from '@/data/planning-center'
 import { getWriter } from '@/data/viewer'
-import { PC_NOT_CONFIGURED, isPlanningCenterConfigured } from '@/planning-center/config'
-import { fetchPeople } from '@/planning-center/client'
+import { PC_NOT_CONFIGURED } from '@/planning-center/config'
+import { fetchPeople, verifyCredentials } from '@/planning-center/client'
+import {
+  PLANNING_CENTER,
+  resolveCredentials,
+} from '@/planning-center/credentials'
+import { encryptSecret, secretHint } from '@/planning-center/secrets'
 
 /**
  * Importing a directory from Planning Center.
@@ -51,16 +56,19 @@ export type PreviewOutcome =
 
 /** The gate and the credentials check, in the order the reader needs them. */
 async function ready(): Promise<
-  | { ok: true; viewer: Awaited<ReturnType<typeof getWriter>> }
+  | {
+      ok: true
+      viewer: Awaited<ReturnType<typeof getWriter>>
+      credentials: NonNullable<Awaited<ReturnType<typeof resolveCredentials>>>
+    }
   | { ok: false; message: string }
 > {
   const viewer = await getWriter()
   const gate = permissionCheck(viewer, 'admin.manage_integrations')
   if (!gate.allowed) return { ok: false, message: gate.note }
-  if (!isPlanningCenterConfigured()) {
-    return { ok: false, message: PC_NOT_CONFIGURED }
-  }
-  return { ok: true, viewer }
+  const credentials = await resolveCredentials(viewer.churchId)
+  if (credentials === null) return { ok: false, message: PC_NOT_CONFIGURED }
+  return { ok: true, viewer, credentials }
 }
 
 /**
@@ -86,7 +94,7 @@ async function peopleSyncIsOn(churchId: string): Promise<boolean> {
 export async function previewImport(): Promise<PreviewOutcome> {
   const start = await ready()
   if (!start.ok) return { ok: false, message: start.message }
-  const { viewer } = start
+  const { viewer, credentials } = start
 
   if (!(await peopleSyncIsOn(viewer.churchId))) {
     return {
@@ -96,7 +104,7 @@ export async function previewImport(): Promise<PreviewOutcome> {
     }
   }
 
-  const fetched = await fetchPeople()
+  const fetched = await fetchPeople(credentials)
   if (!fetched.ok) return { ok: false, message: fetched.error }
 
   const [existing, listMappings] = await Promise.all([
@@ -127,7 +135,7 @@ export async function previewImport(): Promise<PreviewOutcome> {
 export async function runImport(): Promise<ActionOutcome> {
   const start = await ready()
   if (!start.ok) return { ok: false, message: start.message }
-  const { viewer } = start
+  const { viewer, credentials } = start
 
   if (!(await peopleSyncIsOn(viewer.churchId))) {
     return {
@@ -137,7 +145,7 @@ export async function runImport(): Promise<ActionOutcome> {
     }
   }
 
-  const fetched = await fetchPeople()
+  const fetched = await fetchPeople(credentials)
   if (!fetched.ok) return { ok: false, message: fetched.error }
 
   const [existing, listMappings] = await Promise.all([
@@ -371,4 +379,112 @@ function isFoldList(value: string): value is FoldList {
 
 function label(list: FoldList): string {
   return list === 'family' ? 'Family' : 'Guests'
+}
+
+/* ────────────────────────────── Connecting ────────────────────────────── */
+
+/**
+ * Save a Personal Access Token, after proving it works.
+ *
+ * Verified before it is stored, not after. A Setup screen that says "connected"
+ * while the import says 401 leaves the person who typed it with no way to tell
+ * which half is wrong — so this makes one real request to Planning Center first
+ * and stores nothing if it fails.
+ *
+ * The secret is encrypted before it reaches the database and is never read back
+ * out to a browser; the screen shows the Application ID and the last four
+ * characters, which is enough to recognise which token is stored.
+ */
+export async function connectPlanningCenter(
+  formData: FormData
+): Promise<ActionOutcome> {
+  const appId = String(formData.get('appId') ?? '').trim()
+  const secret = String(formData.get('secret') ?? '').trim()
+
+  const viewer = await getWriter()
+  const gate = permissionCheck(viewer, 'admin.manage_integrations')
+  if (!gate.allowed) return { ok: false, message: gate.note }
+
+  if (appId === '' || secret === '') {
+    return {
+      ok: false,
+      message:
+        'Both halves are needed. Planning Center issues an Application ID and a Secret together, and one without the other authenticates nothing.',
+    }
+  }
+
+  const check = await verifyCredentials({ appId, secret })
+  if (!check.ok) return { ok: false, message: check.error }
+
+  await db
+    .insert(schema.integrationCredentials)
+    .values({
+      churchId: viewer.churchId,
+      provider: PLANNING_CENTER,
+      appId,
+      secretEncrypted: encryptSecret(secret),
+      secretHint: secretHint(secret),
+      connectedById: viewer.personId,
+    })
+    .onConflictDoUpdate({
+      target: [
+        schema.integrationCredentials.churchId,
+        schema.integrationCredentials.provider,
+      ],
+      // Replaced rather than versioned: an old token is not history worth
+      // keeping, it is a key that should stop existing.
+      set: {
+        appId,
+        secretEncrypted: encryptSecret(secret),
+        secretHint: secretHint(secret),
+        connectedById: viewer.personId,
+        connectedAt: new Date(),
+      },
+    })
+
+  revalidatePath('/admin')
+
+  const total = check.value.reportedTotal
+  return {
+    ok: true,
+    message:
+      total === null
+        ? 'Connected. Planning Center accepted the token and let Fold read People.'
+        : `Connected. Planning Center reports ${total} ${total === 1 ? 'person' : 'people'} in your directory — press “See what would change” to find out what importing them would do.`,
+  }
+}
+
+/**
+ * Forget the stored token.
+ *
+ * Deleted rather than marked inactive. A revoked credential that is still in the
+ * database is still a credential, and there is no version of this where keeping
+ * it is useful.
+ */
+export async function disconnectPlanningCenter(): Promise<ActionOutcome> {
+  const viewer = await getWriter()
+  const gate = permissionCheck(viewer, 'admin.manage_integrations')
+  if (!gate.allowed) return { ok: false, message: gate.note }
+
+  const removed = await db
+    .delete(schema.integrationCredentials)
+    .where(
+      and(
+        eq(schema.integrationCredentials.churchId, viewer.churchId),
+        eq(schema.integrationCredentials.provider, PLANNING_CENTER)
+      )
+    )
+    .returning({ id: schema.integrationCredentials.id })
+
+  if (removed.length === 0) {
+    // §8.5: an action reporting success must have done something.
+    return { ok: false, message: 'There was no stored token to remove.' }
+  }
+
+  revalidatePath('/admin')
+  return {
+    ok: true,
+    message:
+      'Token removed. People already imported stay where they are, still carrying their Planning Center ids, so reconnecting later recognises them rather than adding second copies.',
+  }
 }

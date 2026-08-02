@@ -646,6 +646,58 @@ export const changeLog = pgTable(
 /* ─────────────────────── Planning Center integration ─────────────────────── */
 
 /**
+ * Credentials for a connected third-party system.
+ *
+ * Here rather than in the environment so an administrator can connect Planning
+ * Center from the Setup screen. Reading them out of the environment alone meant
+ * connecting required a terminal and a redeploy, which put the one person who
+ * should be doing it — the church administrator — behind the one person who
+ * should not have to be involved.
+ *
+ * `secret_encrypted` is exactly that: AES-256-GCM, see
+ * `src/planning-center/secrets.ts`. A Planning Center token opens a church's
+ * whole directory in a system this database's tier model does not reach into, so
+ * a leaked backup should not include a working one. `app_id` is not encrypted —
+ * it is an identifier, not a secret, and showing it is how an administrator
+ * recognises which token is stored.
+ *
+ * One row per church per provider, replaced rather than versioned: an old
+ * credential is not history worth keeping, it is a key that should stop existing.
+ */
+export const integrationCredentials = pgTable(
+  'integration_credentials',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id, { onDelete: 'restrict' }),
+    /** `planning_center` today. Text so adding one is not a migration. */
+    provider: text('provider').notNull(),
+    appId: text('app_id').notNull(),
+    secretEncrypted: text('secret_encrypted').notNull(),
+    /** The last four characters, so the stored token is recognisable. */
+    secretHint: text('secret_hint').notNull(),
+    connectedById: uuid('connected_by_id')
+      .notNull()
+      .references(() => people.id, { onDelete: 'restrict' }),
+    connectedAt: timestamp('connected_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('integration_credentials_provider_idx').on(
+      table.churchId,
+      table.provider
+    ),
+    check('credential_app_id_not_blank', sql`btrim(${table.appId}) <> ''`),
+    check(
+      'credential_secret_not_blank',
+      sql`btrim(${table.secretEncrypted}) <> ''`
+    ),
+  ]
+)
+
+/**
  * The church's per-category sync choices (§6).
  *
  * The check constraint is the interesting line. §6 says confidential pastoral

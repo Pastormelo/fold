@@ -8,7 +8,11 @@ import { type FoldList, type ListMapping, FOLD_LISTS } from '@/domain/planning-c
 import type { ExistingPerson } from '@/domain/pc-import'
 import { type PermissionCheck, permissionCheck } from '@/domain/roles'
 import { db, schema } from '@/db/client'
-import { isPlanningCenterConfigured, PC_NOT_CONFIGURED } from '@/planning-center/config'
+import { PC_NOT_CONFIGURED } from '@/planning-center/config'
+import {
+  type CredentialStatus,
+  credentialStatus,
+} from '@/planning-center/credentials'
 
 import { getViewer } from './viewer'
 
@@ -32,6 +36,8 @@ export type DuplicateRow = {
 export type IntegrationView = {
   configured: boolean
   configurationNote: string | null
+  /** Where the credential is, and who put it there. Never the secret itself. */
+  credential: CredentialStatus
   gate: PermissionCheck
   /** Family and Guests, and where each lands in Planning Center. */
   listMappings: Record<FoldList, ListMapping>
@@ -48,28 +54,30 @@ export const getIntegrationView = cache(async (): Promise<IntegrationView> => {
   const viewer = await getViewer()
   const gate = permissionCheck(viewer, 'admin.manage_integrations')
 
-  const [people, mappingRows, settingRows, duplicateRows] = await Promise.all([
-    db
-      .select({
-        id: schema.people.id,
-        planningCenterId: schema.people.planningCenterId,
-      })
-      .from(schema.people)
-      .where(eq(schema.people.churchId, viewer.churchId)),
-    db
-      .select()
-      .from(schema.foldListMappings)
-      .where(eq(schema.foldListMappings.churchId, viewer.churchId)),
-    db
-      .select()
-      .from(schema.syncSettings)
-      .where(eq(schema.syncSettings.churchId, viewer.churchId)),
-    db
-      .select()
-      .from(schema.possibleDuplicates)
-      .where(eq(schema.possibleDuplicates.churchId, viewer.churchId))
-      .orderBy(asc(schema.possibleDuplicates.surfacedAt)),
-  ])
+  const [credential, people, mappingRows, settingRows, duplicateRows] =
+    await Promise.all([
+      credentialStatus(viewer.churchId),
+      db
+        .select({
+          id: schema.people.id,
+          planningCenterId: schema.people.planningCenterId,
+        })
+        .from(schema.people)
+        .where(eq(schema.people.churchId, viewer.churchId)),
+      db
+        .select()
+        .from(schema.foldListMappings)
+        .where(eq(schema.foldListMappings.churchId, viewer.churchId)),
+      db
+        .select()
+        .from(schema.syncSettings)
+        .where(eq(schema.syncSettings.churchId, viewer.churchId)),
+      db
+        .select()
+        .from(schema.possibleDuplicates)
+        .where(eq(schema.possibleDuplicates.churchId, viewer.churchId))
+        .orderBy(asc(schema.possibleDuplicates.surfacedAt)),
+    ])
 
   const open = duplicateRows.filter((row) => row.resolvedAt === null)
   const names = await namesFor([
@@ -81,9 +89,15 @@ export const getIntegrationView = cache(async (): Promise<IntegrationView> => {
     (row) => row.category === 'people_and_households'
   )
 
+  // Usable, not merely present: a stored credential that cannot be decrypted is
+  // not one, and the screen says so rather than offering a button that 401s.
+  const usable =
+    credential.state === 'environment' || credential.state === 'stored'
+
   return {
-    configured: isPlanningCenterConfigured(),
-    configurationNote: isPlanningCenterConfigured() ? null : PC_NOT_CONFIGURED,
+    configured: usable,
+    configurationNote: usable ? null : PC_NOT_CONFIGURED,
+    credential,
     gate,
     listMappings: readListMappings(mappingRows),
     // §6's default for this category is on, so an absent row means on.

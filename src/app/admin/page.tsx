@@ -29,9 +29,26 @@ import {
   revokeRole,
   setSyncCategory,
 } from './actions'
-import { mapList, resolveDuplicate } from './pc-actions'
+import {
+  connectPlanningCenter,
+  disconnectPlanningCenter,
+  mapList,
+  resolveDuplicate,
+} from './pc-actions'
 
 export const metadata = { title: 'Setup · Fold' }
+
+const CREDENTIAL_INPUT = {
+  font: 'inherit',
+  fontSize: '0.875rem',
+  width: '100%',
+  maxWidth: 460,
+  padding: '8px 11px',
+  borderRadius: 'var(--radius-sm)',
+  border: '1px solid var(--border-default)',
+  background: 'var(--surface-card)',
+  color: 'var(--text-primary)',
+} as const
 
 const TIER_ACCENT = {
   all_leaders: 'var(--tier-all-leaders)',
@@ -459,6 +476,145 @@ export default async function SetupPage() {
           >
             {integration.note}
           </p>
+
+          {/* ── The credential itself ──
+              First, because nothing below it works without one. This is the
+              screen an administrator connects Planning Center from; requiring a
+              terminal and a redeploy to paste a token put the one person who
+              should be doing it behind the one person who should not have to be
+              involved. */}
+          <div
+            className="flex flex-col gap-3"
+            style={{
+              background: 'var(--surface-card)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-md)',
+              padding: '16px 18px',
+            }}
+          >
+            <h3 style={{ fontSize: '1rem' }}>Connection</h3>
+
+            {pcView.credential.state === 'environment' && (
+              <p
+                className="max-w-[680px] text-[0.9375rem]"
+                style={{ textWrap: 'pretty' }}
+              >
+                Connected through the environment. The credentials are set as
+                environment variables on this deployment, which take precedence
+                over anything entered here — change them where they are set
+                rather than on this screen.
+              </p>
+            )}
+
+            {pcView.credential.state === 'stored' && (
+              <>
+                <p
+                  className="max-w-[680px] text-[0.9375rem]"
+                  style={{ textWrap: 'pretty' }}
+                >
+                  Connected. Application ID{' '}
+                  <strong>{pcView.credential.appId}</strong>, secret ending{' '}
+                  <strong>{pcView.credential.secretHint}</strong> — connected by{' '}
+                  {pcView.credential.connectedByName}.
+                </p>
+                <p
+                  className="max-w-[680px] text-[0.8125rem]"
+                  style={{ color: 'var(--text-muted)', textWrap: 'pretty' }}
+                >
+                  The secret is encrypted in the database and is never sent back
+                  to a browser, which is why only its last four characters are
+                  shown. Saving a new one replaces it.
+                </p>
+              </>
+            )}
+
+            {pcView.credential.state === 'unreadable' && (
+              <p
+                className="max-w-[680px] text-[0.9375rem]"
+                style={{
+                  borderLeft: '3px solid var(--ofc-warning)',
+                  paddingLeft: 12,
+                  textWrap: 'pretty',
+                }}
+              >
+                A token is stored for Application ID{' '}
+                <strong>{pcView.credential.appId}</strong>, but it cannot be
+                decrypted. That almost always means the database password was
+                rotated — the key is derived from it. Enter the token again
+                below and it will work.
+              </p>
+            )}
+
+            {pcView.credential.state === 'none' && (
+              <p
+                className="max-w-[680px] text-[0.9375rem]"
+                style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}
+              >
+                Create a <strong>Personal Access Token</strong> at{' '}
+                api.planningcenteronline.com/oauth/applications — scroll to
+                Personal Access Tokens and make one. Planning Center gives you an
+                Application ID and a Secret; paste both below. The token needs
+                access to People.
+              </p>
+            )}
+
+            {pcView.credential.state !== 'environment' && (
+              <ActionForm
+                action={connectPlanningCenter}
+                label={
+                  pcView.credential.state === 'stored'
+                    ? 'Replace the token'
+                    : 'Connect Planning Center'
+                }
+                variant={
+                  pcView.credential.state === 'stored' ? 'secondary' : 'primary'
+                }
+                disabled={!pcView.gate.allowed}
+                disabledReason={pcView.gate.allowed ? null : pcView.gate.note}
+              >
+                <input
+                  name="appId"
+                  defaultValue={
+                    pcView.credential.state === 'stored' ||
+                    pcView.credential.state === 'unreadable'
+                      ? pcView.credential.appId
+                      : ''
+                  }
+                  placeholder="Application ID"
+                  autoComplete="off"
+                  style={CREDENTIAL_INPUT}
+                />
+                {/* type=password so it is not shoulder-read or auto-saved as a
+                    plain field. It is a token, not a password, but every
+                    browser affordance for one is the right one here. */}
+                <input
+                  name="secret"
+                  type="password"
+                  placeholder="Secret"
+                  autoComplete="off"
+                  style={CREDENTIAL_INPUT}
+                />
+              </ActionForm>
+            )}
+
+            <p
+              className="max-w-[680px] text-[0.8125rem]"
+              style={{ color: 'var(--text-muted)', textWrap: 'pretty' }}
+            >
+              The token is checked against Planning Center before it is saved, so
+              &ldquo;connected&rdquo; here means it actually authenticated and
+              could read People — not merely that something was typed.
+            </p>
+
+            {pcView.credential.state === 'stored' && (
+              <ActionForm
+                action={disconnectPlanningCenter}
+                label="Disconnect"
+                disabled={!pcView.gate.allowed}
+                disabledReason={pcView.gate.allowed ? null : pcView.gate.note}
+              />
+            )}
+          </div>
 
           {/* ── Importing the directory ──
               Placed above the category list because it is the thing a church

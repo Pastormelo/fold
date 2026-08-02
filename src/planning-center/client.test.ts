@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { PC_APP_ID_VAR, PC_NOT_CONFIGURED, PC_SECRET_VAR } from './config'
+import { PC_NOT_CONFIGURED } from './config'
 import { fetchPeople } from './client'
 
 /**
@@ -20,21 +20,12 @@ import { fetchPeople } from './client'
  * fixtures change together.
  */
 
-const originalFetch = globalThis.fetch
-const originalId = process.env[PC_APP_ID_VAR]
-const originalSecret = process.env[PC_SECRET_VAR]
+const CREDENTIALS = { appId: 'app-id', secret: 'secret' }
 
-beforeEach(() => {
-  process.env[PC_APP_ID_VAR] = 'app-id'
-  process.env[PC_SECRET_VAR] = 'secret'
-})
+const originalFetch = globalThis.fetch
 
 afterEach(() => {
   globalThis.fetch = originalFetch
-  if (originalId === undefined) delete process.env[PC_APP_ID_VAR]
-  else process.env[PC_APP_ID_VAR] = originalId
-  if (originalSecret === undefined) delete process.env[PC_SECRET_VAR]
-  else process.env[PC_SECRET_VAR] = originalSecret
 })
 
 /** Replies in order, one per call, so pagination can be exercised. */
@@ -84,7 +75,7 @@ const INCLUDED = [
 describe('reading people', () => {
   it('turns a page into people', async () => {
     replyWith({ data: [person()], included: INCLUDED })
-    const result = await fetchPeople()
+    const result = await fetchPeople(CREDENTIALS)
     expect(result.ok).toBe(true)
     if (!result.ok) throw new Error('unreachable')
     expect(result.value.people).toEqual([
@@ -102,7 +93,7 @@ describe('reading people', () => {
 
   it('sends HTTP Basic credentials and asks for the contact details', async () => {
     const calls = replyWith({ data: [] })
-    await fetchPeople()
+    await fetchPeople(CREDENTIALS)
     expect(calls[0]).toContain('include=emails,phone_numbers')
     const init = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock
       .calls[0]![1] as RequestInit
@@ -119,7 +110,7 @@ describe('reading people', () => {
       },
       { data: [person({ id: 'pc-2' })], included: INCLUDED }
     )
-    const result = await fetchPeople()
+    const result = await fetchPeople(CREDENTIALS)
     expect(result.ok && result.value.people.map((p) => p.planningCenterId)).toEqual(
       ['pc-1', 'pc-2']
     )
@@ -135,7 +126,7 @@ describe('reading people', () => {
         person({ id: 'c', attributes: { first_name: 'C', last_name: 'Three', membership: 'Member' } }),
       ],
     })
-    const result = await fetchPeople()
+    const result = await fetchPeople(CREDENTIALS)
     expect(result.ok && result.value.membershipValues).toEqual([
       'Member',
       'Regular Attender',
@@ -156,7 +147,7 @@ describe('contact details', () => {
         { type: 'Email', id: 'e-new', attributes: { address: 'new@example.com', primary: true } },
       ],
     })
-    const result = await fetchPeople()
+    const result = await fetchPeople(CREDENTIALS)
     expect(result.ok && result.value.people[0]!.email).toBe('new@example.com')
   })
 
@@ -169,13 +160,13 @@ describe('contact details', () => {
         { type: 'Email', id: 'e-1', attributes: { address: 'only@example.com' } },
       ],
     })
-    const result = await fetchPeople()
+    const result = await fetchPeople(CREDENTIALS)
     expect(result.ok && result.value.people[0]!.email).toBe('only@example.com')
   })
 
   it('reports no contact details rather than an empty string', async () => {
     replyWith({ data: [person({ relationships: {} })] })
-    const result = await fetchPeople()
+    const result = await fetchPeople(CREDENTIALS)
     expect(result.ok && result.value.people[0]!.email).toBeNull()
     expect(result.ok && result.value.people[0]!.phone).toBeNull()
   })
@@ -187,7 +178,7 @@ describe('contact details', () => {
       data: [person()],
       included: [...INCLUDED, { type: 'Household', id: 'h-1', attributes: {} }],
     })
-    const result = await fetchPeople()
+    const result = await fetchPeople(CREDENTIALS)
     expect(result.ok && result.value.people[0]!.email).toBe('lena@example.com')
   })
 })
@@ -197,7 +188,7 @@ describe('status', () => {
     replyWith({
       data: [person({ attributes: { first_name: 'L', last_name: 'W', status: 'inactive' } })],
     })
-    const result = await fetchPeople()
+    const result = await fetchPeople(CREDENTIALS)
     expect(result.ok && result.value.people[0]!.active).toBe(false)
   })
 
@@ -207,17 +198,16 @@ describe('status', () => {
     replyWith({
       data: [person({ attributes: { first_name: 'L', last_name: 'W' } })],
     })
-    const result = await fetchPeople()
+    const result = await fetchPeople(CREDENTIALS)
     expect(result.ok && result.value.people[0]!.active).toBe(true)
   })
 })
 
 describe('when something is wrong', () => {
   it('refuses without credentials rather than calling anything', async () => {
-    delete process.env[PC_APP_ID_VAR]
     const called = vi.fn()
     globalThis.fetch = called as unknown as typeof fetch
-    const result = await fetchPeople()
+    const result = await fetchPeople(null)
     expect(result.ok).toBe(false)
     if (result.ok) throw new Error('unreachable')
     expect(result.error).toBe(PC_NOT_CONFIGURED)
@@ -227,7 +217,7 @@ describe('when something is wrong', () => {
   it('explains a rejected token', async () => {
     globalThis.fetch = (async () =>
       new Response('', { status: 401 })) as unknown as typeof fetch
-    const result = await fetchPeople()
+    const result = await fetchPeople(CREDENTIALS)
     expect(result.ok).toBe(false)
     if (result.ok) throw new Error('unreachable')
     expect(result.error).toMatch(/rejected the credentials/)
@@ -236,7 +226,7 @@ describe('when something is wrong', () => {
   it('distinguishes no access to People from a bad token', async () => {
     globalThis.fetch = (async () =>
       new Response('', { status: 403 })) as unknown as typeof fetch
-    const result = await fetchPeople()
+    const result = await fetchPeople(CREDENTIALS)
     expect(!result.ok && result.error).toMatch(/access to the People app/)
   })
 
@@ -244,7 +234,7 @@ describe('when something is wrong', () => {
     // The failure this client is most likely to meet, because it has never seen
     // a real response. It has to fail legibly rather than plausibly.
     replyWith({ data: [{ type: 'Person', id: 'pc-1', attributes: {} }] })
-    const result = await fetchPeople()
+    const result = await fetchPeople(CREDENTIALS)
     expect(result.ok).toBe(false)
     if (result.ok) throw new Error('unreachable')
     expect(result.error).toContain('data.0.attributes.first_name')
@@ -255,7 +245,7 @@ describe('when something is wrong', () => {
     globalThis.fetch = (async () => {
       throw new Error('ECONNREFUSED')
     }) as unknown as typeof fetch
-    const result = await fetchPeople()
+    const result = await fetchPeople(CREDENTIALS)
     expect(result.ok).toBe(false)
     if (result.ok) throw new Error('unreachable')
     expect(result.error).toMatch(/Could not reach Planning Center/)
@@ -273,7 +263,7 @@ describe('when something is wrong', () => {
         }),
         { status: 200 }
       )) as unknown as typeof fetch
-    const result = await fetchPeople()
+    const result = await fetchPeople(CREDENTIALS)
     expect(result.ok).toBe(false)
     if (result.ok) throw new Error('unreachable')
     expect(result.error).toMatch(/looks complete and is not/)

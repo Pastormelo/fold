@@ -4,11 +4,8 @@ import { z } from 'zod'
 
 import type { IncomingPerson } from '@/domain/pc-import'
 
-import {
-  PC_NOT_CONFIGURED,
-  PC_PEOPLE_API,
-  planningCenterCredentials,
-} from './config'
+import { PC_NOT_CONFIGURED, PC_PEOPLE_API } from './config'
+import type { PlanningCenterCredentials } from './config'
 
 /**
  * Reading people out of Planning Center.
@@ -120,8 +117,18 @@ export type PeopleFetch = {
   reportedTotal: number | null
 }
 
-export async function fetchPeople(): Promise<PcResult<PeopleFetch>> {
-  const credentials = planningCenterCredentials()
+/**
+ * Credentials are passed in rather than read here.
+ *
+ * They may come from the environment or from the row an administrator saved on
+ * the Setup screen, and deciding which is `./credentials`' job — a module that
+ * touches the database, which this one should not. It also makes `verify` below
+ * possible: checking a credential before storing it means checking one that is
+ * not stored anywhere yet.
+ */
+export async function fetchPeople(
+  credentials: PlanningCenterCredentials | null
+): Promise<PcResult<PeopleFetch>> {
   if (credentials === null) return { ok: false, error: PC_NOT_CONFIGURED }
 
   const auth = Buffer.from(
@@ -306,4 +313,59 @@ function describeStatus(status: number): string {
     return `Planning Center returned a server error (${status}). Nothing was changed; try again shortly.`
   }
   return `Planning Center returned ${status}. Nothing was changed.`
+}
+
+/**
+ * Check a credential before it is saved.
+ *
+ * One page, one person, which is enough to prove the token authenticates and can
+ * read People. Saving an unchecked credential would mean the Setup screen says
+ * "connected" and the import says 401, and the person who typed it has no way to
+ * tell which half is wrong.
+ */
+export async function verifyCredentials(
+  credentials: PlanningCenterCredentials
+): Promise<PcResult<{ reportedTotal: number | null }>> {
+  const auth = Buffer.from(
+    `${credentials.appId}:${credentials.secret}`
+  ).toString('base64')
+
+  let response: Response
+  try {
+    response = await fetch(`${PC_PEOPLE_API}/people?per_page=1`, {
+      headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' },
+      cache: 'no-store',
+    })
+  } catch {
+    return {
+      ok: false,
+      error:
+        'Could not reach Planning Center. Check the connection and try again — nothing was saved.',
+    }
+  }
+
+  if (!response.ok) return { ok: false, error: describeStatus(response.status) }
+
+  let body: unknown
+  try {
+    body = await response.json()
+  } catch {
+    return {
+      ok: false,
+      error:
+        'Planning Center answered with something that was not JSON. Nothing was saved.',
+    }
+  }
+
+  const parsed = pageSchema.safeParse(body)
+  if (!parsed.success) {
+    const first = parsed.error.issues[0]
+    const path = first?.path.join('.') ?? 'the response'
+    return {
+      ok: false,
+      error: `Reached Planning Center, but its answer was not the shape this expected — ${path}: ${first?.message ?? 'unrecognised'}. Nothing was saved.`,
+    }
+  }
+
+  return { ok: true, value: { reportedTotal: parsed.data.meta?.total_count ?? null } }
 }
