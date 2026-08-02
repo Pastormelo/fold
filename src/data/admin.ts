@@ -2,7 +2,7 @@ import 'server-only'
 
 import { cache } from 'react'
 
-import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm'
+import { and, asc, eq, isNull } from 'drizzle-orm'
 
 import {
   FOLD_LISTS,
@@ -212,51 +212,6 @@ export const getLeaders = cache(async (): Promise<LeaderRow[]> => {
 export const getViewerClearance = cache(
   async (): Promise<ConfidentialityTier | null> => {
     return clearanceFor(await getViewer())
-  }
-)
-
-/* ─────────────────────── Whether anything is connected ─────────────────────── */
-
-export type IntegrationState = {
-  connected: boolean
-  /** Said plainly, so the scope list below it cannot be read as a status. */
-  note: string
-}
-
-/**
- * Whether Planning Center has actually been connected.
- *
- * Derived from whether any person carries a Planning Center id — evidence that an
- * import happened, rather than a flag somebody set. There is no OAuth flow yet, so
- * for now this is always false, and saying so matters: the category list beneath
- * it shows §6's defaults, and without this line a reader would take
- * "People and households · both ways" as a description of what is happening
- * tonight rather than of what would happen if it were switched on.
- */
-export const getIntegrationState = cache(
-  async (): Promise<IntegrationState> => {
-    const viewer = await getViewer()
-
-    const [imported] = await db
-      .select({ id: schema.people.id })
-      .from(schema.people)
-      .where(
-        and(
-          eq(schema.people.churchId, viewer.churchId),
-          isNotNull(schema.people.planningCenterId)
-        )
-      )
-      .limit(1)
-
-    return imported
-      ? {
-          connected: true,
-          note: 'Connected. Records that came from Planning Center keep their id, so a resync never creates a second person.',
-        }
-      : {
-          connected: false,
-          note: 'Planning Center is not connected, so nothing is syncing. What follows is the scope that would apply once it is — not a description of what is happening now.',
-        }
   }
 )
 

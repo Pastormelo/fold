@@ -1,12 +1,7 @@
 import { ActionForm } from '@/components/action-form'
 import { PageShell } from '@/components/page-shell'
 import { PlanningCenterImport } from '@/components/planning-center-import'
-import {
-  getFoldLists,
-  getIntegrationState,
-  getLeaders,
-  getRoleMatrix,
-} from '@/data/admin'
+import { getFoldLists, getLeaders, getRoleMatrix } from '@/data/admin'
 import {
   getGrantedExceptions,
   getSyncCategories,
@@ -96,7 +91,7 @@ export default async function SetupPage({
   const pcError = typeof params.pc_error === 'string' ? params.pc_error : null
   const pcConnected = params.pc_connected === '1'
 
-  const [roles, leaders, exceptions, tiers, sync, lists, integration, pcView] =
+  const [roles, leaders, exceptions, tiers, sync, lists, pcView] =
     await Promise.all([
       getRoleMatrix(),
       getLeaders(),
@@ -104,7 +99,6 @@ export default async function SetupPage({
       getTierOverview(),
       getSyncCategories(),
       getFoldLists(),
-      getIntegrationState(),
       getIntegrationView(),
     ])
 
@@ -493,7 +487,7 @@ export default async function SetupPage({
           <p
             className="text-[0.9375rem]"
             style={{
-              background: integration.connected
+              background: pcView.configured
                 ? 'var(--surface-card)'
                 : 'var(--surface-sunken)',
               border: '1px solid var(--border-subtle)',
@@ -502,7 +496,7 @@ export default async function SetupPage({
               textWrap: 'pretty',
             }}
           >
-            {integration.note}
+            {pcView.connectionNote}
           </p>
 
           {/* ── The credential itself ──

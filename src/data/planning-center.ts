@@ -36,6 +36,16 @@ export type DuplicateRow = {
 export type IntegrationView = {
   configured: boolean
   configurationNote: string | null
+  /**
+   * The banner above the scope list.
+   *
+   * It has to be derived from the credential. It used to come from
+   * `getIntegrationState`, which reported "connected" only once somebody in the
+   * directory carried a Planning Center id — so a church that had connected and
+   * not yet imported was told it was not connected, three lines above a card
+   * saying it was.
+   */
+  connectionNote: string
   /** Where the credential is, and who put it there. Never the secret itself. */
   credential: CredentialStatus
   gate: PermissionCheck
@@ -89,14 +99,45 @@ export const getIntegrationView = cache(async (): Promise<IntegrationView> => {
     (row) => row.category === 'people_and_households'
   )
 
-  // Usable, not merely present: a stored credential that cannot be decrypted is
-  // not one, and the screen says so rather than offering a button that 401s.
-  const usable =
-    credential.state === 'environment' || credential.state === 'stored'
+  /*
+   * Usable, not merely present: a stored credential that cannot be decrypted is
+   * not one, and the screen says so rather than offering a button that 401s.
+   *
+   * Listed exhaustively rather than as "not none", and that is the point. This
+   * was written before OAuth existed and read `environment || stored`, so a
+   * church that had just signed in successfully saw "Connected, authorised by
+   * you" beside a greyed-out import button telling them to go and set an
+   * environment variable. A `switch` on the state makes adding a fourth kind of
+   * connection fail the type check here instead of shipping the same
+   * contradiction again.
+   */
+  const usable = ((): boolean => {
+    switch (credential.state) {
+      case 'environment':
+      case 'stored':
+      case 'oauth':
+        // An oauth connection whose authorisation was revoked cannot be renewed,
+        // so it is present and not usable.
+        return credential.state !== 'oauth' || !credential.needsReauthorising
+      case 'none':
+      case 'unreadable':
+        return false
+    }
+  })()
 
   return {
     configured: usable,
-    configurationNote: usable ? null : PC_NOT_CONFIGURED,
+    connectionNote: usable
+      ? 'Connected. Planning Center stays the system of record; what follows is the scope Fold reads within.'
+      : 'Planning Center is not connected, so nothing is syncing. What follows is the scope that would apply once it is — not a description of what is happening now.',
+    /*
+     * Why it is unavailable, in terms of the connection that actually exists.
+     *
+     * The old note said "create a Personal Access Token and set two environment
+     * variables" whatever the state was, which after signing in successfully was
+     * both wrong and impossible to act on.
+     */
+    configurationNote: usable ? null : unavailableNote(credential),
     credential,
     gate,
     listMappings: readListMappings(mappingRows),
@@ -193,4 +234,30 @@ async function namesFor(ids: readonly string[]): Promise<Map<string, string>> {
   return new Map(
     rows.map((row) => [row.id, `${row.firstName} ${row.lastName}`])
   )
+}
+
+/**
+ * The sentence to show when Planning Center cannot be used.
+ *
+ * Each state sends a reader somewhere different, and one generic note sent them
+ * all to the wrong place. Signing in again is not the same instruction as pasting
+ * a token, and neither is what somebody whose database password was rotated needs
+ * to hear.
+ */
+function unavailableNote(credential: CredentialStatus): string {
+  switch (credential.state) {
+    case 'oauth':
+      return 'Planning Center access has lapsed and could not be renewed, which usually means Fold’s access was revoked over there. Sign in again above.'
+    case 'unreadable':
+      return 'A Planning Center credential is stored but cannot be read — almost always a rotated database password. Connect again above.'
+    case 'none':
+      return credential.oauthAvailable
+        ? 'Planning Center is not connected yet. Press “Sign in with Planning Center” above; there is nothing to copy or paste.'
+        : PC_NOT_CONFIGURED
+    case 'environment':
+    case 'stored':
+      // Reachable only if `usable` and this function disagree, which the switch
+      // above is arranged to prevent.
+      return PC_NOT_CONFIGURED
+  }
 }
