@@ -4,7 +4,10 @@ import { and, eq } from 'drizzle-orm'
 
 import { db, schema } from '@/db/client'
 
-import { planningCenterCredentials as fromEnvironment } from './config'
+import {
+  type PcAuth,
+  planningCenterCredentials as fromEnvironment,
+} from './config'
 import {
   type PcTokens,
   isOAuthConfigured,
@@ -35,8 +38,15 @@ import { decryptSecret, encryptSecret, secretHint } from './secrets'
 export const PLANNING_CENTER = 'planning_center'
 
 export type ResolvedCredentials = {
-  appId: string
-  secret: string
+  /**
+   * How to sign a request with this credential.
+   *
+   * Carried rather than derived by the caller. The two schemes are not
+   * interchangeable — a Personal Access Token is Basic, an OAuth access token is
+   * Bearer — and when the caller decided, it decided wrong: every OAuth request
+   * went out as a Basic password and came back 401.
+   */
+  auth: PcAuth
   /** Which of the three it came from, for the screen to be honest about. */
   source: 'environment' | 'database' | 'oauth'
 }
@@ -68,7 +78,10 @@ export async function resolveCredentials(
 ): Promise<ResolvedCredentials | null> {
   const environment = fromEnvironment()
   if (environment !== null) {
-    return { ...environment, source: 'environment' }
+    return {
+      auth: { kind: 'basic', ...environment },
+      source: 'environment',
+    }
   }
 
   const [row] = await db
@@ -91,7 +104,10 @@ export async function resolveCredentials(
   if (secret === null) return null
 
   if (row.kind !== 'oauth') {
-    return { appId: row.appId, secret, source: 'database' }
+    return {
+      auth: { kind: 'basic', appId: row.appId, secret },
+      source: 'database',
+    }
   }
 
   /*
@@ -103,7 +119,7 @@ export async function resolveCredentials(
    * ninety minutes.
    */
   if (row.accessExpiresAt !== null && row.accessExpiresAt > new Date()) {
-    return { appId: row.appId, secret, source: 'oauth' }
+    return { auth: { kind: 'bearer', accessToken: secret }, source: 'oauth' }
   }
 
   const app = oauthApp()
@@ -126,8 +142,7 @@ export async function resolveCredentials(
   })
 
   return {
-    appId: row.appId,
-    secret: refreshed.value.accessToken,
+    auth: { kind: 'bearer', accessToken: refreshed.value.accessToken },
     source: 'oauth',
   }
 }

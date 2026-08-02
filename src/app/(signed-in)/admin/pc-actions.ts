@@ -104,7 +104,7 @@ export async function previewImport(): Promise<PreviewOutcome> {
     }
   }
 
-  const fetched = await fetchPeople(credentials)
+  const fetched = await fetchPeople(credentials.auth)
   if (!fetched.ok) return { ok: false, message: fetched.error }
 
   const [existing, listMappings] = await Promise.all([
@@ -145,7 +145,7 @@ export async function runImport(): Promise<ActionOutcome> {
     }
   }
 
-  const fetched = await fetchPeople(credentials)
+  const fetched = await fetchPeople(credentials.auth)
   if (!fetched.ok) return { ok: false, message: fetched.error }
 
   const [existing, listMappings] = await Promise.all([

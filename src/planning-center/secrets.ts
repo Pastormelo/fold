@@ -25,10 +25,24 @@ import {
  * `FOLD_ENCRYPTION_KEY` and it is used instead, which is the better answer for a
  * deployment that can manage one.
  *
- * The cost is real and worth stating: rotating the database password makes stored
- * credentials unreadable. That is recoverable rather than serious — the app says
- * so plainly and asks for the token again, which takes a minute — and it is the
- * reason `decryptSecret` returns `null` on failure rather than throwing.
+ * The cost is bigger than "rotating the password breaks it", which is how this was
+ * first described, and the difference matters. The key is a function of the whole
+ * connection string, so a credential stored by one environment cannot be read by
+ * another whose `DATABASE_URL` differs in any way — and they do differ here on
+ * purpose: production uses Supabase's transaction pooler on 6543 and local work
+ * uses the session pooler on 5432. Each environment can read what it wrote and not
+ * what the other did. A pooler hostname changing on Supabase's side would have the
+ * same effect.
+ *
+ * **So set `FOLD_ENCRYPTION_KEY` on any deployment you intend to keep.** It costs
+ * one environment variable, set once by the same person who sets the OAuth client
+ * id, and it makes the key independent of how the database happens to be reached.
+ * The fallback exists so the feature works before anyone has done that, not because
+ * it is the better arrangement.
+ *
+ * Either way the failure is recoverable rather than serious: `decryptSecret`
+ * returns `null` rather than throwing, `credentialStatus` reports an `unreadable`
+ * state, and the screen asks for the connection again.
  *
  * It also means the key lives in the same place as the database credentials, so
  * this does not defend against somebody who has the running environment. It
@@ -80,10 +94,10 @@ export function encryptSecret(plaintext: string): string {
 /**
  * `null` when it cannot be read, rather than a throw.
  *
- * The realistic cause is a rotated database password, and the useful response to
- * that is a screen saying "enter the token again" — not an error boundary on the
- * Setup page, which would take out role management and the tier overview along
- * with it.
+ * The realistic causes are a rotated database password and a credential stored by
+ * a different environment, and the useful response to both is a screen saying
+ * "connect again" — not an error boundary on the Setup page, which would take out
+ * role management and the tier overview along with it.
  */
 export function decryptSecret(stored: string): string | null {
   const parts = stored.split(':')

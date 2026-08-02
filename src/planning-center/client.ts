@@ -4,7 +4,13 @@ import { z } from 'zod'
 
 import type { IncomingPerson } from '@/domain/pc-import'
 
-import { PC_NOT_CONFIGURED, PC_PEOPLE_API } from './config'
+import {
+  type PcAuth,
+  PC_NOT_CONFIGURED,
+  PC_PEOPLE_API,
+  authorizationHeader,
+  rejectedCredentialNote,
+} from './config'
 import type { PlanningCenterCredentials } from './config'
 
 /**
@@ -127,13 +133,11 @@ export type PeopleFetch = {
  * not stored anywhere yet.
  */
 export async function fetchPeople(
-  credentials: PlanningCenterCredentials | null
+  auth: PcAuth | null
 ): Promise<PcResult<PeopleFetch>> {
-  if (credentials === null) return { ok: false, error: PC_NOT_CONFIGURED }
+  if (auth === null) return { ok: false, error: PC_NOT_CONFIGURED }
 
-  const auth = Buffer.from(
-    `${credentials.appId}:${credentials.secret}`
-  ).toString('base64')
+  const authorization = authorizationHeader(auth)
 
   const people: IncomingPerson[] = []
   const membershipValues = new Set<string>()
@@ -154,7 +158,7 @@ export async function fetchPeople(
     let response: Response
     try {
       response = await fetch(url, {
-        headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' },
+        headers: { Authorization: authorization, Accept: 'application/json' },
         // Never cached: an import reads the directory as it is right now.
         cache: 'no-store',
       })
@@ -167,7 +171,7 @@ export async function fetchPeople(
     }
 
     if (!response.ok) {
-      return { ok: false, error: describeStatus(response.status) }
+      return { ok: false, error: describeStatus(response.status, auth) }
     }
 
     let body: unknown
@@ -299,10 +303,10 @@ function pick(
   return (found.find((entry) => entry.primary) ?? found[0]!).value
 }
 
-function describeStatus(status: number): string {
-  if (status === 401) {
-    return 'Planning Center rejected the credentials. Check the Application ID and Secret — they are a pair, and a token that was revoked fails this way too.'
-  }
+function describeStatus(status: number, auth: PcAuth): string {
+  // The 401 wording depends on what was sent: "check the Application ID and
+  // Secret" is useless advice to somebody who signed in and has neither.
+  if (status === 401) return rejectedCredentialNote(auth)
   if (status === 403) {
     return 'Those credentials reached Planning Center but are not allowed to read People. The token needs access to the People app.'
   }
@@ -326,14 +330,16 @@ function describeStatus(status: number): string {
 export async function verifyCredentials(
   credentials: PlanningCenterCredentials
 ): Promise<PcResult<{ reportedTotal: number | null }>> {
-  const auth = Buffer.from(
-    `${credentials.appId}:${credentials.secret}`
-  ).toString('base64')
+  // Basic, always: this checks a *pasted* Personal Access Token, which is the only
+  // kind of credential that arrives unverified. An OAuth token is proven by the
+  // exchange that produced it.
+  const auth: PcAuth = { kind: 'basic', ...credentials }
+  const authorization = authorizationHeader(auth)
 
   let response: Response
   try {
     response = await fetch(`${PC_PEOPLE_API}/people?per_page=1`, {
-      headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' },
+      headers: { Authorization: authorization, Accept: 'application/json' },
       cache: 'no-store',
     })
   } catch {
@@ -344,7 +350,9 @@ export async function verifyCredentials(
     }
   }
 
-  if (!response.ok) return { ok: false, error: describeStatus(response.status) }
+  if (!response.ok) {
+    return { ok: false, error: describeStatus(response.status, auth) }
+  }
 
   let body: unknown
   try {

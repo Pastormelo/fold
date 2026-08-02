@@ -20,13 +20,20 @@ import { fetchPeople } from './client'
  * fixtures change together.
  */
 
-const CREDENTIALS = { appId: 'app-id', secret: 'secret' }
+const CREDENTIALS = { kind: 'basic', appId: 'app-id', secret: 'secret' } as const
 
 const originalFetch = globalThis.fetch
 
 afterEach(() => {
   globalThis.fetch = originalFetch
 })
+
+/** The Authorization header the client actually sent. */
+function sentAuthorization(): string {
+  const init = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock
+    .calls[0]![1] as RequestInit
+  return (init.headers as Record<string, string>).Authorization
+}
 
 /** Replies in order, one per call, so pagination can be exercised. */
 function replyWith(...pages: unknown[]) {
@@ -95,10 +102,31 @@ describe('reading people', () => {
     const calls = replyWith({ data: [] })
     await fetchPeople(CREDENTIALS)
     expect(calls[0]).toContain('include=emails,phone_numbers')
-    const init = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock
-      .calls[0]![1] as RequestInit
-    const auth = (init.headers as Record<string, string>).Authorization
-    expect(auth).toBe(`Basic ${Buffer.from('app-id:secret').toString('base64')}`)
+    expect(sentAuthorization()).toBe(
+      `Basic ${Buffer.from('app-id:secret').toString('base64')}`
+    )
+  })
+
+  it('sends an OAuth access token as a Bearer token, not a Basic password', async () => {
+    /*
+     * The bug this exists for. An OAuth access token is a bearer token; sending it
+     * as the password half of HTTP Basic gets a 401 that reads exactly like a
+     * wrong credential, so a church that had just signed in successfully was told
+     * to go and check an Application ID it does not have. The two schemes were
+     * never interchangeable and the code treated them as one.
+     */
+    replyWith({ data: [] })
+    await fetchPeople({ kind: 'bearer', accessToken: 'access-token-1' })
+    expect(sentAuthorization()).toBe('Bearer access-token-1')
+  })
+
+  it('never base64-encodes a bearer token', async () => {
+    // The specific shape of the mistake: the token was still *sent*, just wrapped
+    // in the wrong scheme, so nothing about the request looked obviously broken.
+    replyWith({ data: [] })
+    await fetchPeople({ kind: 'bearer', accessToken: 'access-token-1' })
+    expect(sentAuthorization()).not.toContain('Basic')
+    expect(sentAuthorization()).toContain('access-token-1')
   })
 
   it('follows pagination and stops when there is no next link', async () => {
@@ -221,6 +249,21 @@ describe('when something is wrong', () => {
     expect(result.ok).toBe(false)
     if (result.ok) throw new Error('unreachable')
     expect(result.error).toMatch(/rejected the credentials/)
+  })
+
+  it('sends somebody who signed in to sign in again, not to check an ID', async () => {
+    // "Check the Application ID and Secret" is useless advice to a church that
+    // connected by pressing a button and has neither.
+    globalThis.fetch = (async () =>
+      new Response('', { status: 401 })) as unknown as typeof fetch
+    const result = await fetchPeople({
+      kind: 'bearer',
+      accessToken: 'access-token-1',
+    })
+    expect(result.ok).toBe(false)
+    if (result.ok) throw new Error('unreachable')
+    expect(result.error).toMatch(/sign in to Planning Center again/)
+    expect(result.error).not.toMatch(/Application ID/)
   })
 
   it('distinguishes no access to People from a bad token', async () => {

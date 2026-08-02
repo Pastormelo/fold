@@ -50,3 +50,33 @@ export const PC_NOT_CONFIGURED = `Planning Center is not connected. Create a Per
 
 /** For a disabled button, where the paragraph above would not be read. */
 export const PC_NOT_CONFIGURED_SHORT = 'Planning Center is not connected.'
+
+/* ────────────────────────── How a request is signed ────────────────────────── */
+
+/**
+ * The two ways to authenticate against Planning Center, and they are not
+ * interchangeable.
+ *
+ * A **Personal Access Token** is an Application ID and Secret sent as HTTP Basic
+ * auth. An **OAuth access token** is a single bearer token sent as
+ * `Authorization: Bearer`. Sending an access token as a Basic password gets a 401
+ * that looks exactly like a wrong credential — which is what happened, and why
+ * this is now a discriminated type rather than two strings and a convention. The
+ * scheme travels with the credential instead of being decided at the call site.
+ */
+export type PcAuth =
+  | { kind: 'basic'; appId: string; secret: string }
+  | { kind: 'bearer'; accessToken: string }
+
+export function authorizationHeader(auth: PcAuth): string {
+  if (auth.kind === 'bearer') return `Bearer ${auth.accessToken}`
+  const encoded = Buffer.from(`${auth.appId}:${auth.secret}`).toString('base64')
+  return `Basic ${encoded}`
+}
+
+/** What a 401 means, which depends on which kind of credential was sent. */
+export function rejectedCredentialNote(auth: PcAuth): string {
+  return auth.kind === 'bearer'
+    ? 'Planning Center rejected the access token. Its authorisation may have been revoked over there — sign in to Planning Center again above.'
+    : 'Planning Center rejected the credentials. Check the Application ID and Secret — they are a pair, and a token that was revoked fails this way too.'
+}
