@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/colors.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/typography.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/effects.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/base.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/styles.css">
+<script src="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/_ds_bundle.js"></script>
+<style>
+  body { margin: 0; background: #E7EDF1; font-family: Mulish, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #B0530D; text-decoration: none; }
+  a:hover { color: #DC6A12; text-decoration: underline; }
+  .fold-scroll { overflow-y: auto; scrollbar-width: none; }
+  .fold-scroll::-webkit-scrollbar { display: none; }
+  @keyframes foldSheet { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes foldFade { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</helmet>
+
+<div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; gap: 28px; padding: 56px 32px 80px; box-sizing: border-box;">
+  <div style="display: flex; flex-direction: column; gap: 12px; align-items: center; text-align: center; max-width: 620px;">
+    <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #5E6C7A;">Working prototype</div>
+    <div style="font-family: Montserrat, sans-serif; font-size: 42px; font-weight: 800; letter-spacing: 0.03em; line-height: 1; color: #20242A; white-space: nowrap;">F<svg width="30" height="30" viewBox="0 0 64 64" fill="none" style="display:inline-block;vertical-align:baseline;overflow:visible;margin:0 0.04em"><rect x="3" y="3" width="58" height="58" rx="15" stroke="#20242A" stroke-width="6.5"/><circle cx="23" cy="24" r="5.4" fill="#20242A"/><circle cx="41" cy="24" r="5.4" fill="#20242A"/><circle cx="23" cy="42" r="5.4" fill="#20242A"/><circle cx="41" cy="42" r="5.4" fill="#20242A"/><circle cx="77" cy="-9" r="7" fill="#FF953E"/></svg>LD</div>
+    <p style="margin: 0; font-size: 15.5px; line-height: 1.6; color: #39424C; text-wrap: pretty;">The tabbed spine from 1a with the one-tap resolution and fast capture from 1b. Tap the tabs, log a conversation, watch the coverage bar move. Everything here is live state.</p>
+  </div>
+
+  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+    <div style="height: 874px; position: relative; background: #F4FBFE; overflow: hidden;">
+
+      <sc-if value="{{ onFold }}" hint-placeholder-val="{{ true }}">
+        <div style="height: 874px; display: flex; flex-direction: column;">
+          <div style="flex-shrink: 0; background: #20242A; padding: 62px 22px 20px; color: #F4FBFE;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #A7B1BD;">{{ roleLabel }}</div>
+              <div style="display: flex; align-items: center;">
+                <div style="width: 26px; height: 26px; border-radius: 999px; background: #5E6C7A; border: 1.5px solid #20242A; font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;">MR</div>
+                <div style="width: 26px; height: 26px; border-radius: 999px; background: #434E59; border: 1.5px solid #20242A; margin-left: -9px; font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;">TJ</div>
+              </div>
+            </div>
+            <div style="font-family: Montserrat, sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -0.025em; margin-top: 8px;">{{ foldName }}</div>
+            <div style="margin-top: 4px; font-size: 14px; color: #C9D0D9;">{{ headerSub }}</div>
+            <div onClick="{{ openBrief }}" style="display: inline-flex; align-items: center; gap: 9px; margin-top: 14px; background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.16); border-radius: 999px; padding: 8px 14px; cursor: pointer;" style-hover="background: rgba(255,255,255,0.15);">
+              <div style="width: 6px; height: 6px; border-radius: 999px; background: #FF953E;"></div>
+              <div style="font-family: Montserrat, sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #F4FBFE;">Your 6am brief</div>
+            </div>
+            <sc-if value="{{ showCoverage }}" hint-placeholder-val="{{ true }}">
+              <div style="margin-top: 22px;">
+                <div style="display: flex; height: 7px; border-radius: 999px; overflow: hidden; gap: 2px;">
+                  <div style="background: #3FA66B; transition: flex-grow 0.4s cubic-bezier(0.22,1,0.36,1); flex: {{ nCurrent }};"></div>
+                  <div style="background: #E8A53C; transition: flex-grow 0.4s cubic-bezier(0.22,1,0.36,1); flex: {{ nDrifting }};"></div>
+                  <div style="background: #FF953E; transition: flex-grow 0.4s cubic-bezier(0.22,1,0.36,1); flex: {{ nOverdue }};"></div>
+                </div>
+                <div style="display: flex; gap: 16px; margin-top: 11px; font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;">
+                  <span style="color: #7FCBA0;">{{ nCurrent }} current</span>
+                  <span style="color: #E8A53C;">{{ nDrifting }} drifting</span>
+                  <span style="color: #FFB76B;">{{ nOverdue }} overdue</span>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+
+          <div class="fold-scroll" style="flex: 1; padding: 0 22px 110px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 22px 0 12px;">
+              <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #20242A;">Needs you now</div>
+              <div style="font-size: 12.5px; color: #7E8995;">{{ staleLabel }}</div>
+            </div>
+
+            <sc-if value="{{ allClear }}" hint-placeholder-val="{{ false }}">
+              <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 16px; padding: 26px 20px; text-align: center;">
+                <div style="font-family: Montserrat, sans-serif; font-size: 17px; font-weight: 800; color: #20242A;">Nobody is falling through.</div>
+                <div style="font-size: 14px; color: #5E6C7A; margin-top: 7px; line-height: 1.5;">Every person in {{ foldName }} has been contacted inside your window. Rare and worth noticing.</div>
+              </div>
+            </sc-if>
+
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <sc-for list="{{ needsYou }}" as="p" hint-placeholder-count="3">
+                <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-left: 3px solid #FF953E; border-radius: 16px; padding: 15px; box-shadow: 0 1px 3px rgba(32,36,42,0.06);">
+                  <div style="display: flex; align-items: center; gap: 12px; cursor: pointer;" onClick="{{ p.open }}">
+                    <div style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 999px; background: #EEF1F5; color: #5E6C7A; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center;">{{ p.initials }}</div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="font-size: 16.5px; font-weight: 700; color: #20242A;">{{ p.name }}</div>
+                      <div style="font-size: 12.5px; color: #7E8995; margin-top: 2px;">Last touch {{ p.since }} · {{ p.tag }}</div>
+                    </div>
+                    <div style="font-size: 17px; color: #C9D0D9;">›</div>
+                  </div>
+                  <div style="font-size: 14.5px; line-height: 1.5; color: #39424C; margin-top: 11px; text-wrap: pretty;">{{ p.context }}</div>
+                  <div style="display: flex; gap: 8px; margin-top: 14px;">
+                    <div onClick="{{ p.talked }}" style="flex: 1; text-align: center; background: #FF953E; border-radius: 10px; padding: 11px 6px; font-family: Montserrat, sans-serif; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #20242A; cursor: pointer; transition: transform 0.14s cubic-bezier(0.22,1,0.36,1);" style-hover="background: #F47F22;" style-active="transform: scale(0.97);">Engaged</div>
+                    <div onClick="{{ p.note }}" style="flex: 1; text-align: center; background: #FFFFFF; border: 1px solid #E0E5EB; border-radius: 10px; padding: 11px 6px; font-family: Montserrat, sans-serif; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #39424C; cursor: pointer;" style-hover="background: #F7F9FB;">Write a note</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #5E6C7A; padding: 26px 0 4px;">Cared for recently</div>
+            <div style="display: flex; flex-direction: column;">
+              <sc-for list="{{ recent }}" as="p" hint-placeholder-count="4">
+                <div onClick="{{ p.open }}" style="display: flex; align-items: center; gap: 12px; padding: 13px 2px; border-bottom: 1px solid #E0E5EB; cursor: pointer;" style-hover="background: #F7F9FB;">
+                  <div style="width: 7px; height: 7px; border-radius: 999px; flex-shrink: 0; background: {{ p.dot }};"></div>
+                  <div style="flex: 1; font-size: 15.5px; color: #20242A;">{{ p.name }}</div>
+                  <div style="font-size: 12.5px; color: #7E8995;">{{ p.since }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ onFeed }}" hint-placeholder-val="{{ false }}">
+        <div style="height: 874px; display: flex; flex-direction: column;">
+          <div style="flex-shrink: 0; background: #20242A; padding: 62px 22px 20px; color: #F4FBFE;">
+            <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #A7B1BD;">Care activity</div>
+            <div style="font-family: Montserrat, sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -0.025em; margin-top: 8px;">The feed</div>
+            <div style="display: flex; gap: 7px; margin-top: 18px;">
+              <sc-for list="{{ feedFilters }}" as="f" hint-placeholder-count="3">
+                <div onClick="{{ f.pick }}" style="font-family: Montserrat, sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 999px; padding: 7px 12px; cursor: pointer; background: {{ f.bg }}; color: {{ f.fg }}; border: 1px solid {{ f.bc }};">{{ f.label }}</div>
+              </sc-for>
+            </div>
+          </div>
+          <div class="fold-scroll" style="flex: 1; padding: 20px 22px 110px;">
+            <sc-if value="{{ onMilestones }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column;">
+                <sc-for list="{{ milestones }}" as="m" hint-placeholder-count="6">
+                  <div onClick="{{ m.open }}" style="display: flex; align-items: center; gap: 13px; padding: 15px 2px; border-bottom: 1px solid #E0E5EB; cursor: pointer;">
+                    <div style="width: 9px; height: 9px; border-radius: 999px; flex-shrink: 0; background: {{ m.dot }};"></div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="font-size: 15.5px; font-weight: 700; color: #20242A;">{{ m.name }}</div>
+                      <div style="font-size: 13px; color: #5E6C7A; margin-top: 2px;">{{ m.detail }}</div>
+                    </div>
+                    <div style="text-align: right;">
+                      <div style="font-family: Montserrat, sans-serif; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; color: {{ m.whenColor }};">{{ m.when }}</div>
+                      <div style="font-family: Montserrat, sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #A7B1BD; margin-top: 3px;">{{ m.type }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ onPrayer }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 7px; margin-bottom: 14px;">
+                <sc-for list="{{ prayerScopes }}" as="v" hint-placeholder-count="2">
+                  <div onClick="{{ v.pick }}" style="font-family: Montserrat, sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 999px; padding: 7px 12px; cursor: pointer; background: {{ v.bg }}; color: {{ v.fg }}; border: 1px solid {{ v.bc }};">{{ v.label }}</div>
+                </sc-for>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 11px;">
+                <sc-for list="{{ prayers }}" as="p" hint-placeholder-count="4">
+                  <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(32,36,42,0.05);">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <div style="font-size: 16px; font-weight: 700; color: #20242A;">{{ p.person }}</div>
+                      <div style="flex: 1;"></div>
+                      <div style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 999px; padding: 4px 9px; color: {{ p.statusColor }}; background: {{ p.statusBg }};">{{ p.status }}</div>
+                    </div>
+                    <div style="font-size: 14.5px; line-height: 1.5; color: #39424C; margin-top: 8px; text-wrap: pretty;">{{ p.body }}</div>
+                    <div style="font-size: 12.5px; color: #7E8995; margin-top: 8px;">Asked {{ p.asked }} · {{ p.countLabel }}</div>
+                    <div style="display: flex; gap: 8px; margin-top: 13px;">
+                      <div onClick="{{ p.pray }}" style="flex: 1; text-align: center; background: #FF953E; border-radius: 10px; padding: 11px 6px; font-family: Montserrat, sans-serif; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #20242A; cursor: pointer;">I prayed</div>
+                      <div onClick="{{ p.close }}" style="flex: 1; text-align: center; background: #FFFFFF; border: 1px solid #E0E5EB; border-radius: 10px; padding: 11px 6px; font-family: Montserrat, sans-serif; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #39424C; cursor: pointer;">Mark answered</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ onCareFeed }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column;">
+              <sc-for list="{{ feed }}" as="e" hint-placeholder-count="6">
+                <div onClick="{{ e.open }}" style="display: flex; gap: 13px; padding-bottom: 20px; cursor: pointer;">
+                  <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; padding-top: 5px;">
+                    <div style="width: 9px; height: 9px; border-radius: 999px; background: {{ e.dot }};"></div>
+                    <div style="flex: 1; width: 1px; background: #E0E5EB;"></div>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: baseline; gap: 8px;">
+                      <div style="font-size: 15.5px; font-weight: 700; color: #20242A;">{{ e.person }}</div>
+                      <div style="font-size: 12px; color: #7E8995;">{{ e.when }}</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
+                      <span style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #39424C; background: #F7F9FB; border: 1px solid #E0E5EB; border-radius: 999px; padding: 3px 8px;">{{ e.kind }}</span>
+                      <span style="font-size: 12.5px; color: #7E8995;">{{ e.who }}</span>
+                      <sc-if value="{{ e.locked }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B0530D; background: #FFF4EA; border-radius: 4px; padding: 3px 6px;">{{ e.vis }}</span>
+                      </sc-if>
+                    </div>
+                    <div style="font-size: 14.5px; line-height: 1.55; color: #39424C; margin-top: 7px; text-wrap: pretty;">{{ e.body }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ onTasks }}" hint-placeholder-val="{{ false }}">
+        <div style="height: 874px; display: flex; flex-direction: column;">
+          <div style="flex-shrink: 0; background: #20242A; padding: 62px 22px 22px; color: #F4FBFE;">
+            <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #A7B1BD;">Follow-ups</div>
+            <div style="font-family: Montserrat, sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -0.025em; margin-top: 8px;">{{ openTaskCount }} on you</div>
+            <div style="margin-top: 5px; font-size: 14px; color: #C9D0D9;">Assigned to you because you shepherd these people.</div>
+          </div>
+          <div class="fold-scroll" style="flex: 1; padding: 22px 22px 110px;">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <sc-for list="{{ tasks }}" as="t" hint-placeholder-count="4">
+                <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 14px; padding: 14px 15px; display: flex; gap: 13px; align-items: flex-start; box-shadow: 0 1px 2px rgba(32,36,42,0.05); opacity: {{ t.opacity }};">
+                  <div onClick="{{ t.toggle }}" style="width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0; margin-top: 1px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; background: {{ t.boxBg }}; border: 1.5px solid {{ t.boxBorder }}; color: #20242A;">{{ t.check }}</div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 15.5px; font-weight: 700; color: #20242A; text-decoration: {{ t.strike }};">{{ t.title }}</div>
+                    <div style="font-size: 13px; color: #7E8995; margin-top: 3px;">{{ t.person }} · {{ t.due }}</div>
+                    <sc-if value="{{ t.nudge }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top: 9px; font-size: 13px; line-height: 1.45; color: #B0530D; background: #FFF4EA; border: 1px solid #FFD2A8; border-radius: 10px; padding: 9px 11px;">{{ t.nudgeText }}</div>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ onPeople }}" hint-placeholder-val="{{ false }}">
+        <div style="height: 874px; display: flex; flex-direction: column;">
+          <div style="flex-shrink: 0; padding: 62px 22px 14px; background: #F4FBFE;">
+            <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #7E8995;">Your church</div>
+            <div style="font-family: Montserrat, sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -0.025em; color: #20242A; margin-top: 8px;">The folds</div>
+            <div style="margin-top: 14px; background: #FFFFFF; border: 1px solid #E0E5EB; border-radius: 12px; padding: 12px 15px;">
+              <input placeholder="Search people, folds, notes" value="{{ query }}" onChange="{{ setQuery }}" style="width: 100%; border: none; outline: none; background: transparent; font-family: Mulish, sans-serif; font-size: 15px; color: #20242A;">
+            </div>
+          </div>
+          <div class="fold-scroll" style="flex: 1; padding: 10px 22px 110px;">
+            <sc-if value="{{ searching }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column;">
+                <sc-for list="{{ results }}" as="p" hint-placeholder-count="3">
+                  <div onClick="{{ p.open }}" style="display: flex; align-items: center; gap: 12px; padding: 14px 2px; border-bottom: 1px solid #E0E5EB; cursor: pointer;">
+                    <div style="width: 34px; height: 34px; border-radius: 999px; background: #EEF1F5; color: #5E6C7A; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 11.5px; display: flex; align-items: center; justify-content: center;">{{ p.initials }}</div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="font-size: 15.5px; font-weight: 700; color: #20242A;">{{ p.name }}</div>
+                      <div style="font-size: 12.5px; color: #7E8995;">{{ p.tag }} · last touch {{ p.since }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ notSearching }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <sc-for list="{{ folds }}" as="f" hint-placeholder-count="6">
+                  <div onClick="{{ f.open }}" style="background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 16px; padding: 15px; box-shadow: 0 1px 2px rgba(32,36,42,0.05); cursor: pointer;" style-hover="box-shadow: 0 4px 12px rgba(32,36,42,0.09);">
+                    <div style="display: flex; align-items: center; gap: 11px;">
+                      <div style="width: 34px; height: 34px; border-radius: 999px; background: #EEF1F5; color: #5E6C7A; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 11.5px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{ f.initials }}</div>
+                      <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 16px; font-weight: 700; color: #20242A;">{{ f.name }}</div>
+                        <div style="font-size: 12.5px; color: #7E8995; margin-top: 1px;">{{ f.elder }} · {{ f.count }} people</div>
+                      </div>
+                      <div style="font-family: Montserrat, sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: {{ f.statusColor }};">{{ f.status }}</div>
+                    </div>
+                    <div style="display: flex; height: 6px; border-radius: 999px; overflow: hidden; gap: 2px; margin-top: 13px;">
+                      <div style="background: #3FA66B; flex: {{ f.current }};"></div>
+                      <div style="background: #E8A53C; flex: {{ f.drifting }};"></div>
+                      <div style="background: #FF953E; flex: {{ f.overdue }};"></div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ onGuests }}" hint-placeholder-val="{{ false }}">
+        <div style="height: 874px; display: flex; flex-direction: column;">
+          <div style="flex-shrink: 0; padding: 62px 22px 12px; background: #F4FBFE;">
+            <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #7E8995;">Assimilation</div>
+            <div style="font-family: Montserrat, sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -0.025em; color: #20242A; margin-top: 8px;">Guests</div>
+            <div style="font-size: 14px; line-height: 1.5; color: #5E6C7A; margin-top: 6px;">{{ guestSub }}</div>
+            <div style="display: flex; gap: 6px; margin-top: 14px;">
+              <sc-for list="{{ gStages }}" as="st" hint-placeholder-count="4">
+                <div onClick="{{ st.pick }}" style="flex: 1; border-radius: 12px; padding: 10px 8px; cursor: pointer; text-align: center; background: {{ st.bg }}; border: 1px solid {{ st.bc }};">
+                  <div style="font-family: Montserrat, sans-serif; font-size: 19px; font-weight: 800; letter-spacing: -0.02em; color: {{ st.fg }};">{{ st.count }}</div>
+                  <div style="font-family: Montserrat, sans-serif; font-size: 8px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{ st.labelFg }}; margin-top: 3px;">{{ st.short }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display: flex; gap: 6px; margin-top: 12px; overflow-x: auto;">
+              <sc-for list="{{ gFilters }}" as="f" hint-placeholder-count="4">
+                <div onClick="{{ f.pick }}" style="flex-shrink: 0; font-size: 13px; border-radius: 999px; padding: 7px 13px; cursor: pointer; background: {{ f.bg }}; color: {{ f.fg }}; border: 1px solid {{ f.bc }};">{{ f.label }}</div>
+              </sc-for>
+            </div>
+          </div>
+          <div class="fold-scroll" style="flex: 1; padding: 12px 22px 110px;">
+            <div onClick="{{ openGreeter }}" style="background: #20242A; border-radius: 16px; padding: 16px; cursor: pointer; margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #FFB76B;">Sunday arrivals · greeter mode</div>
+                  <div style="font-size: 15px; font-weight: 700; color: #F4FBFE; margin-top: 6px;">{{ greeterCount }} captured at the door today</div>
+                  <div style="font-size: 12.5px; line-height: 1.5; color: #A7B1BD; margin-top: 3px; text-wrap: pretty;">{{ greeterPrompt }}</div>
+                </div>
+                <div style="flex-shrink: 0; width: 38px; height: 38px; border-radius: 999px; background: #FF953E; color: #20242A; font-size: 20px; font-weight: 700; display: flex; align-items: center; justify-content: center;">+</div>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <sc-for list="{{ guestList }}" as="g" hint-placeholder-count="5">
+                <div onClick="{{ g.open }}" style="background: #FFFFFF; border: 1px solid #EEF1F5; border-left: 3px solid {{ g.urgencyColor }}; border-radius: 16px; padding: 15px; box-shadow: 0 1px 2px rgba(32,36,42,0.05); cursor: pointer;" style-hover="box-shadow: 0 4px 12px rgba(32,36,42,0.09);">
+                  <div style="display: flex; align-items: center; gap: 11px;">
+                    <div style="width: 34px; height: 34px; border-radius: 999px; background: #EEF1F5; color: #5E6C7A; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 11.5px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{ g.initials }}</div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="font-size: 16px; font-weight: 700; color: #20242A;">{{ g.name }}</div>
+                      <div style="font-size: 12.5px; color: #7E8995; margin-top: 1px;">{{ g.stageLabel }} · {{ g.visitLabel }}</div>
+                    </div>
+                    <div style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: {{ g.urgencyColor }}; flex-shrink: 0;">{{ g.urgency }}</div>
+                  </div>
+                  <div style="font-size: 14.5px; line-height: 1.45; color: #20242A; margin-top: 11px; text-wrap: pretty;">{{ g.nextStep }}</div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #F1F4F7;">
+                    <div style="font-size: 12.5px; color: #7E8995;">{{ g.connector }}</div>
+                    <div style="font-size: 12px; color: #A7B1BD;">{{ g.touchLabel }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background: #FFF4EA; border: 1px solid #FFD2A8; border-radius: 16px; padding: 16px; margin-top: 14px;">
+              <div style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #B0530D;">Sunday reminder</div>
+              <div style="font-size: 14px; line-height: 1.5; color: #7A4A17; margin-top: 6px; text-wrap: pretty;">{{ guestReminder }}</div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ greeterOn }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; inset: 0; z-index: 30; background: #F4FBFE; display: flex; flex-direction: column; animation: foldFade 0.18s cubic-bezier(0.22,1,0.36,1);">
+          <div style="flex-shrink: 0; background: #20242A; padding: 58px 22px 22px; color: #F4FBFE;">
+            <div onClick="{{ closeGreeter }}" style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A7B1BD; cursor: pointer;">‹ Guests</div>
+            <div style="font-family: Montserrat, sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -0.025em; margin-top: 16px;">Who just walked in</div>
+            <div style="font-size: 13.5px; line-height: 1.5; color: #A7B1BD; margin-top: 6px; text-wrap: pretty;">{{ greeterPrompt }}</div>
+          </div>
+
+          <div class="fold-scroll" style="flex: 1; padding: 16px 22px 40px;">
+            <div style="background: #FFFFFF; border: 1px solid #E0E5EB; border-radius: 18px; padding: 16px; box-shadow: 0 1px 3px rgba(32,36,42,0.05);">
+              <div style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #7E8995;">Name</div>
+              <input placeholder="First and last, or the household" value="{{ gName }}" onChange="{{ setGName }}" style="width: 100%; box-sizing: border-box; margin-top: 8px; border: 1px solid #E0E5EB; border-radius: 12px; padding: 13px 14px; outline: none; font-family: Mulish, sans-serif; font-size: 16px; color: #20242A;">
+
+              <div style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #7E8995; margin-top: 16px;">Service</div>
+              <div style="display: flex; gap: 7px; margin-top: 8px;">
+                <sc-for list="{{ gSvcOptions }}" as="v" hint-placeholder-count="2">
+                  <div onClick="{{ v.pick }}" style="flex: 1; text-align: center; font-size: 14px; border-radius: 10px; padding: 11px 10px; cursor: pointer; background: {{ v.bg }}; color: {{ v.fg }}; border: 1px solid {{ v.bc }};">{{ v.label }}</div>
+                </sc-for>
+              </div>
+
+              <div style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #7E8995; margin-top: 16px;">How you met them</div>
+              <div style="display: flex; gap: 7px; margin-top: 8px; flex-wrap: wrap;">
+                <sc-for list="{{ gSourceOptions }}" as="v" hint-placeholder-count="5">
+                  <div onClick="{{ v.pick }}" style="font-size: 13px; border-radius: 999px; padding: 8px 13px; cursor: pointer; background: {{ v.bg }}; color: {{ v.fg }}; border: 1px solid {{ v.bc }};">{{ v.label }}</div>
+                </sc-for>
+              </div>
+
+              <div style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #7E8995; margin-top: 16px;">Who they came with</div>
+              <div style="display: flex; gap: 7px; margin-top: 8px; flex-wrap: wrap;">
+                <sc-for list="{{ gPartyOptions }}" as="v" hint-placeholder-count="4">
+                  <div onClick="{{ v.pick }}" style="font-size: 13px; border-radius: 999px; padding: 8px 13px; cursor: pointer; background: {{ v.bg }}; color: {{ v.fg }}; border: 1px solid {{ v.bc }};">{{ v.label }}</div>
+                </sc-for>
+              </div>
+
+              <div onClick="{{ toggleGFirst }}" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; border: 1px solid {{ gFirstBc }}; background: {{ gFirstBg }}; border-radius: 12px; padding: 13px 14px; cursor: pointer;">
+                <div style="font-size: 14.5px; font-weight: 700; color: #20242A;">{{ gFirstLabel }}</div>
+                <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #B0530D;">Tap to change</div>
+              </div>
+
+              <div onClick="{{ saveArrival }}" style="margin-top: 16px; text-align: center; border-radius: 12px; padding: 15px; font-family: Montserrat, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; background: {{ saveArrivalBg }}; color: {{ saveArrivalFg }};">Save arrival</div>
+            </div>
+
+            <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #7E8995; margin-top: 22px;">Captured today · {{ greeterCount }}</div>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+              <sc-for list="{{ arrLog }}" as="a" hint-placeholder-count="3">
+                <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 14px; padding: 14px; box-shadow: 0 1px 2px rgba(32,36,42,0.05);">
+                  <div style="display: flex; align-items: center; gap: 9px;">
+                    <div style="flex: 1; min-width: 0; font-size: 15.5px; font-weight: 700; color: #20242A;">{{ a.name }}</div>
+                    <div style="font-family: Montserrat, sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; border-radius: 999px; padding: 3px 8px; flex-shrink: 0; background: {{ a.badgeBg }}; color: {{ a.badgeFg }};">{{ a.badge }}</div>
+                  </div>
+                  <div style="font-size: 12.5px; color: #7E8995; margin-top: 4px;">{{ a.meta }} · {{ a.at }}</div>
+                  <div style="font-size: 12.5px; color: #5E6C7A; margin-top: 2px;">{{ a.party }}</div>
+                  <sc-if value="{{ a.gap }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size: 12.5px; line-height: 1.45; color: #B0530D; background: #FFF4EA; border: 1px solid #FFD2A8; border-radius: 10px; padding: 9px 11px; margin-top: 10px; text-wrap: pretty;">{{ a.gapNote }}</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showGuest }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; inset: 0; z-index: 30; background: #F4FBFE; display: flex; flex-direction: column; animation: foldFade 0.18s cubic-bezier(0.22,1,0.36,1);">
+          <div style="flex-shrink: 0; background: #20242A; padding: 58px 22px 22px; color: #F4FBFE;">
+            <div onClick="{{ closeGuest }}" style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A7B1BD; cursor: pointer;">‹ Guests</div>
+            <div style="display: flex; align-items: center; gap: 14px; margin-top: 20px;">
+              <div style="width: 52px; height: 52px; border-radius: 999px; background: #434E59; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 17px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{ mg.initials }}</div>
+              <div style="min-width: 0;">
+                <div style="font-family: Montserrat, sans-serif; font-size: 23px; font-weight: 800; letter-spacing: -0.02em;">{{ mg.name }}</div>
+                <div style="font-size: 13px; color: #A7B1BD; margin-top: 3px;">{{ mg.stageLabel }} · {{ mg.status }}</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 14px; margin-top: 18px;">
+              <sc-for list="{{ mg.facts }}" as="f" hint-placeholder-count="3">
+                <div style="flex: 1;">
+                  <div style="font-family: Montserrat, sans-serif; font-size: 8px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #7E8995;">{{ f.label }}</div>
+                  <div style="font-size: 13.5px; font-weight: 700; color: #F4FBFE; margin-top: 3px;">{{ f.value }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div class="fold-scroll" style="flex: 1; padding: 16px 22px 40px;">
+            <div style="background: #FFF4EA; border: 1px solid #FFD2A8; border-radius: 16px; padding: 16px;">
+              <div style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #B0530D;">Next best action</div>
+              <div style="font-size: 16px; font-weight: 700; line-height: 1.4; color: #20242A; margin-top: 6px; text-wrap: pretty;">{{ mg.nextStep }}</div>
+              <div style="font-size: 13.5px; line-height: 1.5; color: #7A4A17; margin-top: 5px;">{{ mg.whyNow }}</div>
+            </div>
+            <div style="display: flex; gap: 7px; flex-wrap: wrap; margin-top: 12px;">
+              <sc-for list="{{ mg.actions }}" as="a" hint-placeholder-count="4">
+                <div onClick="{{ a.act }}" style="flex: 1; min-width: 78px; text-align: center; font-family: Montserrat, sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; border-radius: 12px; padding: 13px 8px; cursor: pointer; background: {{ a.bg }}; color: {{ a.fg }}; border: 1px solid {{ a.bc }};">{{ a.label }}</div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ mg.toast }}" hint-placeholder-val="{{ false }}">
+              <div style="background: #20242A; border-radius: 14px; padding: 14px 16px; margin-top: 12px; font-size: 14px; line-height: 1.5; color: #F4FBFE;">{{ mg.toast }}</div>
+            </sc-if>
+            <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 16px; padding: 16px; margin-top: 12px;">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
+                <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #20242A;">First-visit workflow</div>
+                <div style="font-size: 12px; color: #7E8995;">{{ mg.touchLabel }}</div>
+              </div>
+              <div style="display: flex; gap: 5px; margin-top: 12px;">
+                <sc-for list="{{ mg.touches }}" as="t" hint-placeholder-count="4">
+                  <div style="flex: 1;">
+                    <div style="height: 5px; border-radius: 999px; background: {{ t.color }};"></div>
+                    <div style="font-size: 10.5px; color: #5E6C7A; margin-top: 5px;">{{ t.label }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font-size: 13px; line-height: 1.5; color: #5E6C7A; margin-top: 12px; padding-top: 11px; border-top: 1px solid #F1F4F7;">{{ mg.workflowNote }}</div>
+            </div>
+            <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 16px; padding: 16px; margin-top: 12px;">
+              <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #20242A;">Everything so far</div>
+              <div style="display: flex; flex-direction: column; margin-top: 13px;">
+                <sc-for list="{{ mg.timeline }}" as="t" hint-placeholder-count="4">
+                  <div style="display: flex; gap: 12px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; width: 9px; flex-shrink: 0;">
+                      <div style="width: 8px; height: 8px; border-radius: 999px; background: {{ t.dot }}; margin-top: 5px;"></div>
+                      <div style="flex: 1; width: 1.5px; background: #EEF1F5;"></div>
+                    </div>
+                    <div style="flex: 1; min-width: 0; padding-bottom: 16px;">
+                      <div style="display: flex; align-items: baseline; gap: 8px;">
+                        <div style="font-family: Montserrat, sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: {{ t.dot }};">{{ t.kind }}</div>
+                        <div style="font-size: 11.5px; color: #A7B1BD;">{{ t.when }}</div>
+                      </div>
+                      <div style="font-size: 14px; line-height: 1.5; color: #20242A; margin-top: 3px; text-wrap: pretty;">{{ t.body }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showPerson }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; inset: 0; z-index: 30; background: #F4FBFE; display: flex; flex-direction: column; animation: foldFade 0.18s cubic-bezier(0.22,1,0.36,1);">
+          <div style="flex-shrink: 0; background: #20242A; padding: 58px 22px 22px; color: #F4FBFE;">
+            <div onClick="{{ closePerson }}" style="display: flex; align-items: center; justify-content: space-between; font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A7B1BD; cursor: pointer;">
+              <span>‹ {{ foldName }}</span>
+              <span style="color: #FFB76B;">Edit</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 14px; margin-top: 20px;">
+              <div style="width: 56px; height: 56px; border-radius: 999px; background: #434E59; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 18px; display: flex; align-items: center; justify-content: center;">{{ person.initials }}</div>
+              <div style="min-width: 0;">
+                <div style="font-family: Montserrat, sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -0.02em;">{{ person.name }}</div>
+                <div style="font-size: 13px; color: #C9D0D9; margin-top: 3px;">{{ person.meta }}</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 7px; margin-top: 18px; flex-wrap: wrap;">
+              <span onClick="{{ openJourney }}" style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #20242A; background: #FFB76B; border-radius: 999px; padding: 5px 10px; cursor: pointer;">{{ person.journey }} ›</span>
+              <span style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #F4FBFE; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; padding: 5px 10px;">{{ person.tag }}</span>
+            </div>
+          </div>
+
+          <div class="fold-scroll" style="flex: 1; padding: 18px 22px 0;">
+            <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+              <div style="flex: 1; background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 12px; padding: 11px 12px;">
+                <div style="font-family: Montserrat, sans-serif; font-size: 21px; font-weight: 800; color: #20242A;">{{ person.touches }}</div>
+                <div style="font-family: Montserrat, sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #7E8995; margin-top: 2px;">Touches, 90d</div>
+              </div>
+              <div style="flex: 1; background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 12px; padding: 11px 12px;">
+                <div style="font-family: Montserrat, sans-serif; font-size: 21px; font-weight: 800; color: {{ person.sinceColor }};">{{ person.sinceShort }}</div>
+                <div style="font-family: Montserrat, sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #7E8995; margin-top: 2px;">Since last</div>
+              </div>
+              <div style="flex: 1; background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 12px; padding: 11px 12px;">
+                <div style="font-family: Montserrat, sans-serif; font-size: 21px; font-weight: 800; color: #20242A;">{{ person.birthday }}</div>
+                <div style="font-family: Montserrat, sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #7E8995; margin-top: 2px;">Birthday</div>
+              </div>
+            </div>
+            <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #20242A; padding-bottom: 14px;">Care thread</div>
+            <div style="display: flex; flex-direction: column;">
+              <sc-for list="{{ thread }}" as="e" hint-placeholder-count="4">
+                <div style="display: flex; gap: 13px; padding-bottom: 18px;">
+                  <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; padding-top: 5px;">
+                    <div style="width: 9px; height: 9px; border-radius: 999px; background: {{ e.dot }};"></div>
+                    <div style="flex: 1; width: 1px; background: #E0E5EB;"></div>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <span style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #39424C;">{{ e.kind }}</span>
+                      <span style="font-size: 12.5px; color: #7E8995;">{{ e.when }} · {{ e.who }}</span>
+                      <sc-if value="{{ e.locked }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B0530D; background: #FFF4EA; border-radius: 4px; padding: 3px 6px;">{{ e.vis }}</span>
+                      </sc-if>
+                    </div>
+                    <div style="font-size: 14.5px; line-height: 1.55; color: #39424C; margin-top: 5px; text-wrap: pretty;">{{ e.body }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="flex-shrink: 0; padding: 12px 18px 34px; background: rgba(244,251,254,0.96); border-top: 1px solid #E0E5EB; display: flex; align-items: center; gap: 10px;">
+            <div onClick="{{ openCaptureForPerson }}" style="flex: 1; background: #FFFFFF; border: 1px solid #E0E5EB; border-radius: 999px; padding: 13px 18px; font-size: 14.5px; color: #7E8995; cursor: pointer;" style-hover="border-color: #FFB76B;">{{ logPlaceholder }}</div>
+            <div onClick="{{ openCaptureForPerson }}" style="width: 46px; height: 46px; border-radius: 999px; background: #20242A; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;">
+              <div style="width: 11px; height: 17px; border-radius: 999px; background: #FF953E;"></div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showCapture }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; inset: 0; z-index: 60; background: rgba(32,36,42,0.55); display: flex; flex-direction: column; justify-content: flex-end; animation: foldFade 0.18s ease-out;">
+          <div onClick="{{ closeCapture }}" style="flex: 1;"></div>
+          <div style="background: #F4FBFE; border-radius: 26px 26px 0 0; padding: 16px 22px 30px; animation: foldSheet 0.26s cubic-bezier(0.22,1,0.36,1);">
+            <div style="width: 42px; height: 4px; border-radius: 999px; background: #C9D0D9; margin: 0 auto 18px;"></div>
+            <div style="display: flex; align-items: center; gap: 11px;">
+              <div style="width: 34px; height: 34px; border-radius: 999px; background: #EEF1F5; color: #5E6C7A; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 11.5px; display: flex; align-items: center; justify-content: center;">{{ capturePerson.initials }}</div>
+              <div style="flex: 1; font-size: 16px; font-weight: 700; color: #20242A;">{{ capturePerson.name }}</div>
+              <span onClick="{{ closeCapture }}" style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #B0530D; cursor: pointer;">Cancel</span>
+            </div>
+            <textarea placeholder="What happened? Use #tags and @names." value="{{ draft }}" onChange="{{ setDraft }}" style="width: 100%; box-sizing: border-box; margin-top: 14px; min-height: 96px; resize: none; border: 1px solid #E0E5EB; border-radius: 14px; padding: 13px 14px; font-family: Mulish, sans-serif; font-size: 16px; line-height: 1.5; color: #20242A; background: #FFFFFF; outline: none;"></textarea>
+            <div style="display: flex; gap: 7px; margin-top: 14px; flex-wrap: wrap;">
+              <sc-for list="{{ kindChips }}" as="k" hint-placeholder-count="5">
+                <div onClick="{{ k.pick }}" style="font-family: Montserrat, sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 999px; padding: 7px 11px; cursor: pointer; background: {{ k.bg }}; color: {{ k.fg }}; border: 1px solid {{ k.bc }};">{{ k.label }}</div>
+              </sc-for>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-top: 16px; padding: 12px 14px; background: #F7F9FB; border: 1px solid #EEF1F5; border-radius: 14px;">
+              <div onClick="{{ toggleVoice }}" style="width: 40px; height: 40px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; background: {{ micBg }};">
+                <div style="width: 10px; height: 16px; border-radius: 999px; background: {{ micDot }};"></div>
+              </div>
+              <div style="flex: 1; display: flex; align-items: center; gap: 3px; height: 22px;">
+                <sc-for list="{{ wave }}" as="w" hint-placeholder-count="16">
+                  <div style="width: 3px; border-radius: 999px; height: {{ w.h }}; background: {{ w.c }};"></div>
+                </sc-for>
+              </div>
+              <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; color: #5E6C7A;">{{ voiceLabel }}</div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 18px; gap: 10px;">
+              <div style="display: flex; background: #EEF1F5; border-radius: 10px; padding: 3px;">
+                <sc-for list="{{ visOptions }}" as="v" hint-placeholder-count="3">
+                  <div onClick="{{ v.pick }}" style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 8px 9px; border-radius: 8px; cursor: pointer; background: {{ v.bg }}; color: {{ v.fg }}; box-shadow: {{ v.shadow }};">{{ v.label }}</div>
+                </sc-for>
+              </div>
+              <div onClick="{{ saveEntry }}" style="background: #20242A; border-radius: 10px; padding: 13px 22px; font-family: Montserrat, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #F4FBFE; cursor: pointer;" style-active="transform: scale(0.97);">Save</div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showBrief }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; inset: 0; z-index: 50; background: #F4FBFE; display: flex; flex-direction: column; animation: foldFade 0.18s cubic-bezier(0.22,1,0.36,1);">
+          <div style="flex-shrink: 0; background: #20242A; padding: 58px 22px 26px; color: #F4FBFE;">
+            <div onClick="{{ closeBrief }}" style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A7B1BD; cursor: pointer;">‹ Close</div>
+            <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #FFB76B; margin-top: 18px;">{{ briefDate }} · 6:00 AM</div>
+            <div style="font-family: Montserrat, sans-serif; font-size: 27px; font-weight: 800; letter-spacing: -0.025em; margin-top: 10px; line-height: 1.18; text-wrap: pretty;">{{ briefLead }}</div>
+            <div style="font-size: 13.5px; color: #C9D0D9; margin-top: 8px;">The same brief lands in your inbox every morning, so you can read it before the day starts asking things of you.</div>
+          </div>
+          <div class="fold-scroll" style="flex: 1; padding: 20px 22px 30px;">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <sc-for list="{{ briefBlocks }}" as="b" hint-placeholder-count="4">
+                <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 16px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(32,36,42,0.05);">
+                  <div style="display: flex; align-items: center; gap: 9px;">
+                    <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #20242A;">{{ b.label }}</div>
+                    <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 800; color: #B0530D;">{{ b.count }}</div>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 9px; margin-top: 12px;">
+                    <sc-for list="{{ b.items }}" as="i" hint-placeholder-count="2">
+                      <div style="display: flex; gap: 10px; align-items: flex-start;">
+                        <div style="width: 5px; height: 5px; border-radius: 999px; background: #C9D0D9; margin-top: 8px; flex-shrink: 0;"></div>
+                        <div style="flex: 1; font-size: 14.5px; line-height: 1.5; color: #39424C; text-wrap: pretty;">{{ i }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div onClick="{{ closeBrief }}" style="margin-top: 18px; text-align: center; background: #20242A; border-radius: 11px; padding: 15px; font-family: Montserrat, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #F4FBFE; cursor: pointer;">Start with these</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showJourney }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; inset: 0; z-index: 45; background: #F4FBFE; display: flex; flex-direction: column; animation: foldFade 0.18s cubic-bezier(0.22,1,0.36,1);">
+          <div style="flex-shrink: 0; background: #20242A; padding: 58px 22px 24px; color: #F4FBFE;">
+            <div onClick="{{ closeJourney }}" style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A7B1BD; cursor: pointer;">‹ {{ journey.person }}</div>
+            <div style="font-family: Montserrat, sans-serif; font-size: 27px; font-weight: 800; letter-spacing: -0.025em; margin-top: 16px;">{{ journey.name }}</div>
+            <div style="font-size: 13.5px; color: #C9D0D9; margin-top: 5px;">{{ journey.progressLabel }}</div>
+            <div style="display: flex; gap: 5px; margin-top: 18px;">
+              <sc-for list="{{ journey.pips }}" as="p" hint-placeholder-count="4">
+                <div style="flex: 1; height: 5px; border-radius: 999px; background: {{ p.c }};"></div>
+              </sc-for>
+            </div>
+          </div>
+          <div class="fold-scroll" style="flex: 1; padding: 22px 22px 24px;">
+            <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #20242A;">The steps</div>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+              <sc-for list="{{ journey.steps }}" as="s" hint-placeholder-count="4">
+                <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 14px; padding: 15px; display: flex; gap: 13px; align-items: flex-start; box-shadow: 0 1px 2px rgba(32,36,42,0.05); opacity: {{ s.opacity }};">
+                  <div onClick="{{ s.toggle }}" style="width: 24px; height: 24px; border-radius: 999px; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #20242A; background: {{ s.boxBg }}; border: 2px solid {{ s.boxBorder }};">{{ s.check }}</div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 15.5px; font-weight: 700; color: #20242A; text-decoration: {{ s.strike }};">{{ s.label }}</div>
+                    <div style="font-size: 12.5px; color: #7E8995; margin-top: 3px;">{{ s.meta }}</div>
+                    <sc-if value="{{ s.current }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top: 11px; font-size: 13.5px; line-height: 1.5; color: #B0530D; background: #FFF4EA; border: 1px solid #FFD2A8; border-radius: 10px; padding: 10px 12px;">{{ s.hint }}</div>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top: 24px; padding: 16px 18px; background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 14px;">
+              <div style="font-size: 14.5px; font-weight: 700; color: #20242A;">Journeys are shared, not private</div>
+              <div style="font-size: 13.5px; line-height: 1.55; color: #5E6C7A; margin-top: 6px;">If you go on vacation, whoever covers your fold sees exactly which step this person is on and what comes next.</div>
+            </div>
+          </div>
+          <div style="flex-shrink: 0; padding: 12px 22px 34px; border-top: 1px solid #E0E5EB; background: rgba(244,251,254,0.96); display: flex; gap: 10px;">
+            <div onClick="{{ openCaptureForJourney }}" style="flex: 1; text-align: center; background: #FF953E; border-radius: 11px; padding: 15px; font-family: Montserrat, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #20242A; cursor: pointer;">Log this step</div>
+            <div style="width: 54px; background: #FFFFFF; border: 1px solid #E0E5EB; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #39424C;">···</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showFold }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; inset: 0; z-index: 42; background: #F4FBFE; display: flex; flex-direction: column; animation: foldFade 0.18s cubic-bezier(0.22,1,0.36,1);">
+          <div style="flex-shrink: 0; background: #20242A; padding: 58px 22px 24px; color: #F4FBFE;">
+            <div onClick="{{ closeFold }}" style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A7B1BD; cursor: pointer;">‹ The folds</div>
+            <div style="font-family: Montserrat, sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -0.025em; margin-top: 16px;">{{ foldDetail.name }}</div>
+            <div style="font-size: 13.5px; color: #C9D0D9; margin-top: 5px;">{{ foldDetail.sub }}</div>
+          </div>
+          <div class="fold-scroll" style="flex: 1; padding: 22px 22px 24px;">
+            <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #20242A;">Shepherds</div>
+            <div style="display: flex; flex-direction: column; gap: 9px; margin-top: 13px;">
+              <sc-for list="{{ foldDetail.shepherds }}" as="s" hint-placeholder-count="2">
+                <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 14px; padding: 13px 15px; display: flex; align-items: center; gap: 12px;">
+                  <div style="width: 36px; height: 36px; border-radius: 999px; background: #EEF1F5; color: #5E6C7A; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center;">{{ s.initials }}</div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 15.5px; font-weight: 700; color: #20242A;">{{ s.name }}</div>
+                    <div style="font-size: 12.5px; color: #7E8995; margin-top: 1px;">{{ s.role }} · {{ s.load }}</div>
+                  </div>
+                </div>
+              </sc-for>
+              <div onClick="{{ startOnboarding }}" style="border: 1px dashed #C9D0D9; border-radius: 14px; padding: 14px 15px; display: flex; align-items: center; gap: 12px; cursor: pointer;" style-hover="border-color: #FF953E; background: #FFF4EA;">
+                <div style="width: 36px; height: 36px; border-radius: 999px; background: #FFE6CF; color: #B0530D; font-size: 19px; font-weight: 300; display: flex; align-items: center; justify-content: center;">+</div>
+                <div style="flex: 1;">
+                  <div style="font-size: 15px; font-weight: 700; color: #20242A;">Invite a co-shepherd</div>
+                  <div style="font-size: 12.5px; color: #7E8995; margin-top: 1px;">They see this fold only, and what you invite them to see</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #20242A; margin-top: 28px;">Who belongs here</div>
+            <div style="display: flex; flex-direction: column;">
+              <sc-for list="{{ foldDetail.members }}" as="m" hint-placeholder-count="6">
+                <div style="display: flex; align-items: center; gap: 12px; padding: 14px 2px; border-bottom: 1px solid #E0E5EB;">
+                  <div style="width: 7px; height: 7px; border-radius: 999px; flex-shrink: 0; background: {{ m.dot }};"></div>
+                  <div style="flex: 1; min-width: 0;" onClick="{{ m.open }}">
+                    <div style="font-size: 15.5px; font-weight: 700; color: #20242A;">{{ m.name }}</div>
+                    <div style="font-size: 12.5px; color: #7E8995; margin-top: 1px;">{{ m.elder }} · last touch {{ m.since }}</div>
+                  </div>
+                  <div onClick="{{ m.reassign }}" style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #39424C; background: #FFFFFF; border: 1px solid #E0E5EB; border-radius: 999px; padding: 7px 11px; cursor: pointer;" style-hover="border-color: #FFB76B; color: #B0530D;">Move</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showAssign }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; inset: 0; z-index: 65; background: rgba(32,36,42,0.55); display: flex; flex-direction: column; justify-content: flex-end; animation: foldFade 0.18s ease-out;">
+          <div onClick="{{ closeAssign }}" style="flex: 1;"></div>
+          <div style="background: #F4FBFE; border-radius: 26px 26px 0 0; padding: 16px 22px 30px; animation: foldSheet 0.26s cubic-bezier(0.22,1,0.36,1);">
+            <div style="width: 42px; height: 4px; border-radius: 999px; background: #C9D0D9; margin: 0 auto 18px;"></div>
+            <div style="font-family: Montserrat, sans-serif; font-size: 19px; font-weight: 800; letter-spacing: -0.02em; color: #20242A;">Who shepherds {{ assignName }}?</div>
+            <div style="font-size: 13.5px; line-height: 1.5; color: #5E6C7A; margin-top: 6px;">Their care history moves with them. Nothing is lost, and the new shepherd sees every journey mid-step.</div>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 18px;">
+              <sc-for list="{{ shepherdOptions }}" as="o" hint-placeholder-count="4">
+                <div onClick="{{ o.pick }}" style="display: flex; align-items: center; gap: 12px; padding: 13px 15px; border-radius: 14px; cursor: pointer; background: {{ o.bg }}; border: 1.5px solid {{ o.bc }};">
+                  <div style="width: 34px; height: 34px; border-radius: 999px; background: #EEF1F5; color: #5E6C7A; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 11.5px; display: flex; align-items: center; justify-content: center;">{{ o.initials }}</div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 15px; font-weight: 700; color: #20242A;">{{ o.name }}</div>
+                    <div style="font-size: 12.5px; color: #7E8995; margin-top: 1px;">{{ o.load }}</div>
+                  </div>
+                  <sc-if value="{{ o.selected }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 800; color: #B0530D;">Selected</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div onClick="{{ confirmAssign }}" style="margin-top: 18px; text-align: center; background: #20242A; border-radius: 11px; padding: 15px; font-family: Montserrat, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #F4FBFE; cursor: pointer;">Move them</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showOnboarding }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; inset: 0; z-index: 70; background: #20242A; display: flex; flex-direction: column; padding: 74px 26px 34px; color: #F4FBFE; animation: foldFade 0.2s ease-out;">
+          <div style="margin-bottom: 26px;"><div style="font-family: Montserrat, sans-serif; font-size: 21px; font-weight: 800; letter-spacing: 0.03em; line-height: 1; color: #F4FBFE; white-space: nowrap;">F<svg width="15" height="15" viewBox="0 0 64 64" fill="none" style="display:inline-block;vertical-align:baseline;overflow:visible;margin:0 0.04em"><rect x="3" y="3" width="58" height="58" rx="15" stroke="#F4FBFE" stroke-width="6.5"/><circle cx="23" cy="24" r="5.4" fill="#F4FBFE"/><circle cx="41" cy="24" r="5.4" fill="#F4FBFE"/><circle cx="23" cy="42" r="5.4" fill="#F4FBFE"/><circle cx="41" cy="42" r="5.4" fill="#F4FBFE"/><circle cx="77" cy="-9" r="7" fill="#FF953E"/></svg>LD</div></div>
+          <div style="display: flex; gap: 6px;">
+            <sc-for list="{{ onboardPips }}" as="p" hint-placeholder-count="3">
+              <div style="flex: 1; height: 4px; border-radius: 999px; background: {{ p.c }};"></div>
+            </sc-for>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 18px;">
+            <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #FFB76B;">{{ onboard.eyebrow }}</div>
+            <div style="font-family: Montserrat, sans-serif; font-size: 33px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.14; text-wrap: pretty;">{{ onboard.title }}</div>
+            <div style="font-size: 16.5px; line-height: 1.6; color: #C9D0D9; text-wrap: pretty;">{{ onboard.body }}</div>
+            <div style="margin-top: 6px; padding: 16px 18px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; font-size: 14.5px; line-height: 1.55; color: #F4FBFE;">{{ onboard.aside }}</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div onClick="{{ skipOnboarding }}" style="font-family: Montserrat, sans-serif; font-size: 11.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #7E8995; cursor: pointer; padding: 14px 4px;">Skip</div>
+            <div style="flex: 1;"></div>
+            <div onClick="{{ nextOnboarding }}" style="background: #FF953E; border-radius: 11px; padding: 16px 26px; font-family: Montserrat, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #20242A; cursor: pointer;">{{ onboard.cta }}</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; left: 22px; right: 22px; bottom: 108px; z-index: 80; background: #20242A; border-radius: 14px; padding: 14px 16px; color: #F4FBFE; font-size: 14.5px; line-height: 1.4; box-shadow: 0 10px 30px rgba(32,36,42,0.3); animation: foldFade 0.2s ease-out;">{{ toast }}</div>
+      </sc-if>
+
+      <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}">
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; z-index: 20; background: rgba(244,251,254,0.94); backdrop-filter: blur(12px); border-top: 1px solid #E0E5EB; padding: 12px 16px 34px; display: flex; align-items: center; justify-content: space-between;">
+          <sc-for list="{{ tabsLeft }}" as="t" hint-placeholder-count="2">
+            <div onClick="{{ t.pick }}" style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 52px; cursor: pointer;">
+              <div style="width: 5px; height: 5px; border-radius: 999px; background: {{ t.dot }};"></div>
+              <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: {{ t.fg }};">{{ t.label }}</div>
+            </div>
+          </sc-for>
+          <div onClick="{{ openCaptureBlank }}" style="width: 54px; height: 54px; border-radius: 999px; background: #FF953E; box-shadow: 0 6px 18px rgba(255,149,62,0.45); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 300; color: #20242A; margin-top: -22px; cursor: pointer; transition: transform 0.14s cubic-bezier(0.22,1,0.36,1);" style-active="transform: scale(0.94);">+</div>
+          <sc-for list="{{ tabsRight }}" as="t" hint-placeholder-count="2">
+            <div onClick="{{ t.pick }}" style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 52px; cursor: pointer;">
+              <div style="width: 5px; height: 5px; border-radius: 999px; background: {{ t.dot }};"></div>
+              <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: {{ t.fg }};">{{ t.label }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+    </div>
+  </x-import>
+
+  <div style="max-width: 620px; font-size: 13.5px; line-height: 1.6; color: #5E6C7A; text-align: center;">Try it: tap <strong style="color: #20242A;">Engaged</strong> on an overdue person and watch the coverage bar and the feed update. Tap <strong style="color: #20242A;">+</strong> to capture a note with tags, a voice memo and a visibility tier. Next step is the staff web view.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:1120},&quot;foldName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Ridgeway Fold&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;staleDays&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:60,&quot;min&quot;:14,&quot;max&quot;:120,&quot;step&quot;:1,&quot;unit&quot;:&quot;days&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Care policy&quot;},&quot;showCoverage&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Care policy&quot;},&quot;role&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Elder&quot;,&quot;Lead pastor&quot;],&quot;default&quot;:&quot;Elder&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const DOT = { Visit: '#FF953E', 'Check-in': '#3FA66B', Benevolence: '#E8A53C', Milestone: '#5BC2D6', Restoration: '#D9534F' };
+
+const SHEPHERDS = [
+  { name: 'Marcus Reid', initials: 'MR', load: '18 people · you' },
+  { name: 'Tanya Jules', initials: 'TJ', load: '22 people · Eastside, has room' },
+  { name: 'Andre Villareal', initials: 'AV', load: '16 people · Northgate' },
+  { name: 'Dean Lowry', initials: 'DL', load: '19 people · Westbrook, overloaded' }
+];
+
+const JOURNEY_TEMPLATES = {
+  1: { name: 'Hospital journey', steps: [
+    { label: 'Visit before the procedure', meta: 'You · Jun 14', done: true },
+    { label: 'Meals arranged for two weeks', meta: 'Tanya Jules · through Jul 28', done: true },
+    { label: 'Visit at home after discharge', meta: 'You · due within 3 days of discharge', done: false, hint: 'Discharge was Jul 18. This is the step that is late.' },
+    { label: 'Check in at thirty days', meta: 'You · due Aug 17', done: false }
+  ] },
+  2: { name: 'New family journey', steps: [
+    { label: 'Welcome conversation after service', meta: 'Marcus Reid · Mar 22', done: true },
+    { label: 'Meal or coffee in the first month', meta: 'You · overdue', done: false, hint: 'They stopped coming to group in May. Ask why before anything else.' },
+    { label: 'Connected to a group and a serving team', meta: 'Unassigned', done: false }
+  ] },
+  3: { name: 'Benevolence review', steps: [
+    { label: 'Need assessed with the family', meta: 'Tanya Jules · May 24', done: true },
+    { label: 'Deacons approved support', meta: 'Elders only · May 30', done: true },
+    { label: 'Renewal decision', meta: 'Elders and deacons · due Aug 1', done: false, hint: 'Two months of help ends July 31. A decision is owed this week.' },
+    { label: 'Transition plan off support', meta: 'Unassigned', done: false }
+  ] },
+  5: { name: 'Marriage journey', steps: [
+    { label: 'First conversation together', meta: 'You · Jun 2', done: true },
+    { label: 'Referred to counseling', meta: 'Elders only · Jun 20', done: true },
+    { label: 'Check in with each of them separately', meta: 'You · due this month', done: false, hint: 'Fourteen years in and the anniversary is Thursday. Ask how it actually is.' },
+    { label: 'Follow up at ninety days', meta: 'Unassigned', done: false }
+  ] },
+  4: { name: 'Personal struggle', steps: [
+    { label: 'She told you what is going on', meta: 'Elders only · Jul 22', done: true },
+    { label: 'Agreed on who else may know', meta: 'You · this week', done: false, hint: 'Ask her permission before anything goes past you. That answer belongs in this step.' },
+    { label: 'Weekly check-in for a season', meta: 'You · Mondays', done: false },
+    { label: 'Review together in three months', meta: 'Unassigned', done: false }
+  ] },
+  6: { name: 'Homebound visits', steps: [
+    { label: 'Monthly visit with communion', meta: 'Tanya Jules · Jul 16', done: true },
+    { label: 'Ride arranged for a Sunday service', meta: 'You · August attempt', done: false, hint: 'He asked to try the 9:00 service. He needs a ride and a seat near the door.' },
+    { label: 'Next monthly visit', meta: 'Tanya Jules · due Aug 16', done: false }
+  ] },
+  7: { name: 'New believer journey', steps: [
+    { label: 'Baptism', meta: 'May 10', done: true },
+    { label: 'First month of reading together', meta: 'Tanya Jules · weekly', done: true },
+    { label: 'Invited into a serving team', meta: 'You · this month', done: false, hint: 'She is ready to be asked. Tanya says the kids team fits her.' },
+    { label: 'Membership conversation', meta: 'Unassigned', done: false },
+    { label: 'Six-month check on rhythms', meta: 'Unassigned', done: false }
+  ] },
+  8: { name: 'Restoration process', steps: [
+    { label: 'First conversation, two elders present', meta: 'Elders only · May 4', done: true },
+    { label: 'Second conversation', meta: 'Elders only · Jun 1', done: true },
+    { label: 'Third conversation', meta: 'Elders only · Jun 28', done: true },
+    { label: 'Elders review together', meta: 'Elders only · August meeting', done: false, hint: 'Notes on this journey are elders-only and never appear in the open feed.' }
+  ] }
+};
+
+const MILESTONES = [
+  { pid: 6, name: 'Ellis Bramlett', type: 'Birthday', detail: 'Turns 71', when: 'Today', today: true },
+  { pid: 5, name: 'Jon & Kate Diaz', type: 'Anniversary', detail: '14 years married', when: 'Today', today: true },
+  { pid: 1, name: 'Dolores Amaya', type: 'Loss', detail: 'One year since Hector passed', when: 'Saturday', today: false },
+  { pid: 7, name: 'Priya Nandakumar', type: 'Baptism', detail: 'Two months since her baptism', when: 'Aug 10', today: false },
+  { pid: 4, name: 'Marisol Cabrera', type: 'Membership', detail: 'Five years a member', when: 'Aug 14', today: false },
+  { pid: 2, name: 'The Okonkwo family', type: 'Birthday', detail: 'Ada turns 16', when: 'Aug 19', today: false },
+  { pid: 3, name: 'Ray Whitfield', type: 'Loss', detail: 'Three years since Eileen passed', when: 'Aug 26', today: false }
+];
+
+const MTONE = { Birthday: '#FF953E', Anniversary: '#5BC2D6', Loss: '#5E6C7A', Baptism: '#3FA66B', Membership: '#E8A53C' };
+
+const ONBOARD = [
+  { eyebrow: 'Welcome to Fold', title: 'Six people have been entrusted to you.', body: 'Marcus asked you to help shepherd Ridgeway. You will see those six people, their care history, and nothing else in the church you have no business seeing.', aside: 'You are a co-shepherd, not an administrator. Fold keeps your view that small on purpose.', cta: 'Next' },
+  { eyebrow: 'How it works', title: 'Engage. Log it in ten seconds. Move on.', body: 'After a conversation, tap Engaged or dictate a note. Fold quietly tracks who has gone quiet so you never have to keep a mental list again.', aside: 'If a follow-up sits too long, you get a nudge. If you are away, whoever covers your fold sees exactly where each person is.', cta: 'Next' },
+  { eyebrow: 'A promise', title: 'What people tell you stays where it belongs.', body: 'Every note carries a visibility tier. Elders-only entries never appear in the open feed, and confidential matters stay out of reports read aloud.', aside: 'Write what a person would be comfortable knowing you wrote. Fold is a memory, not a file on someone.', cta: 'Enter my fold' }
+];
+
+const G_STAGES = [
+  { id: 'visit', short: 'One Visit', name: 'One Visit', bg: '#FFF4EA', fg: '#B0530D' },
+  { id: 'weekend', short: 'Weekend', name: 'One Weekend', bg: '#EAF4F8', fg: '#2A6E80' },
+  { id: 'family', short: 'Family', name: 'One Family', bg: '#EAF6EF', fg: '#2C7A50' },
+  { id: 'mission', short: 'Mission', name: 'One Mission', bg: '#F1EEF9', fg: '#5B4B96' }
+];
+const G_URG = { Overdue: '#D9534F', Today: '#B0530D', 'This week': '#8A6520', Later: '#5E6C7A', Closed: '#A7B1BD' };
+const GUESTS = [
+  { id: 1, name: 'Priscilla Vance', initials: 'PV', stage: 'visit', status: 'First-time guest', visits: 1, first: 'Jul 20', contact: '—', connector: '', touch: 1, urgency: 'Overdue',
+    next: 'Somebody needs to own her by tonight', why: 'Connection card Sunday. No connector yet, five days in.', tl: [
+      { kind: 'Message', when: 'Jul 20', body: 'Automatic thank-you sent Sunday afternoon. No reply yet.' },
+      { kind: 'Visit', when: 'Jul 20', body: 'First Sunday. Filled out a card at the welcome table.' }] },
+  { id: 2, name: 'Dario Espinoza', initials: 'DE', stage: 'visit', status: 'Returning guest', visits: 3, first: 'Jun 29', contact: 'Jul 14', connector: 'Naomi Cruz', touch: 2, urgency: 'Today',
+    next: 'Invite him to the August 9 One Weekend', why: 'Three visits and nobody has told him what comes next.', tl: [
+      { kind: 'Visit', when: 'Jul 20', body: 'Third Sunday. Stayed for coffee and asked about the youth ministry.' },
+      { kind: 'Call', when: 'Jul 14', body: 'Moved here in May for work. Wife still in El Paso until August.' }] },
+  { id: 3, name: 'Hollis Grant', initials: 'HG', stage: 'visit', status: 'Engaged explorer', visits: 2, first: 'Jul 6', contact: 'Jul 21', connector: 'Ben Achebe', touch: 3, urgency: 'This week',
+    next: 'Coffee with a pastor about baptism and elder authority', why: 'Real theological questions Ben should not carry alone.', tl: [
+      { kind: 'Coffee', when: 'Jul 21', body: 'Recommended level two: theological questions needing pastoral clarity.' },
+      { kind: 'Note', when: 'Jul 21', body: 'Reading our statement of faith line by line. Serious, not combative.' }] },
+  { id: 4, name: 'Nia Calloway', initials: 'NC', stage: 'visit', status: 'Returning guest', visits: 3, first: 'Jun 22', contact: 'Jul 17', connector: 'Dana Whitlow', touch: 3, urgency: 'This week',
+    next: 'Pastor and his wife, over marriage and family questions', why: 'She raised it herself. Dana rightly handed it up.', tl: [
+      { kind: 'Escalation', when: 'Jul 17', body: 'Sent to Andre and Sofia Villareal. Scheduled Jul 29.' }] },
+  { id: 5, name: 'Tessa Blaine', initials: 'TB', stage: 'weekend', status: 'Did not attend', visits: 5, first: 'May 18', contact: 'Jul 15', connector: 'Kwame Fields', touch: 4, urgency: 'Today',
+    next: 'One warm re-invite, then leave it alone', why: 'Missed July 12. One more invitation is care; three is pressure.', tl: [
+      { kind: 'Text', when: 'Jul 15', body: 'No guilt, no problem. August 9 is open if that works better.' },
+      { kind: 'One Weekend', when: 'Jul 12', body: 'Registered but did not attend.' }] },
+  { id: 6, name: 'Renata Cho', initials: 'RC', stage: 'weekend', status: 'Registered Aug 9', visits: 4, first: 'Jun 8', contact: 'Jul 22', connector: 'Naomi Cruz', touch: 4, urgency: 'This week',
+    next: 'Confirm childcare for August 9', why: 'Registered with two kids under five.', tl: [
+      { kind: 'One Weekend', when: 'Jul 22', body: 'Registered for August 9.' }] },
+  { id: 7, name: 'Jonah Rourke', initials: 'JR', stage: 'weekend', status: 'Membership pending', visits: 6, first: 'Apr 27', contact: 'Jul 23', connector: 'Ben Achebe', touch: 4, urgency: 'This week',
+    next: 'Baptism conversation before membership is approved', why: 'Affirmation submitted; he has never been baptized.', tl: [
+      { kind: 'Membership', when: 'Jul 23', body: 'Affirmation submitted. Flagged: not yet baptized.' }] },
+  { id: 8, name: 'Trent Vasquez', initials: 'TV', stage: 'weekend', status: 'Follow-up needed', visits: 4, first: 'May 25', contact: 'Jul 19', connector: 'Ben Achebe', touch: 4, urgency: 'Today',
+    next: 'Dean is meeting him weekly. Nothing for you here.', why: 'Spiritual struggle disclosed at One Weekend. Notes held at elder tier.', tl: [
+      { kind: 'Escalation', when: 'Jun 16', body: 'Escalated to Dean Lowry. Outcome recorded; notes closed to connectors.' }] },
+  { id: 9, name: 'Aleksander Duma', initials: 'AD', stage: 'weekend', status: 'Membership pending', visits: 7, first: 'Mar 30', contact: 'Jul 24', connector: 'Kwame Fields', touch: 4, urgency: 'This week',
+    next: 'Lead pastor review, submitted Jul 24', why: 'Former church planter. Strategic discernment, not customer service.', tl: [
+      { kind: 'Coffee', when: 'Jul 24', body: 'Level three recommended. Fifteen years planting in Sacramento.' }] },
+  { id: 10, name: 'Imani Whitlock', initials: 'IW', stage: 'weekend', status: 'Not ready', visits: 4, first: 'May 11', contact: 'Jul 18', connector: 'Naomi Cruz', touch: 4, urgency: 'Later',
+    next: 'Check in again in September. No pressure until then.', why: 'Church hurt. Time is the kindness here.', tl: [
+      { kind: 'Coffee', when: 'Jul 18', body: 'Met with Tanya. She is welcome to stay a while without deciding anything.' }] },
+  { id: 11, name: 'Cheyenne Ford', initials: 'CF', stage: 'family', status: 'Needs group connection', visits: 9, first: 'Feb 2', contact: 'Jul 19', connector: 'Ben Achebe', touch: 4, urgency: 'This week',
+    next: 'Walk her into the Tuesday group on Ridgeway', why: 'Member seven weeks, still no group.', tl: [
+      { kind: 'Membership', when: 'Jun 1', body: 'Approved as a member. Entered One Family.' }] },
+  { id: 12, name: 'Halle Bergstrom', initials: 'HB', stage: 'family', status: 'Fully connected', visits: 14, first: 'Nov 3', contact: 'Jul 8', connector: 'Dana Whitlow', touch: 4, urgency: 'Today',
+    next: 'Hand her to Westbrook fold and close assimilation', why: 'Group and serve team both done. She belongs to a shepherd now.', tl: [
+      { kind: 'Serve', when: 'May 4', body: 'Joined the Lil Ones check-in team.' }] },
+  { id: 13, name: 'Yusuf Kaan', initials: 'YK', stage: 'mission', status: 'Member', visits: 22, first: 'Aug 12', contact: 'Jul 2', connector: '', touch: 4, urgency: 'Later',
+    next: 'Disciple Makers Training, cohort 4', why: 'Assimilation is finished. This is discipleship now.', tl: [
+      { kind: 'Milestone', when: 'Jun 22', body: 'Finished evangelism training. Leading a table at cohort 4.' }] }
+];
+
+class Component extends DCLogic {
+  state = {
+    guestId: null,
+    gFilter: 'Needs me',
+    gStage: '',
+    gToast: '',
+    tab: 'fold',
+    greeter: false,
+    gName: '',
+    gSvc: '11:11',
+    gSource: 'Connection card',
+    gParty: 'On their own',
+    gFirst: true,
+    arrLog: [
+      { name: 'Renata Sowell', svc: '11:11', source: 'Invited by member', party: 'With Joy Adeyemi', first: true, at: '10:51 AM' },
+      { name: 'Suheily Ramos', svc: '11:11', source: 'One Weekend signup', party: 'On their own', first: true, at: '10:44 AM' },
+      { name: 'The Okafor household', svc: '9:09', source: 'Lil Ones check-in', party: 'Two adults, two kids', first: true, at: '8:58 AM' }
+    ],
+    personId: null,
+    captureId: null,
+    draft: '',
+    kind: 'Check-in',
+    vis: 'All leaders',
+    voice: false,
+    query: '',
+    toast: null,
+    nextId: 100,
+    journeyId: null,
+    brief: false,
+    feedFilter: 'All care',
+    prayerScope: 'My fold',
+    prayers: [
+      { id: 1, person: 'Dolores Amaya', pid: 1, fold: '', body: 'Surgery on the 14th, and the weeks alone afterward.', asked: 'Jul 20', prayed: 4, answered: false },
+      { id: 5, person: 'The Okonkwo family', pid: 2, fold: '', body: 'That they would tell someone why they stopped coming.', asked: 'Jul 24', prayed: 2, answered: false },
+      { id: 6, person: 'Ray Whitfield', pid: 3, fold: '', body: 'Work, and the benevolence decision coming August 1.', asked: 'Jul 6', prayed: 9, answered: false },
+      { id: 7, person: 'Priya Nandakumar', pid: 7, fold: '', body: 'Courage to be baptized in front of her parents.', asked: 'Apr 28', prayed: 31, answered: true },
+      { id: 2, person: 'Lena Whitcomb', pid: null, fold: 'Westbrook Fold', body: 'Five months into grief. That she would sleep.', asked: 'Jul 12', prayed: 7, answered: false },
+      { id: 3, person: 'Tobias Fenn', pid: null, fold: 'Students', body: 'New in faith and telling his family this week.', asked: 'Jul 8', prayed: 11, answered: false },
+      { id: 4, person: 'Samuel Adeyemi', pid: null, fold: 'Eastside Fold', body: 'A job after nine months of looking.', asked: 'May 2', prayed: 23, answered: true }
+    ],
+    foldOpen: null,
+    assignId: null,
+    assignPick: 'Tanya Jules',
+    onboardStep: null,
+    journeys: JSON.parse(JSON.stringify(JOURNEY_TEMPLATES)),
+    elders: {},
+    people: [
+      { id: 1, name: 'Dolores Amaya', initials: 'DA', tag: 'Hospital', days: 68, meta: 'Member since 2019 · shepherded by you', journey: 'Hospital journey · step 2 of 4', birthday: 'Aug 4', context: 'Knee surgery moved up to the 14th. Nobody has been by since the diagnosis.' },
+      { id: 2, name: 'The Okonkwo family', initials: 'OK', tag: 'New family', days: 74, meta: 'Joined March 2026 · two teenagers', journey: 'New family journey · step 1 of 3', birthday: 'Feb 19', context: 'Joined in March, stopped coming to group. Nobody has asked why.' },
+      { id: 3, name: 'Ray Whitfield', initials: 'RW', tag: 'Benevolence', days: 91, meta: 'Member since 2011 · lives alone', journey: 'Benevolence · review due', birthday: 'Nov 30', context: 'Rent assistance approved in May. No follow-up logged since.' },
+      { id: 4, name: 'Marisol Cabrera', initials: 'MC', tag: 'Walking through it', days: 3, meta: 'Member since 2021 · leads Lil Ones', journey: 'No active journey', birthday: 'Jun 8', context: 'Steady. Serving twice a month.' },
+      { id: 5, name: 'Jon & Kate Diaz', initials: 'JD', tag: 'Marriage', days: 6, meta: 'Members since 2017', journey: 'No active journey', birthday: 'Mar 22', context: 'Anniversary Thursday, 14 years.' },
+      { id: 6, name: 'Ellis Bramlett', initials: 'EB', tag: 'Home visit', days: 9, meta: 'Member since 1998 · homebound', journey: 'Homebound visits · monthly', birthday: 'Jul 28', context: 'Hip is better. Wants communion brought by.' },
+      { id: 7, name: 'Priya Nandakumar', initials: 'PN', tag: 'New believer', days: 24, meta: 'Baptized May 2026', journey: 'New believer journey · step 3 of 5', birthday: 'Sep 2', context: 'Reading through Luke with Tanya.' },
+      { id: 8, name: 'Curtis Hale', initials: 'CH', tag: 'Restoration', days: 38, meta: 'Member since 2015', journey: 'Restoration process · elders only', birthday: 'Jan 12', context: 'Third meeting held. Elders reviewing in August.' }
+    ],
+    entries: [
+      { id: 11, pid: 1, kind: 'Visit', when: 'Jun 14', who: 'you', vis: 'All leaders', body: 'Sat with her before the pre-op. Steady, but worried about recovery weeks alone. Sister flying in from Tulsa on the 12th.' },
+      { id: 12, pid: 3, kind: 'Benevolence', when: 'May 30', who: 'Tanya Jules', vis: 'Elders only', body: 'Deacons approved two months of utility help. Reviewed at the June meeting.' },
+      { id: 13, pid: 1, kind: 'Check-in', when: 'May 2', who: 'you', vis: 'All leaders', body: 'Called after service. Doctor found something on the knee, scans scheduled.' },
+      { id: 14, pid: 8, kind: 'Restoration', when: 'Jun 28', who: 'Marcus Reid', vis: 'Elders only', body: 'Third conversation. He is receiving it well. Elders review in August.' },
+      { id: 15, pid: 6, kind: 'Visit', when: 'Jul 16', who: 'Tanya Jules', vis: 'All leaders', body: 'Brought communion and sat an hour. Hip is healing, spirits good.' },
+      { id: 16, pid: 4, kind: 'Check-in', when: 'Jul 22', who: 'you', vis: 'All leaders', body: 'Quick catch-up in the lobby. Serving twice a month and glad about it.' },
+      { id: 17, pid: 7, kind: 'Milestone', when: 'Jul 19', who: 'system', vis: 'All leaders', body: 'Two months since baptism. Tanya is reading Luke with her.' }
+    ],
+    tasks: [
+      { id: 21, title: 'Take a meal to the Amayas after surgery', person: 'Dolores Amaya', due: 'Due Jul 15', done: false, nudgeText: 'Set 9 days ago and still open. Reassign to Tanya?' },
+      { id: 22, title: 'Ask the Okonkwos to coffee', person: 'The Okonkwo family', due: 'Due Jul 26', done: false, nudgeText: '' },
+      { id: 23, title: 'Review Ray\u2019s benevolence with the deacons', person: 'Ray Whitfield', due: 'Due Aug 1', done: false, nudgeText: '' },
+      { id: 24, title: 'Bring communion to Ellis', person: 'Ellis Bramlett', due: 'Done Jul 16', done: true, nudgeText: '' }
+    ]
+  };
+
+  stale() { return this.props.staleDays ?? 60; }
+
+  since(d) {
+    if (d === 0) return 'today';
+    if (d === 1) return 'yesterday';
+    return d + ' days ago';
+  }
+
+  flash(msg) {
+    clearTimeout(this._t);
+    this.setState({ toast: msg });
+    this._t = setTimeout(() => this.setState({ toast: null }), 3200);
+  }
+
+  logTouch(pid, kind, body, vis) {
+    const p = this.state.people.find(x => x.id === pid);
+    this.setState(s => ({
+      people: s.people.map(x => x.id === pid ? Object.assign({}, x, { days: 0 }) : x),
+      entries: [{ id: s.nextId, pid: pid, kind: kind, when: 'Just now', who: 'you', vis: vis, body: body }].concat(s.entries),
+      nextId: s.nextId + 1
+    }));
+    this.flash(p.name + ' is current again. Logged to the fold and the feed.');
+  }
+
+  renderVals() {
+    const s = this.state;
+    const stale = this.stale();
+    const foldName = this.props.foldName ?? 'Ridgeway Fold';
+    const role = this.props.role ?? 'Elder';
+    const decorate = (p) => Object.assign({}, p, {
+      since: this.since(p.days),
+      dot: p.days < stale / 2 ? '#3FA66B' : '#E8A53C',
+      open: () => this.setState({ personId: p.id }),
+      talked: () => this.logTouch(p.id, 'Check-in', 'Engaged. Logged from the fold list, detail to follow.', 'All leaders'),
+      note: () => this.setState({ captureId: p.id, draft: '', kind: 'Check-in', vis: 'All leaders', voice: false })
+    });
+    const overdue = s.people.filter(p => p.days >= stale);
+    const recent = s.people.filter(p => p.days < stale).sort((a, b) => a.days - b.days);
+    const nOverdue = overdue.length;
+    const nDrifting = s.people.filter(p => p.days >= stale / 2 && p.days < stale).length;
+    const nCurrent = s.people.length - nOverdue - nDrifting;
+    const shepherdOf = (p) => (s.elders && s.elders[p.id]) ? s.elders[p.id] : (p.id === 6 ? 'Tanya Jules' : 'You');
+    const tanyaLoad = s.people.filter(p => shepherdOf(p) === 'Tanya Jules').length;
+    const journeyLabel = (p) => {
+      const j = s.journeys[p.id];
+      if (!j) return 'No active journey';
+      const done = j.steps.filter(x => x.done).length;
+      return j.name + ' · step ' + Math.min(done + 1, j.steps.length) + ' of ' + j.steps.length;
+    };
+    const person = s.people.find(p => p.id === s.personId);
+    const capturePerson = s.people.find(p => p.id === s.captureId) || { name: 'Pick a person', initials: '+' };
+    const q = s.query.trim().toLowerCase();
+    const gStageOf = (id) => G_STAGES.find(x => x.id === id) || G_STAGES[0];
+    const gmapMobile = (g) => ({
+      name: g.name, initials: g.initials, status: g.status, stage: g.stage, touch: g.touch, first: g.first, contact: g.contact,
+      stageLabel: gStageOf(g.stage).name, connector: g.connector || 'Nobody assigned',
+      visitLabel: g.visits + (g.visits === 1 ? ' visit' : ' visits'),
+      nextStep: g.next, whyNow: g.why, urgency: g.urgency, urgencyColor: G_URG[g.urgency] || '#5E6C7A',
+      touchLabel: g.stage === 'visit' ? 'Touch ' + g.touch + ' of 4' : 'Workflow complete',
+      open: () => this.setState({ guestId: g.id, gToast: '' })
+    });
+    const gNeeds = GUESTS.filter(g => g.urgency === 'Overdue' || g.urgency === 'Today');
+    let gList = GUESTS.slice();
+    if (s.gStage) gList = gList.filter(g => g.stage === s.gStage);
+    else if (s.gFilter === 'Needs me') gList = gNeeds.slice();
+    else if (s.gFilter === 'New') gList = gList.filter(g => g.visits <= 2);
+    else if (s.gFilter === 'One Weekend') gList = gList.filter(g => g.stage === 'weekend');
+    else if (s.gFilter === 'To connect') gList = gList.filter(g => g.stage === 'family');
+    const ORDER = { Overdue: 0, Today: 1, 'This week': 2, Later: 3, Closed: 4 };
+    gList = gList.sort((a, b) => ORDER[a.urgency] - ORDER[b.urgency]);
+    const mg = GUESTS.find(g => g.id === s.guestId) || null;
+    const tab = (id, label) => ({
+      label: label,
+      dot: s.tab === id ? '#FF953E' : 'transparent',
+      fg: s.tab === id ? '#20242A' : '#7E8995',
+      pick: () => this.setState({ tab: id })
+    });
+    const chip = (label, active) => ({
+      label: label, bg: active ? '#FFE6CF' : '#FFFFFF', fg: active ? '#20242A' : '#5E6C7A', bc: active ? '#FFD2A8' : '#E0E5EB'
+    });
+    const heights = [8, 14, 20, 11, 18, 22, 9, 16, 13, 21, 17, 10, 19, 12, 7, 15];
+
+    return {
+      foldName: foldName,
+      roleLabel: role === 'Elder' ? 'My fold' : 'Overseeing',
+      headerSub: s.people.length + ' people · you and Tanya Jules',
+      showCoverage: this.props.showCoverage ?? true,
+      staleLabel: 'Quiet ' + stale + '+ days',
+      nCurrent: nCurrent, nDrifting: nDrifting, nOverdue: nOverdue,
+      allClear: nOverdue === 0,
+      needsYou: overdue.map(decorate),
+      recent: recent.map(decorate),
+
+      onFold: s.tab === 'fold', onFeed: s.tab === 'feed', onTasks: s.tab === 'tasks', onPeople: s.tab === 'people',
+      onGuests: s.tab === 'guests',
+      greeterOn: s.greeter,
+      openGreeter: () => this.setState({ greeter: true }),
+      closeGreeter: () => this.setState({ greeter: false, gName: '' }),
+      greeterCount: String(s.arrLog.length),
+      greeterPrompt: 'Catch them at the door, not from memory on Monday. Name and how you met them is enough.',
+      gName: s.gName,
+      setGName: (e) => this.setState({ gName: e.target.value }),
+      gSvcOptions: ['9:09', '11:11'].map(v => Object.assign(chip(v, s.gSvc === v), { pick: () => this.setState({ gSvc: v }) })),
+      gSourceOptions: ['Connection card', 'Lil Ones check-in', 'Walk-up, no card', 'Invited by member', 'One Weekend signup']
+        .map(v => Object.assign(chip(v, s.gSource === v), { pick: () => this.setState({ gSource: v }) })),
+      gPartyOptions: ['On their own', 'Married couple', 'With kids', 'With a member']
+        .map(v => Object.assign(chip(v, s.gParty === v), { pick: () => this.setState({ gParty: v }) })),
+      gFirstOn: s.gFirst,
+      gFirstLabel: s.gFirst ? 'First time here' : 'Been before',
+      gFirstBg: s.gFirst ? '#FFE6CF' : '#FFFFFF',
+      gFirstBc: s.gFirst ? '#FFD2A8' : '#E0E5EB',
+      toggleGFirst: () => this.setState({ gFirst: !s.gFirst }),
+      canSaveArrival: s.gName.trim().length > 1,
+      saveArrivalBg: s.gName.trim().length > 1 ? '#FF953E' : '#F1F4F7',
+      saveArrivalFg: s.gName.trim().length > 1 ? '#20242A' : '#A7B1BD',
+      saveArrival: () => {
+        if (s.gName.trim().length < 2) return;
+        const entry = { name: s.gName.trim(), svc: s.gSvc, source: s.gSource, party: s.gParty, first: s.gFirst, at: 'Just now' };
+        this.setState({ arrLog: [entry].concat(s.arrLog), gName: '' });
+        this.flash(entry.name.split(' ')[0] + ' is captured. The connect team sees this before you reach the parking lot.');
+      },
+      arrLog: s.arrLog.map(a => ({
+        name: a.name, at: a.at, meta: a.svc + ' · ' + a.source, party: a.party,
+        badge: a.first ? 'First time' : 'Returning',
+        badgeBg: a.first ? '#FFF4EA' : '#F2F8F4',
+        badgeFg: a.first ? '#B0530D' : '#2C7A50',
+        gap: a.source === 'Walk-up, no card' || a.source === 'Lil Ones check-in',
+        gapNote: 'No way to contact them yet. Ask before they leave.'
+      })),
+      guestSub: gNeeds.length + ' need something from you today. 64 guests this quarter.',
+      guestReminder: 'Two people are new this Sunday. Log them before you leave the building. Monday memory is worse than you think.',
+      gStages: G_STAGES.map(st => ({
+        short: st.short, count: String(GUESTS.filter(g => g.stage === st.id).length),
+        bg: s.gStage === st.id ? st.bg : '#FFFFFF', bc: s.gStage === st.id ? st.fg : '#E0E5EB',
+        fg: s.gStage === st.id ? st.fg : '#20242A', labelFg: s.gStage === st.id ? st.fg : '#7E8995',
+        pick: () => this.setState({ gStage: s.gStage === st.id ? '' : st.id, gFilter: 'All' })
+      })),
+      gFilters: ['Needs me', 'New', 'One Weekend', 'To connect', 'All'].map(f => ({
+        label: f, bg: s.gFilter === f ? '#FFE6CF' : '#FFFFFF', fg: s.gFilter === f ? '#20242A' : '#5E6C7A',
+        bc: s.gFilter === f ? '#FFD2A8' : '#E0E5EB',
+        pick: () => this.setState({ gFilter: f, gStage: '' })
+      })),
+      guestList: gList.map(gmapMobile),
+      showGuest: !!mg,
+      closeGuest: () => this.setState({ guestId: null, gToast: '' }),
+      mg: mg ? Object.assign({}, gmapMobile(mg), {
+        facts: [
+          { label: 'First visit', value: mg.first },
+          { label: 'Last contact', value: mg.contact },
+          { label: 'Connector', value: mg.connector || 'Unassigned' }
+        ],
+        actions: [
+          { label: 'Text', bg: '#FF953E', fg: '#20242A', bc: '#FF953E', act: () => this.setState({ gToast: 'Text sent and logged as touch ' + Math.min(4, mg.touch + 1) + ' of 4.' }) },
+          { label: 'Call', bg: '#FFFFFF', fg: '#39424C', bc: '#E0E5EB', act: () => this.setState({ gToast: 'Call logged. Add a note when you have a minute.' }) },
+          { label: 'No answer', bg: '#FFFFFF', fg: '#39424C', bc: '#E0E5EB', act: () => this.setState({ gToast: 'Attempt recorded. Attempts count as care, even unanswered.' }) },
+          { label: 'Note', bg: '#FFFFFF', fg: '#39424C', bc: '#E0E5EB', act: () => this.setState({ gToast: 'Dictate it now and it lands on the timeline.' }) },
+          { label: 'Coffee', bg: '#20242A', fg: '#F4FBFE', bc: '#20242A', act: () => this.setState({ gToast: 'Recommend coffee: pick the barrier, and Fold suggests who should meet them.' }) },
+          { label: 'Advance', bg: '#FFFFFF', fg: '#B0530D', bc: '#FFD2A8', act: () => this.setState({ gToast: 'Advance ' + mg.name.split(' ')[0] + ' to ' + (mg.stage === 'visit' ? 'One Weekend' : (mg.stage === 'weekend' ? 'One Family' : 'One Mission')) + '? Confirm on the next screen.' }) }
+        ],
+        touches: [
+          { label: 'Thanks', color: mg.touch >= 1 ? '#3FA66B' : '#EEF1F5' },
+          { label: 'Call', color: mg.touch >= 2 ? '#3FA66B' : '#EEF1F5' },
+          { label: 'Invite', color: mg.touch >= 3 ? '#3FA66B' : '#EEF1F5' },
+          { label: 'Card', color: mg.touch >= 4 ? '#3FA66B' : '#EEF1F5' }
+        ],
+        workflowNote: mg.stage === 'visit'
+          ? 'Four touches across two weeks, then it stops unless they respond, return, or register.'
+          : 'First-visit workflow complete. Advanced on engagement, not on a timer.',
+        toast: s.gToast,
+        timeline: (mg.tl || []).map(t => ({
+          kind: t.kind, when: t.when, body: t.body,
+          dot: { Visit: '#FF953E', Message: '#5BC2D6', Text: '#5BC2D6', Call: '#5BC2D6', Note: '#5E6C7A', Coffee: '#B0530D', Escalation: '#5B4B96', 'One Weekend': '#2A6E80', Membership: '#E8A53C', Serve: '#3FA66B', Milestone: '#3FA66B' }[t.kind] || '#FF953E'
+        }))
+      }) : { facts: [], actions: [], touches: [], timeline: [] },
+      showTabs: !s.personId && !s.journeyId && !s.foldOpen && !s.brief && !s.guestId && !s.greeter && s.onboardStep === null,
+      tabsLeft: [tab('fold', 'Fold'), tab('people', 'Family'), tab('guests', 'Guests')],
+      tabsRight: [tab('feed', 'Feed'), tab('tasks', 'Tasks')],
+
+      feedFilters: ['All care', 'Prayer', 'Milestones'].map(f => Object.assign(chip(f, s.feedFilter === f), { pick: () => this.setState({ feedFilter: f }) })),
+      onPrayer: s.feedFilter === 'Prayer',
+      onMilestones: s.feedFilter === 'Milestones',
+      onCareFeed: s.feedFilter === 'All care',
+      milestones: MILESTONES.filter(m => s.people.some(p => p.id === m.pid)).map(m => ({
+        name: m.name, type: m.type, detail: m.detail, when: m.when,
+        dot: MTONE[m.type] || '#FF953E',
+        whenColor: m.today ? '#B0530D' : '#7E8995',
+        open: () => this.setState({ personId: m.pid, tab: 'fold' })
+      })),
+      prayerScopes: ['My fold', 'Church-wide'].map(v => Object.assign(chip(v, s.prayerScope === v), { pick: () => this.setState({ prayerScope: v }) })),
+      prayers: s.prayers.filter(p => s.prayerScope === 'Church-wide' || p.pid).map(p => ({
+        person: p.person, body: p.body, asked: p.asked,
+        countLabel: p.prayed + ' have prayed · ' + (p.pid ? foldName : p.fold),
+        status: p.answered ? 'Answered' : 'Open',
+        statusColor: p.answered ? '#3FA66B' : '#B0530D',
+        statusBg: p.answered ? '#EAF6EF' : '#FFF4EA',
+        pray: () => {
+          this.setState(st => ({ prayers: st.prayers.map(x => x.id === p.id ? Object.assign({}, x, { prayed: x.prayed + 1 }) : x) }));
+          this.flash('Prayed for ' + p.person.split(' ')[0] + '. They will see that someone did, not what was said.');
+        },
+        close: () => {
+          this.setState(st => ({ prayers: st.prayers.map(x => x.id === p.id ? Object.assign({}, x, { answered: !x.answered }) : x) }));
+          if (!p.answered) this.flash('Marked answered. It moves to the answered list instead of disappearing.');
+        }
+      })),
+      feed: s.entries.filter(e => s.feedFilter !== 'Milestones' || e.kind === 'Milestone').map(e => {
+        const p = s.people.find(x => x.id === e.pid) || { name: 'Unassigned' };
+        return {
+          person: p.name, when: e.when, kind: e.kind, who: e.who, body: e.body,
+          vis: e.vis, locked: e.vis !== 'All leaders', dot: DOT[e.kind] || '#FF953E',
+          open: () => this.setState({ personId: e.pid })
+        };
+      }),
+
+      openTaskCount: s.tasks.filter(t => !t.done).length,
+      tasks: s.tasks.map(t => ({
+        title: t.title, person: t.person, due: t.due,
+        check: t.done ? '✓' : '',
+        boxBg: t.done ? '#FF953E' : '#FFFFFF',
+        boxBorder: t.done ? '#FF953E' : '#C9D0D9',
+        strike: t.done ? 'line-through' : 'none',
+        opacity: t.done ? 0.55 : 1,
+        nudge: !t.done && !!t.nudgeText,
+        nudgeText: t.nudgeText,
+        toggle: () => this.setState(st => ({ tasks: st.tasks.map(x => x.id === t.id ? Object.assign({}, x, { done: !x.done }) : x) }))
+      })),
+
+      query: s.query,
+      setQuery: (e) => this.setState({ query: e.target.value }),
+      searching: q.length > 0,
+      notSearching: q.length === 0,
+      results: s.people.filter(p => p.name.toLowerCase().includes(q) || p.tag.toLowerCase().includes(q)).map(decorate),
+      folds: [
+        { name: foldName, initials: 'MR', elder: 'Marcus Reid, you', count: s.people.length, status: nOverdue > 2 ? 'Thin' : 'Covered', statusColor: nOverdue > 2 ? '#E8A53C' : '#3FA66B', current: nCurrent, drifting: nDrifting, overdue: nOverdue },
+        { name: 'Eastside Fold', initials: 'TJ', elder: 'Tanya Jules', count: 22, status: 'Covered', statusColor: '#3FA66B', current: 19, drifting: 2, overdue: 1 },
+        { name: 'Northgate Fold', initials: 'AV', elder: 'Andre Villareal', count: 16, status: 'Thin', statusColor: '#E8A53C', current: 9, drifting: 5, overdue: 2 },
+        { name: 'Lil Ones Families', initials: 'SK', elder: 'Sarah Koenig', count: 31, status: 'Covered', statusColor: '#3FA66B', current: 26, drifting: 4, overdue: 1 },
+        { name: 'Westbrook Fold', initials: 'DL', elder: 'Dean Lowry', count: 19, status: 'Needs help', statusColor: '#D9534F', current: 7, drifting: 5, overdue: 7 },
+        { name: 'Students & Young Adults', initials: 'BM', elder: 'Bex Mwangi', count: 24, status: 'Thin', statusColor: '#E8A53C', current: 15, drifting: 6, overdue: 3 }
+      ].map(f => Object.assign({}, f, { open: () => this.setState({ foldOpen: f.name }) })),
+
+      showPerson: !!person,
+      person: person ? Object.assign({}, person, {
+        journey: journeyLabel(person),
+        meta: person.meta.replace('shepherded by you', 'shepherded by ' + shepherdOf(person).toLowerCase()),
+        sinceShort: person.days === 0 ? 'today' : person.days + 'd',
+        sinceColor: person.days >= stale ? '#B0530D' : '#20242A',
+        touches: s.entries.filter(e => e.pid === person.id).length
+      }) : {},
+      thread: person ? s.entries.filter(e => e.pid === person.id).map(e => ({
+        kind: e.kind, when: e.when, who: e.who, body: e.body, vis: e.vis,
+        locked: e.vis !== 'All leaders', dot: DOT[e.kind] || '#FF953E'
+      })) : [],
+      closePerson: () => this.setState({ personId: null }),
+      logPlaceholder: person ? 'Log a moment with ' + person.name.split(' ')[0] + '…' : 'Log a moment…',
+      openCaptureForPerson: () => this.setState({ captureId: s.personId, draft: '', kind: 'Check-in', vis: 'All leaders', voice: false }),
+      openCaptureBlank: () => this.setState({ captureId: overdue.length ? overdue[0].id : s.people[0].id, draft: '', kind: 'Check-in', vis: 'All leaders', voice: false }),
+
+      showCapture: !!s.captureId,
+      capturePerson: capturePerson,
+      draft: s.draft,
+      setDraft: (e) => this.setState({ draft: e.target.value }),
+      kindChips: ['Check-in', 'Visit', 'Benevolence', 'Milestone', 'Restoration'].map(k => Object.assign(chip(k, s.kind === k), { pick: () => this.setState({ kind: k }) })),
+      visOptions: ['All leaders', 'Staff', 'Elders only'].map(v => ({
+        label: v,
+        bg: s.vis === v ? '#FFFFFF' : 'transparent',
+        fg: s.vis === v ? '#20242A' : '#7E8995',
+        shadow: s.vis === v ? '0 1px 2px rgba(32,36,42,0.1)' : 'none',
+        pick: () => this.setState({ vis: v })
+      })),
+      voice: s.voice,
+      micBg: s.voice ? '#FF953E' : '#20242A',
+      micDot: s.voice ? '#20242A' : '#FF953E',
+      voiceLabel: s.voice ? '0:12' : 'Hold to talk',
+      wave: heights.map(h => ({ h: h + 'px', c: s.voice ? '#FF953E' : '#C9D0D9' })),
+      toggleVoice: () => this.setState(st => ({ voice: !st.voice, draft: st.voice ? st.draft : 'Caught her after second service. Surgery moved to the 14th, her sister is flying in. Asked Tanya to organize meals.' })),
+      closeCapture: () => this.setState({ captureId: null, draft: '', voice: false }),
+      saveEntry: () => {
+        const pid = s.captureId;
+        const body = s.draft.trim() || 'Checked in. No details logged.';
+        this.setState({ captureId: null, draft: '', voice: false });
+        this.logTouch(pid, s.kind, body, s.vis);
+      },
+
+      showBrief: s.brief,
+      openBrief: () => this.setState({ brief: true }),
+      closeBrief: () => this.setState({ brief: false }),
+      briefDate: 'Monday, July 27',
+      briefLead: overdue.length ? overdue.length + ' people in ' + foldName + ' have gone quiet.' : 'Your fold is fully covered today.',
+      briefBlocks: [
+        { label: 'Needs you', items: overdue.slice(0, 3).map(p => p.name + ', ' + this.since(p.days)) },
+        { label: 'Today', items: MILESTONES.filter(m => m.today).map(m => m.name + ', ' + m.detail.toLowerCase()) },
+        { label: 'Due today', items: s.tasks.filter(t => !t.done).slice(0, 2).map(t => t.title) },
+        { label: 'Pray', items: s.prayers.filter(p => !p.answered && p.pid).slice(0, 2).map(p => p.person + ': ' + p.body) }
+      ].map(b => Object.assign(b, { count: b.items.length })),
+
+      openJourney: () => this.setState({ journeyId: s.personId }),
+      closeJourney: () => this.setState({ journeyId: null }),
+      showJourney: !!(s.journeyId && s.journeys[s.journeyId]),
+      journey: (() => {
+        const j = s.journeys[s.journeyId];
+        if (!j) return { steps: [], pips: [] };
+        const p = s.people.find(x => x.id === s.journeyId) || {};
+        const doneCount = j.steps.filter(x => x.done).length;
+        const firstOpen = j.steps.findIndex(x => !x.done);
+        return {
+          name: j.name,
+          person: p.name || 'Person',
+          progressLabel: p.name + ' · step ' + Math.min(doneCount + 1, j.steps.length) + ' of ' + j.steps.length,
+          pips: j.steps.map(x => ({ c: x.done ? '#FF953E' : 'rgba(255,255,255,0.2)' })),
+          steps: j.steps.map((x, i) => ({
+            label: x.label, meta: x.meta, hint: x.hint || '',
+            current: i === firstOpen && !!x.hint,
+            check: x.done ? '✓' : '',
+            boxBg: x.done ? '#FF953E' : '#FFFFFF',
+            boxBorder: x.done ? '#FF953E' : '#C9D0D9',
+            strike: x.done ? 'line-through' : 'none',
+            opacity: x.done ? 0.6 : 1,
+            toggle: () => this.setState(st => {
+              const copy = JSON.parse(JSON.stringify(st.journeys));
+              copy[st.journeyId].steps[i].done = !copy[st.journeyId].steps[i].done;
+              return { journeys: copy };
+            })
+          }))
+        };
+      })(),
+      openCaptureForJourney: () => this.setState({ captureId: s.journeyId, journeyId: null, personId: null, draft: '', kind: 'Visit', vis: 'All leaders', voice: false }),
+
+      showFold: !!s.foldOpen,
+      foldDetail: (() => {
+        const mine = s.foldOpen === foldName;
+        return {
+          name: s.foldOpen || '',
+          sub: mine ? s.people.length + ' people · 2 shepherds · you oversee this fold' : 'Shared view. You see coverage, not private notes.',
+          shepherds: mine
+            ? [{ name: 'Marcus Reid', initials: 'MR', role: 'Elder, you', load: 'carrying ' + (s.people.length - tanyaLoad) + ' of these' }, { name: 'Tanya Jules', initials: 'TJ', role: 'Co-shepherd', load: 'carrying ' + tanyaLoad + ' of these' }]
+            : [{ name: 'Another elder', initials: 'AE', role: 'Elder', load: 'see the web view' }],
+          members: (mine ? s.people : []).slice().sort((a, b) => b.days - a.days).map(p => ({
+            name: p.name,
+            elder: shepherdOf(p),
+            since: this.since(p.days),
+            dot: p.days >= stale ? '#FF953E' : (p.days >= stale / 2 ? '#E8A53C' : '#3FA66B'),
+            open: () => this.setState({ personId: p.id, foldOpen: null }),
+            reassign: () => this.setState({ assignId: p.id, assignPick: 'Tanya Jules' })
+          }))
+        };
+      })(),
+      closeFold: () => this.setState({ foldOpen: null }),
+
+      showAssign: !!s.assignId,
+      assignName: (s.people.find(p => p.id === s.assignId) || {}).name || '',
+      shepherdOptions: SHEPHERDS.map(o => ({
+        name: o.name, initials: o.initials, load: o.load,
+        selected: s.assignPick === o.name,
+        bg: s.assignPick === o.name ? '#FFF4EA' : '#FFFFFF',
+        bc: s.assignPick === o.name ? '#FFB76B' : '#E0E5EB',
+        pick: () => this.setState({ assignPick: o.name })
+      })),
+      closeAssign: () => this.setState({ assignId: null }),
+      confirmAssign: () => {
+        const p = s.people.find(x => x.id === s.assignId);
+        this.setState(st => ({ assignId: null, elders: Object.assign({}, st.elders, { [st.assignId]: st.assignPick }) }));
+        this.flash(p.name + ' now belongs to ' + s.assignPick + '. Full history moved with them.');
+      },
+
+      showOnboarding: s.onboardStep !== null,
+      startOnboarding: () => this.setState({ onboardStep: 0 }),
+      onboard: ONBOARD[s.onboardStep || 0],
+      onboardPips: ONBOARD.map((x, i) => ({ c: i <= (s.onboardStep || 0) ? '#FF953E' : 'rgba(255,255,255,0.2)' })),
+      nextOnboarding: () => {
+        if ((s.onboardStep || 0) >= ONBOARD.length - 1) {
+          this.setState({ onboardStep: null, foldOpen: null, tab: 'fold' });
+          this.flash('Invite sent. Tanya sees Ridgeway only, and nothing marked elders-only.');
+        } else {
+          this.setState({ onboardStep: (s.onboardStep || 0) + 1 });
+        }
+      },
+      skipOnboarding: () => this.setState({ onboardStep: null }),
+
+      toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

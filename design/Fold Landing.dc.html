@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/colors.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/typography.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/effects.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/base.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/styles.css">
+<script src="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+  body { margin: 0; background: #F4FBFE; font-family: Mulish, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #B0530D; text-decoration: none; }
+  a:hover { color: #DC6A12; text-decoration: underline; }
+</style>
+</helmet>
+
+<div style="width: 100%; overflow-x: hidden;">
+
+  <div style="position: sticky; top: 0; z-index: 40; background: rgba(244,251,254,0.88); backdrop-filter: blur(12px); border-bottom: 1px solid #E0E5EB;">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 16px 32px; display: flex; align-items: center; gap: 28px;">
+      <div style="font-family: Montserrat, sans-serif; font-size: 24px; font-weight: 800; letter-spacing: 0.03em; line-height: 1; color: #20242A; white-space: nowrap;">F<svg width="17" height="17" viewBox="0 0 64 64" fill="none" style="display:inline-block;vertical-align:baseline;overflow:visible;margin:0 0.04em"><rect x="3" y="3" width="58" height="58" rx="15" stroke="#20242A" stroke-width="6.5"></rect><circle cx="23" cy="24" r="5.4" fill="#20242A"></circle><circle cx="41" cy="24" r="5.4" fill="#20242A"></circle><circle cx="23" cy="42" r="5.4" fill="#20242A"></circle><circle cx="41" cy="42" r="5.4" fill="#20242A"></circle><circle cx="77" cy="-9" r="7" fill="#FF953E"></circle></svg>LD</div>
+      <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #7E8995; padding-top: 3px;">for the church, by the church</div>
+      <div style="flex: 1;"></div>
+      <a href="#how" style="font-size: 15px; color: #39424C;">How it works</a>
+      <a href="#folds" style="font-size: 15px; color: #39424C;">Shepherding folds</a>
+      <a href="#trust" style="font-size: 15px; color: #39424C;">Confidentiality</a>
+      <x-import component-from-global-scope="DesignSystem_40c311.Button" variant="primary" size="sm" hint-size="auto,38px">Start free</x-import>
+    </div>
+  </div>
+
+  <div style="max-width: 1200px; margin: 0 auto; padding: 84px 32px 72px; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 56px; align-items: center;">
+    <div>
+      <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #B0530D;">For everyone who cares for the church</div>
+      <h1 style="margin: 18px 0 0; font-family: Montserrat, sans-serif; font-size: 62px; font-weight: 800; letter-spacing: -0.035em; line-height: 1.03; color: #20242A; text-wrap: balance;">Nobody should fall through the cracks.</h1>
+      <p style="margin: 22px 0 0; font-size: 19px; line-height: 1.6; color: #39424C; max-width: 520px; text-wrap: pretty;">Pastors, elders, small group leaders, care volunteers: Fold remembers every conversation, visit and prayer so none of you have to. It tells you who has gone quiet, and hands each leader a fold small enough to actually love.</p>
+      <div style="display: flex; gap: 12px; margin-top: 30px; flex-wrap: wrap;">
+        <x-import component-from-global-scope="DesignSystem_40c311.Button" variant="primary" size="lg" hint-size="auto,52px">Start free for your church</x-import>
+        <x-import component-from-global-scope="DesignSystem_40c311.Button" variant="outline" size="lg" hint-size="auto,52px">See a 3-minute tour</x-import>
+      </div>
+      <div style="display: flex; gap: 22px; margin-top: 24px; font-size: 14px; color: #5E6C7A; flex-wrap: wrap;">
+        <span>Free for churches under 150</span>
+        <span>Import from your existing directory</span>
+        <span>No card to start</span>
+      </div>
+    </div>
+    <div style="position: relative; height: 470px; border-radius: 24px; overflow: hidden; background: #E0E5EB;">
+      <image-slot id="fold-hero" shape="rect" fit="cover" placeholder="Drop a screenshot of the Fold app, or a candid photo of your people"></image-slot>
+    </div>
+  </div>
+
+  <div style="background: #20242A; color: #F4FBFE;">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 84px 32px;">
+      <div style="max-width: 720px;">
+        <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #FFB76B;">The honest problem</div>
+        <h2 style="margin: 18px 0 0; font-family: Montserrat, sans-serif; font-size: 42px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.12; color: #F4FBFE; text-wrap: balance;">Care lives in three places, and none of them is a system.</h2>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 44px;">
+        <div style="border-top: 2px solid rgba(255,255,255,0.16); padding-top: 20px;">
+          <div style="font-family: Montserrat, sans-serif; font-size: 17px; font-weight: 800; color: #F4FBFE;">A spreadsheet nobody updates</div>
+          <div style="font-size: 15.5px; line-height: 1.6; color: #C9D0D9; margin-top: 10px;">Rows and columns are for numbers. People do not fit in them, so after two weeks the updates stop.</div>
+        </div>
+        <div style="border-top: 2px solid rgba(255,255,255,0.16); padding-top: 20px;">
+          <div style="font-family: Montserrat, sans-serif; font-size: 17px; font-weight: 800; color: #F4FBFE;">Forty minutes of staff meeting</div>
+          <div style="font-size: 15.5px; line-height: 1.6; color: #C9D0D9; margin-top: 10px;">If you miss the meeting, you miss the care. And whatever was said in June is already gone.</div>
+        </div>
+        <div style="border-top: 2px solid #FF953E; padding-top: 20px;">
+          <div style="font-family: Montserrat, sans-serif; font-size: 17px; font-weight: 800; color: #F4FBFE;">One leader's memory</div>
+          <div style="font-size: 15.5px; line-height: 1.6; color: #C9D0D9; margin-top: 10px;">The most common care system in the church, and the one that leaves when they do.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="how" style="max-width: 1200px; margin: 0 auto; padding: 88px 32px 20px;">
+    <div style="max-width: 680px;">
+      <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #7E8995;">How it works</div>
+      <h2 style="margin: 18px 0 0; font-family: Montserrat, sans-serif; font-size: 42px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.12; color: #20242A; text-wrap: balance;">Three habits, and the rest takes care of itself.</h2>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 44px;">
+      <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 16px; padding: 26px; box-shadow: 0 1px 3px rgba(32,36,42,0.05);">
+        <div style="font-family: Montserrat, sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #B0530D;">01 · Open</div>
+        <div style="font-family: Montserrat, sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: #20242A; margin-top: 14px;">See who has gone quiet</div>
+        <div style="font-size: 15.5px; line-height: 1.65; color: #39424C; margin-top: 10px;">Your fold, sorted by silence instead of alphabet. The three people nobody has spoken to are at the top, every time you open it.</div>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 16px; padding: 26px; box-shadow: 0 1px 3px rgba(32,36,42,0.05);">
+        <div style="font-family: Montserrat, sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #B0530D;">02 · Engage</div>
+        <div style="font-family: Montserrat, sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: #20242A; margin-top: 14px;">Log it in ten seconds</div>
+        <div style="font-size: 15.5px; line-height: 1.65; color: #39424C; margin-top: 10px;">One tap for "engaged." Dictate a note in the car. Tag it, choose who can see it, done before you reach the driveway.</div>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 16px; padding: 26px; box-shadow: 0 1px 3px rgba(32,36,42,0.05);">
+        <div style="font-family: Montserrat, sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #B0530D;">03 · Account</div>
+        <div style="font-family: Montserrat, sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: #20242A; margin-top: 10px;">Report without a spreadsheet</div>
+        <div style="font-size: 15.5px; line-height: 1.65; color: #39424C; margin-top: 10px;">Your monthly elders report writes itself from what was actually logged, fold by fold, in your shepherds' own words.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="folds" style="max-width: 1200px; margin: 0 auto; padding: 72px 32px;">
+    <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 24px; padding: 0; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); box-shadow: 0 2px 10px rgba(32,36,42,0.06);">
+      <div style="padding: 48px 44px;">
+        <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #B0530D;">Shepherding folds</div>
+        <h2 style="margin: 18px 0 0; font-family: Montserrat, sans-serif; font-size: 38px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.12; color: #20242A; text-wrap: balance;">Every person has a name attached to them.</h2>
+        <p style="margin: 18px 0 0; font-size: 16.5px; line-height: 1.65; color: #39424C;">Divide the church into folds and give each one a leader: an elder, a group leader, a care volunteer. Not a category, not a tag, but a person who is responsible, with co-shepherds beside them and a coverage number they can answer for.</p>
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 26px;">
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <div style="width: 7px; height: 7px; border-radius: 999px; background: #FF953E; margin-top: 8px; flex-shrink: 0;"></div>
+            <div style="font-size: 16px; line-height: 1.55; color: #39424C;">One fold per person, so care is never assumed to be someone else's job.</div>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <div style="width: 7px; height: 7px; border-radius: 999px; background: #FF953E; margin-top: 8px; flex-shrink: 0;"></div>
+            <div style="font-size: 16px; line-height: 1.55; color: #39424C;">Fold health at a glance, so an overloaded leader is visible before they burn out.</div>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <div style="width: 7px; height: 7px; border-radius: 999px; background: #FF953E; margin-top: 8px; flex-shrink: 0;"></div>
+            <div style="font-size: 16px; line-height: 1.55; color: #39424C;">Move a household between folds and the whole care history goes with them.</div>
+          </div>
+        </div>
+      </div>
+      <div style="position: relative; height: 500px; background: #EEF1F5;">
+        <image-slot id="fold-folds" shape="rect" fit="cover" placeholder="Drop the fold health screen, or a photo of your elders"></image-slot>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width: 1200px; margin: 0 auto; padding: 20px 32px 80px;">
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;">
+      <div style="border-top: 2px solid #20242A; padding-top: 18px;">
+        <div style="font-family: Montserrat, sans-serif; font-size: 17px; font-weight: 800; color: #20242A;">Care journeys</div>
+        <div style="font-size: 15px; line-height: 1.6; color: #39424C; margin-top: 8px;">Grief, hospital, marital challenges, personal struggles, new believer, restoration: steps with owners and dates, not a pile of notes.</div>
+      </div>
+      <div style="border-top: 2px solid #20242A; padding-top: 18px;">
+        <div style="font-family: Montserrat, sans-serif; font-size: 17px; font-weight: 800; color: #20242A;">Nudges that name a person</div>
+        <div style="font-size: 15px; line-height: 1.6; color: #39424C; margin-top: 8px;">When a follow-up goes stale, the leader who owns it hears about it. Not a group text nobody reads.</div>
+      </div>
+      <div style="border-top: 2px solid #20242A; padding-top: 18px;">
+        <div style="font-family: Montserrat, sans-serif; font-size: 17px; font-weight: 800; color: #20242A;">Milestones you would hate to miss</div>
+        <div style="font-size: 15px; line-height: 1.6; color: #39424C; margin-top: 8px;">Birthdays, anniversaries, and the anniversary of a loss, which matters more than the other two.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="trust" style="background: #2B3139; color: #F4FBFE;">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 80px 32px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: center;">
+      <div>
+        <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #FFB76B;">Confidentiality</div>
+        <h2 style="margin: 18px 0 0; font-family: Montserrat, sans-serif; font-size: 40px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.12; color: #F4FBFE; text-wrap: balance;">A memory, not a file on someone.</h2>
+        <p style="margin: 18px 0 0; font-size: 17px; line-height: 1.65; color: #C9D0D9;">Every note carries a visibility tier: all leaders, staff, or elders only. Confidential matters stay out of the open feed and out of reports read aloud in a room. A group leader sees their fold and nothing else.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; padding: 18px 20px;">
+          <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A7B1BD;">All leaders</div>
+          <div style="font-size: 15.5px; color: #F4FBFE; margin-top: 7px;">Visits, check-ins, milestones. The ordinary work of care.</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; padding: 18px 20px;">
+          <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A7B1BD;">Staff</div>
+          <div style="font-size: 15.5px; color: #F4FBFE; margin-top: 7px;">Situations the office needs to handle well and quietly.</div>
+        </div>
+        <div style="background: rgba(255,149,62,0.14); border: 1px solid rgba(255,183,107,0.4); border-radius: 14px; padding: 18px 20px;">
+          <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #FFB76B;">Elders only</div>
+          <div style="font-size: 15.5px; color: #F4FBFE; margin-top: 7px;">Restoration, benevolence, counseling. Locked, logged, and never in the feed.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width: 1200px; margin: 0 auto; padding: 84px 32px;">
+    <div style="max-width: 860px;">
+      <div style="font-family: Montserrat, sans-serif; font-size: 26px; font-weight: 700; line-height: 1.45; color: #20242A; text-wrap: pretty;">"I stopped trying to rely on memory when caring for people and calling that faithfulness. Now I know who needs me this week, and don't have to guess."</div>
+      <div style="display: flex; align-items: center; gap: 12px; margin-top: 22px;">
+        <div style="width: 44px; height: 44px; border-radius: 999px; overflow: hidden; flex-shrink: 0; background: #EEF1F5;">
+          <image-slot id="fold-quote-face" shape="circle" fit="cover" placeholder="Photo"></image-slot>
+        </div>
+        <div>
+          <div style="font-size: 15.5px; font-weight: 700; color: #20242A;">Melo Sauval</div>
+          <div style="font-size: 14px; color: #5E6C7A; margin-top: 2px;">Lead Pastor · One Family Church</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="background: linear-gradient(100deg, #FF953E 0%, #DC6A12 100%);">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 76px 32px; display: flex; align-items: center; gap: 40px; flex-wrap: wrap;">
+      <div style="flex: 1; min-width: 320px;">
+        <h2 style="margin: 0; font-family: Montserrat, sans-serif; font-size: 42px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; color: #20242A; text-wrap: balance;">Start with one fold this Sunday.</h2>
+        <p style="margin: 14px 0 0; font-size: 17px; line-height: 1.6; color: #20242A; opacity: 0.82; max-width: 520px;">Import your directory, assign your leaders, and log the first conversation before the room clears out. Nothing to configure for a month.</p>
+      </div>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <x-import component-from-global-scope="DesignSystem_40c311.Button" variant="secondary" size="lg" hint-size="auto,52px">Start free</x-import>
+        <x-import component-from-global-scope="DesignSystem_40c311.Button" variant="outline" size="lg" hint-size="auto,52px">Talk to someone who uses it</x-import>
+      </div>
+    </div>
+  </div>
+
+  <div style="background: #20242A; color: #A7B1BD;">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 40px 32px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+      <div style="font-family: Montserrat, sans-serif; font-size: 20px; font-weight: 800; letter-spacing: 0.03em; line-height: 1; color: #F4FBFE; white-space: nowrap;">F<svg width="14" height="14" viewBox="0 0 64 64" fill="none" style="display:inline-block;vertical-align:baseline;overflow:visible;margin:0 0.04em"><rect x="3" y="3" width="58" height="58" rx="15" stroke="#F4FBFE" stroke-width="6.5"></rect><circle cx="23" cy="24" r="5.4" fill="#F4FBFE"></circle><circle cx="41" cy="24" r="5.4" fill="#F4FBFE"></circle><circle cx="23" cy="42" r="5.4" fill="#F4FBFE"></circle><circle cx="41" cy="42" r="5.4" fill="#F4FBFE"></circle><circle cx="77" cy="-9" r="7" fill="#FF953E"></circle></svg>LD</div>
+      <div style="font-size: 13.5px;">Built by pastors and leaders, for the people they shepherd.</div>
+      <div style="flex: 1;"></div>
+      <a href="#trust" style="font-size: 13.5px; color: #A7B1BD;">Privacy</a>
+      <a href="#how" style="font-size: 13.5px; color: #A7B1BD;">How it works</a>
+      <a href="Fold App.dc.html" style="font-size: 13.5px; color: #FFB76B;">See the app</a>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

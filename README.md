@@ -3,11 +3,27 @@
 A church care platform built on one premise: **a person should not be able to
 quietly disappear.**
 
-`HANDOFF.md` in this repo is the specification and the authority. The code cites
-it constantly — every `§3`, `§8.2`, `§7's five parts` in a comment is a reference
-to a numbered section of that file, and those comments explain *why* the code
-refuses things. Read it first. `START-HERE.md` is the shorter orientation that
-came with it.
+**Authority is split between two documents, and treating one of them as the whole
+thing is how this codebase drifted from its own design.**
+
+`HANDOFF.md` is authoritative for **rules**: the tier model, the permission matrix,
+the pathway lifecycle, what never syncs, and the §8 invariants. The code cites it
+constantly — every `§3`, `§8.2`, `§7's five parts` in a comment is a reference to a
+numbered section of that file, and those comments explain *why* the code refuses
+things. Read it first. `START-HERE.md` is the shorter orientation that came with it.
+
+`design/` holds the prototype, and it is authoritative for **interface**: layout,
+wording, flow, states, and the guided steps inside a screen. It is a working
+single-page app — open `design/Fold Web.dc.html` in a browser and click through it.
+
+The handoff is a 17KB summary of a 567KB prototype, so it describes screens in one
+line each; §9 gives the entire Guests screen six words for six tabs. Building from
+the summary alone got the rules almost exactly right and the interface substantially
+wrong — four tabbed areas were designed and the app has no tabs anywhere.
+`DESIGN-PARITY.md` is the screen-by-screen audit and the list of what is still
+missing. Where the two disagree about a rule the handoff wins, because it was
+written to correct the prototype. Where they disagree about interface, the prototype
+wins.
 
 ## Running it
 

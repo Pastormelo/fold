@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/colors.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/typography.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/effects.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/tokens/base.css">
+<link rel="stylesheet" href="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/styles.css">
+<script src="_ds/ofc-design-system-40c31199-1d5f-431f-96a6-31ec88339d7b/_ds_bundle.js"></script>
+<style>
+  body { margin: 0; background: #E7EDF1; font-family: Mulish, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #B0530D; text-decoration: none; }
+  a:hover { color: #DC6A12; text-decoration: underline; }
+</style>
+</helmet>
+
+<section style="padding: 72px 80px 120px; display: flex; flex-direction: column; gap: 56px;">
+  <div style="display: flex; flex-direction: column; gap: 18px; max-width: 720px;">
+    <div style="font-family: Montserrat, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #5E6C7A;">Fold · care platform · turn 1</div>
+    <div style="display: flex; align-items: baseline; gap: 16px;">
+      <h1 style="margin: 0; font-family: Montserrat, sans-serif; font-size: 56px; font-weight: 800; letter-spacing: -0.03em; color: #20242A;">Fold</h1>
+      <span style="font-size: 19px; color: #5E6C7A;">shepherding care, kept honest</span>
+    </div>
+    <p style="margin: 0; font-size: 17px; line-height: 1.65; color: #39424C; text-wrap: pretty;">Three takes on the navigation structure, all mobile first. Each one answers the same Monday-morning question differently: <em>who in my fold has gone quiet?</em> Same visual language, same data model, different spine. Pick a spine and I will build it out into the full flow, then the web view for staff.</p>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; padding-top: 4px;">
+      <span style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #B0530D; background: #FFF4EA; border: 1px solid #FFD2A8; border-radius: 999px; padding: 7px 13px;">Compare <a href="#1a">1a</a> · <a href="#1b">1b</a> · <a href="#1c">1c</a></span>
+      <span style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #5E6C7A; background: #FFFFFF; border: 1px solid #E0E5EB; border-radius: 999px; padding: 7px 13px;">Names are sample data</span>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 72px; align-items: flex-start; flex-wrap: wrap;">
+
+    <div id="1a" style="display: flex; flex-direction: column; gap: 22px; width: 880px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <span style="font-family: Montserrat, sans-serif; font-size: 13px; font-weight: 800; letter-spacing: 0.08em; color: #20242A; background: #FF953E; border-radius: 6px; padding: 6px 10px;">1a</span>
+          <h2 style="margin: 0; font-family: Montserrat, sans-serif; font-size: 27px; font-weight: 800; letter-spacing: -0.02em; color: #20242A;">Fold first</h2>
+          <span style="font-size: 15px; color: #5E6C7A;">Tabbed. Your people are the home screen.</span>
+        </div>
+        <p style="margin: 0; max-width: 780px; font-size: 15px; line-height: 1.6; color: #39424C; text-wrap: pretty;">Opens straight into your assigned fold, sorted by silence rather than alphabet. A coverage bar at the top is the accountability number an elder reports on at the monthly meeting. Tabs keep the feed, tasks and directory one thumb away.</p>
+      </div>
+      <div style="display: flex; gap: 28px;">
+
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+          <div style="height: 874px; display: flex; flex-direction: column; background: #F4FBFE; overflow: hidden;">
+            <div style="flex-shrink: 0; background: #20242A; padding: 62px 22px 20px; color: #F4FBFE;">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #A7B1BD;">My fold</div>
+                <div style="display: flex; align-items: center; gap: 7px;">
+                  <div style="width: 26px; height: 26px; border-radius: 999px; background: #5E6C7A; border: 1.5px solid #20242A; font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; color: #F4FBFE; display: flex; align-items: center; justify-content: center;">MR</div>
+                  <div style="width: 26px; height: 26px; border-radius: 999px; background: #434E59; border: 1.5px solid #20242A; margin-left: -14px; font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; color: #F4FBFE; display: flex; align-items: center; justify-content: center;">TJ</div>
+                </div>
+              </div>
+              <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 8px;">
+                <div style="font-family: Montserrat, sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -0.02em;">{{ foldName }}</div>
+              </div>
+              <div style="margin-top: 4px; font-size: 14px; color: #C9D0D9;">18 people · you and 2 co-shepherds</div>
+              <sc-if value="{{ showCoverage }}" hint-placeholder-val="{{ true }}">
+                <div style="margin-top: 22px;">
+                  <div style="display: flex; height: 7px; border-radius: 999px; overflow: hidden; gap: 2px;">
+                    <div style="flex: 12; background: #3FA66B;"></div>
+                    <div style="flex: 3; background: #E8A53C;"></div>
+                    <div style="flex: 3; background: #FF953E;"></div>
+                  </div>
+                  <div style="display: flex; gap: 16px; margin-top: 11px; font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;">
+                    <span style="color: #7FCBA0;">12 current</span>
+                    <span style="color: #E8A53C;">3 drifting</span>
+                    <span style="color: #FFB76B;">3 overdue</span>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+
+            <div style="flex: 1; overflow: hidden; padding: 0 22px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 22px 0 10px;">
+                <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #20242A;">Needs you now</div>
+                <div style="font-size: 13px; color: #5E6C7A;">{{ staleLabel }}</div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <sc-for list="{{ needsYou }}" as="p" hint-placeholder-count="3">
+                  <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-left: 3px solid #FF953E; border-radius: 14px; padding: 14px 15px; box-shadow: 0 1px 2px rgba(32,36,42,0.05); display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 999px; background: #EEF1F5; color: #5E6C7A; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center;">{{ p.initials }}</div>
+                    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px;">
+                      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;">
+                        <div style="font-size: 16px; font-weight: 700; color: #20242A;">{{ p.name }}</div>
+                        <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: #B0530D; white-space: nowrap;">{{ p.since }}</div>
+                      </div>
+                      <div style="font-size: 13.5px; line-height: 1.45; color: #5E6C7A; text-wrap: pretty;">{{ p.context }}</div>
+                      <div style="display: flex; gap: 6px; margin-top: 5px;">
+                        <span style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #39424C; background: #F7F9FB; border: 1px solid #E0E5EB; border-radius: 999px; padding: 4px 9px;">{{ p.tag }}</span>
+                        <span style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B0530D; background: #FFF4EA; border: 1px solid #FFD2A8; border-radius: 999px; padding: 4px 9px;">Engaged</span>
+                      </div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #5E6C7A; padding: 26px 0 6px;">Cared for recently</div>
+              <div style="display: flex; flex-direction: column;">
+                <sc-for list="{{ recent }}" as="p" hint-placeholder-count="3">
+                  <div style="display: flex; align-items: center; gap: 12px; padding: 13px 2px; border-bottom: 1px solid #E0E5EB;">
+                    <div style="width: 7px; height: 7px; border-radius: 999px; background: #3FA66B; flex-shrink: 0;"></div>
+                    <div style="flex: 1; font-size: 15.5px; color: #20242A;">{{ p.name }}</div>
+                    <div style="font-size: 13px; color: #7E8995;">{{ p.since }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="flex-shrink: 0; background: rgba(244,251,254,0.92); border-top: 1px solid #E0E5EB; padding: 12px 18px 34px; display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 62px;">
+                <div style="width: 5px; height: 5px; border-radius: 999px; background: #FF953E;"></div>
+                <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #20242A;">Fold</div>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 62px;">
+                <div style="width: 5px; height: 5px; border-radius: 999px; background: transparent;"></div>
+                <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #7E8995;">Feed</div>
+              </div>
+              <div style="width: 54px; height: 54px; border-radius: 999px; background: #FF953E; box-shadow: 0 6px 18px rgba(255,149,62,0.45); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 300; color: #20242A; margin-top: -22px;">+</div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 62px;">
+                <div style="width: 5px; height: 5px; border-radius: 999px; background: transparent;"></div>
+                <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #7E8995;">Tasks</div>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 62px;">
+                <div style="width: 5px; height: 5px; border-radius: 999px; background: transparent;"></div>
+                <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #7E8995;">People</div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+          <div style="height: 874px; display: flex; flex-direction: column; background: #F4FBFE; overflow: hidden;">
+            <div style="flex-shrink: 0; background: #20242A; padding: 58px 22px 22px; color: #F4FBFE;">
+              <div style="display: flex; align-items: center; justify-content: space-between; font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A7B1BD;">
+                <span>← {{ foldName }}</span>
+                <span style="color: #FFB76B;">Edit</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 14px; margin-top: 20px;">
+                <div style="width: 58px; height: 58px; border-radius: 999px; background: #434E59; color: #F4FBFE; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 19px; display: flex; align-items: center; justify-content: center;">DA</div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <div style="font-family: Montserrat, sans-serif; font-size: 25px; font-weight: 800; letter-spacing: -0.02em;">Dolores Amaya</div>
+                  <div style="font-size: 13.5px; color: #C9D0D9;">Member since 2019 · shepherded by you</div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 7px; margin-top: 18px; flex-wrap: wrap;">
+                <span style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #20242A; background: #FFB76B; border-radius: 999px; padding: 5px 10px;">Hospital journey · step 2 of 4</span>
+                <span style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #F4FBFE; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; padding: 5px 10px;">Benevolence</span>
+              </div>
+            </div>
+
+            <div style="flex: 1; overflow: hidden; padding: 20px 22px 0;">
+              <div style="display: flex; gap: 8px; margin-bottom: 18px;">
+                <div style="flex: 1; background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 12px; padding: 11px 12px;">
+                  <div style="font-family: Montserrat, sans-serif; font-size: 22px; font-weight: 800; color: #20242A;">6</div>
+                  <div style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #7E8995; margin-top: 2px;">Touches, 90d</div>
+                </div>
+                <div style="flex: 1; background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 12px; padding: 11px 12px;">
+                  <div style="font-family: Montserrat, sans-serif; font-size: 22px; font-weight: 800; color: #B0530D;">68d</div>
+                  <div style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #7E8995; margin-top: 2px;">Since last</div>
+                </div>
+                <div style="flex: 1; background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 12px; padding: 11px 12px;">
+                  <div style="font-family: Montserrat, sans-serif; font-size: 22px; font-weight: 800; color: #20242A;">Aug 4</div>
+                  <div style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #7E8995; margin-top: 2px;">Birthday</div>
+                </div>
+              </div>
+
+              <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #20242A; padding-bottom: 12px;">Care thread</div>
+              <div style="display: flex; flex-direction: column;">
+                <sc-for list="{{ thread }}" as="e" hint-placeholder-count="4">
+                  <div style="display: flex; gap: 13px; padding-bottom: 18px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; padding-top: 4px;">
+                      <div style="width: 9px; height: 9px; border-radius: 999px; background: #FF953E;"></div>
+                      <div style="flex: 1; width: 1px; background: #E0E5EB;"></div>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #39424C;">{{ e.kind }}</span>
+                        <span style="font-size: 12.5px; color: #7E8995;">{{ e.when }} · {{ e.who }}</span>
+                        <sc-if value="{{ e.locked }}" hint-placeholder-val="{{ false }}">
+                          <span style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B0530D; background: #FFF4EA; border-radius: 4px; padding: 3px 6px;">Elders only</span>
+                        </sc-if>
+                      </div>
+                      <div style="font-size: 14.5px; line-height: 1.55; color: #39424C; margin-top: 5px; text-wrap: pretty;">{{ e.body }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="flex-shrink: 0; padding: 12px 18px 34px; background: rgba(244,251,254,0.94); border-top: 1px solid #E0E5EB; display: flex; align-items: center; gap: 10px;">
+              <div style="flex: 1; background: #FFFFFF; border: 1px solid #E0E5EB; border-radius: 999px; padding: 13px 18px; font-size: 15px; color: #7E8995;">Log a moment with Dolores…</div>
+              <div style="width: 46px; height: 46px; border-radius: 999px; background: #20242A; display: flex; align-items: center; justify-content: center;">
+                <div style="width: 11px; height: 17px; border-radius: 999px; background: #FF953E;"></div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+
+      </div>
+    </div>
+
+    <div id="1b" style="display: flex; flex-direction: column; gap: 22px; width: 880px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <span style="font-family: Montserrat, sans-serif; font-size: 13px; font-weight: 800; letter-spacing: 0.08em; color: #20242A; background: #FF953E; border-radius: 6px; padding: 6px 10px;">1b</span>
+          <h2 style="margin: 0; font-family: Montserrat, sans-serif; font-size: 27px; font-weight: 800; letter-spacing: -0.02em; color: #20242A;">One stream</h2>
+          <span style="font-size: 15px; color: #5E6C7A;">No tabs. One page that answers, then gets out of the way.</span>
+        </div>
+        <p style="margin: 0; max-width: 780px; font-size: 15px; line-height: 1.6; color: #39424C; text-wrap: pretty;">A single scroll of what today asks of you, each item resolvable inline with one tap. Everything else lives behind one pill at the bottom: tap to capture, swipe up to jump anywhere. This is the version volunteers will actually keep using, and the fastest path from conversation to logged note.</p>
+      </div>
+      <div style="display: flex; gap: 28px;">
+
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+          <div style="height: 874px; display: flex; flex-direction: column; background: #F4FBFE; overflow: hidden;">
+            <div style="flex: 1; overflow: hidden; padding: 62px 22px 0;">
+              <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #7E8995;">Monday, 6:41 AM</div>
+              <div style="font-family: Montserrat, sans-serif; font-size: 29px; font-weight: 800; letter-spacing: -0.025em; color: #20242A; margin-top: 10px; line-height: 1.15; text-wrap: pretty;">Three people in {{ foldName }} have gone quiet.</div>
+              <div style="font-size: 14.5px; color: #5E6C7A; margin-top: 8px;">Handle them here. Nothing else is asking for you today.</div>
+
+              <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 24px;">
+                <sc-for list="{{ needsYou }}" as="p" hint-placeholder-count="3">
+                  <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 18px; padding: 16px; box-shadow: 0 2px 6px rgba(32,36,42,0.05);">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div style="width: 38px; height: 38px; border-radius: 999px; background: #20242A; color: #F4FBFE; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 12.5px; display: flex; align-items: center; justify-content: center;">{{ p.initials }}</div>
+                      <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 16.5px; font-weight: 700; color: #20242A;">{{ p.name }}</div>
+                        <div style="font-size: 12.5px; color: #7E8995; margin-top: 1px;">Last touch {{ p.since }} · {{ p.tag }}</div>
+                      </div>
+                    </div>
+                    <div style="font-size: 14.5px; line-height: 1.5; color: #39424C; margin-top: 11px; text-wrap: pretty;">{{ p.context }}</div>
+                    <div style="display: flex; gap: 8px; margin-top: 14px;">
+                      <div style="flex: 1; text-align: center; background: #FF953E; border-radius: 10px; padding: 11px 8px; font-family: Montserrat, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #20242A;">Engaged</div>
+                      <div style="flex: 1; text-align: center; background: #FFFFFF; border: 1px solid #E0E5EB; border-radius: 10px; padding: 11px 8px; font-family: Montserrat, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #39424C;">Write a note</div>
+                      <div style="width: 44px; text-align: center; background: #FFFFFF; border: 1px solid #E0E5EB; border-radius: 10px; padding: 11px 0; font-size: 14px; color: #5E6C7A;">···</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="margin-top: 28px; background: #20242A; border-radius: 18px; padding: 18px;">
+                <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #FFB76B;">This week</div>
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
+                  <sc-for list="{{ milestones }}" as="m" hint-placeholder-count="2">
+                    <div style="display: flex; align-items: center; gap: 11px;">
+                      <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: #A7B1BD; width: 46px; flex-shrink: 0;">{{ m.day }}</div>
+                      <div style="flex: 1; font-size: 14.5px; color: #F4FBFE;">{{ m.what }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+
+            <div style="flex-shrink: 0; padding: 14px 22px 34px; display: flex; justify-content: center;">
+              <div style="display: flex; align-items: center; gap: 12px; background: #FFFFFF; border: 1px solid #E0E5EB; border-radius: 999px; padding: 12px 14px 12px 20px; box-shadow: 0 8px 24px rgba(32,36,42,0.12);">
+                <span style="font-family: Montserrat, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #39424C;">Capture</span>
+                <div style="width: 1px; height: 20px; background: #E0E5EB;"></div>
+                <span style="font-size: 13px; color: #7E8995;">swipe up to jump</span>
+                <div style="width: 38px; height: 38px; border-radius: 999px; background: #FF953E; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 300; color: #20242A;">+</div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+          <div style="height: 874px; display: flex; flex-direction: column; background: #2B3139; overflow: hidden;">
+            <div style="flex: 1; padding: 62px 22px 0; opacity: 0.35;">
+              <div style="font-family: Montserrat, sans-serif; font-size: 29px; font-weight: 800; letter-spacing: -0.025em; color: #F4FBFE; line-height: 1.15;">Three people in {{ foldName }} have gone quiet.</div>
+            </div>
+            <div style="flex-shrink: 0; background: #F4FBFE; border-radius: 26px 26px 0 0; padding: 16px 22px 34px;">
+              <div style="width: 42px; height: 4px; border-radius: 999px; background: #C9D0D9; margin: 0 auto 18px;"></div>
+              <div style="display: flex; align-items: center; gap: 11px;">
+                <div style="width: 34px; height: 34px; border-radius: 999px; background: #EEF1F5; color: #5E6C7A; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 11.5px; display: flex; align-items: center; justify-content: center;">DA</div>
+                <div style="flex: 1; font-size: 16px; font-weight: 700; color: #20242A;">Dolores Amaya</div>
+                <span style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #B0530D;">Change</span>
+              </div>
+              <div style="margin-top: 16px; font-size: 16.5px; line-height: 1.55; color: #20242A;">Caught her after second service. Surgery moved to the <span style="background: #FFF4EA; border-bottom: 2px solid #FFB76B; padding: 1px 3px;">#hospital</span> on the 14th, her sister is flying in. Asked <span style="background: #FFF4EA; border-bottom: 2px solid #FFB76B; padding: 1px 3px;">@Tanya</span> to organize meals.<span style="color: #C9D0D9;">|</span></div>
+              <div style="display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap;">
+                <span style="font-family: Montserrat, sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #20242A; background: #FFE6CF; border: 1px solid #FFD2A8; border-radius: 999px; padding: 6px 11px;">Visit</span>
+                <span style="font-family: Montserrat, sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #5E6C7A; background: #FFFFFF; border: 1px solid #E0E5EB; border-radius: 999px; padding: 6px 11px;">Check-in</span>
+                <span style="font-family: Montserrat, sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #5E6C7A; background: #FFFFFF; border: 1px solid #E0E5EB; border-radius: 999px; padding: 6px 11px;">Benevolence</span>
+                <span style="font-family: Montserrat, sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #5E6C7A; background: #FFFFFF; border: 1px solid #E0E5EB; border-radius: 999px; padding: 6px 11px;">+ follow-up</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; margin-top: 20px; padding: 14px; background: #F7F9FB; border: 1px solid #EEF1F5; border-radius: 14px;">
+                <div style="width: 40px; height: 40px; border-radius: 999px; background: #20242A; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                  <div style="width: 10px; height: 16px; border-radius: 999px; background: #FF953E;"></div>
+                </div>
+                <div style="flex: 1; display: flex; align-items: center; gap: 3px; height: 22px;">
+                  <sc-for list="{{ wave }}" as="h" hint-placeholder-count="18">
+                    <div style="width: 3px; border-radius: 999px; background: #C9D0D9; height: {{ h }};"></div>
+                  </sc-for>
+                </div>
+                <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: #5E6C7A;">0:12</div>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 20px;">
+                <div style="display: flex; background: #EEF1F5; border-radius: 10px; padding: 3px;">
+                  <span style="font-family: Montserrat, sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #7E8995; padding: 8px 10px;">All leaders</span>
+                  <span style="font-family: Montserrat, sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #7E8995; padding: 8px 10px;">Staff</span>
+                  <span style="font-family: Montserrat, sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #20242A; background: #FFFFFF; border-radius: 8px; padding: 8px 10px; box-shadow: 0 1px 2px rgba(32,36,42,0.08);">Elders only</span>
+                </div>
+                <div style="background: #20242A; border-radius: 10px; padding: 12px 20px; font-family: Montserrat, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #F4FBFE;">Save</div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+
+      </div>
+    </div>
+
+    <div id="1c" style="display: flex; flex-direction: column; gap: 22px; width: 880px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <span style="font-family: Montserrat, sans-serif; font-size: 13px; font-weight: 800; letter-spacing: 0.08em; color: #20242A; background: #FF953E; border-radius: 6px; padding: 6px 10px;">1c</span>
+          <h2 style="margin: 0; font-family: Montserrat, sans-serif; font-size: 27px; font-weight: 800; letter-spacing: -0.02em; color: #20242A;">Shepherd's table</h2>
+          <span style="font-size: 15px; color: #5E6C7A;">Folds are the top level. Built for the monthly elders meeting.</span>
+        </div>
+        <p style="margin: 0; max-width: 780px; font-size: 15px; line-height: 1.6; color: #39424C; text-wrap: pretty;">Starts one level up: every fold, its shepherd, and whether that fold is actually being covered. An elder still lands in their own fold by default, but a lead pastor sees the whole flock at a glance, and the report you read aloud once a month writes itself.</p>
+      </div>
+      <div style="display: flex; gap: 28px;">
+
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+          <div style="height: 874px; display: flex; flex-direction: column; background: #F4FBFE; overflow: hidden;">
+            <div style="flex-shrink: 0; padding: 62px 22px 16px;">
+              <div style="font-family: Montserrat, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #7E8995;">Your church</div>
+              <div style="font-family: Montserrat, sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -0.025em; color: #20242A; margin-top: 8px;">The folds</div>
+              <div style="font-size: 14px; color: #5E6C7A; margin-top: 6px;">412 people · 6 folds · 11 shepherds</div>
+            </div>
+            <div style="flex: 1; overflow: hidden; padding: 6px 22px 0;">
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <sc-for list="{{ folds }}" as="f" hint-placeholder-count="6">
+                  <div style="background: #FFFFFF; border: 1px solid #EEF1F5; border-radius: 16px; padding: 15px; box-shadow: 0 1px 2px rgba(32,36,42,0.05);">
+                    <div style="display: flex; align-items: center; gap: 11px;">
+                      <div style="width: 34px; height: 34px; border-radius: 999px; background: #EEF1F5; color: #5E6C7A; font-family: Montserrat, sans-serif; font-weight: 700; font-size: 11.5px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{ f.initials }}</div>
+                      <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 16px; font-weight: 700; color: #20242A;">{{ f.name }}</div>
+                        <div style="font-size: 12.5px; color: #7E8995; margin-top: 1px;">{{ f.elder }} · {{ f.count }} people</div>
+                      </div>
+                      <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: {{ f.statusColor }};">{{ f.status }}</div>
+                    </div>
+                    <div style="display: flex; height: 6px; border-radius: 999px; overflow: hidden; gap: 2px; margin-top: 13px;">
+                      <div style="flex: {{ f.current }}; background: #3FA66B;"></div>
+                      <div style="flex: {{ f.drifting }}; background: #E8A53C;"></div>
+                      <div style="flex: {{ f.overdue }}; background: #FF953E;"></div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="flex-shrink: 0; padding: 14px 22px 34px; display: flex; gap: 10px;">
+              <div style="flex: 1; text-align: center; background: #20242A; border-radius: 12px; padding: 15px; font-family: Montserrat, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #F4FBFE;">My fold</div>
+              <div style="width: 54px; background: #FFFFFF; border: 1px solid #E0E5EB; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 300; color: #39424C;">+</div>
+            </div>
+          </div>
+        </x-import>
+
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+          <div style="height: 874px; display: flex; flex-direction: column; background: #F4FBFE; overflow: hidden;">
+            <div style="flex-shrink: 0; background: #20242A; padding: 58px 22px 24px; color: #F4FBFE;">
+              <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A7B1BD;">← The folds</div>
+              <div style="font-family: Montserrat, sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -0.025em; margin-top: 16px;">{{ foldName }}</div>
+              <div style="font-size: 13.5px; color: #C9D0D9; margin-top: 5px;">Marcus Reid, shepherd · 18 people</div>
+              <div style="display: flex; gap: 22px; margin-top: 24px;">
+                <div>
+                  <div style="font-family: Montserrat, sans-serif; font-size: 27px; font-weight: 800;">83<span style="font-size: 15px;">%</span></div>
+                  <div style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A7B1BD; margin-top: 3px;">Covered</div>
+                </div>
+                <div style="width: 1px; background: rgba(255,255,255,0.14);"></div>
+                <div>
+                  <div style="font-family: Montserrat, sans-serif; font-size: 27px; font-weight: 800; color: #FFB76B;">3</div>
+                  <div style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A7B1BD; margin-top: 3px;">Overdue</div>
+                </div>
+                <div style="width: 1px; background: rgba(255,255,255,0.14);"></div>
+                <div>
+                  <div style="font-family: Montserrat, sans-serif; font-size: 27px; font-weight: 800;">27</div>
+                  <div style="font-family: Montserrat, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A7B1BD; margin-top: 3px;">Touches, 30d</div>
+                </div>
+              </div>
+            </div>
+            <div style="flex: 1; overflow: hidden; padding: 22px 22px 0;">
+              <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #20242A;">Since the last elders meeting</div>
+              <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
+                <sc-for list="{{ summary }}" as="s" hint-placeholder-count="4">
+                  <div style="display: flex; gap: 12px; align-items: flex-start;">
+                    <div style="font-family: Montserrat, sans-serif; font-size: 15px; font-weight: 800; color: #B0530D; width: 26px; flex-shrink: 0; text-align: right;">{{ s.n }}</div>
+                    <div style="flex: 1; font-size: 14.5px; line-height: 1.5; color: #39424C; text-wrap: pretty;">{{ s.what }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="height: 1px; background: #E0E5EB; margin: 22px 0;"></div>
+              <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #20242A;">Needs a shepherd's eye</div>
+              <div style="display: flex; flex-direction: column;">
+                <sc-for list="{{ needsYou }}" as="p" hint-placeholder-count="3">
+                  <div style="display: flex; align-items: center; gap: 12px; padding: 14px 2px; border-bottom: 1px solid #E0E5EB;">
+                    <div style="width: 7px; height: 7px; border-radius: 999px; background: #FF953E; flex-shrink: 0;"></div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="font-size: 15.5px; font-weight: 700; color: #20242A;">{{ p.name }}</div>
+                      <div style="font-size: 12.5px; color: #7E8995;">{{ p.tag }}</div>
+                    </div>
+                    <div style="font-family: Montserrat, sans-serif; font-size: 11px; font-weight: 700; color: #B0530D;">{{ p.since }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="flex-shrink: 0; padding: 14px 22px 34px;">
+              <div style="text-align: center; background: #FF953E; border-radius: 12px; padding: 16px; font-family: Montserrat, sans-serif; font-size: 12.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #20242A; box-shadow: 0 6px 18px rgba(255,149,62,0.32);">Build elders report →</div>
+            </div>
+          </div>
+        </x-import>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;foldName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Ridgeway Fold&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;staleDays&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:60,&quot;min&quot;:14,&quot;max&quot;:120,&quot;step&quot;:1,&quot;unit&quot;:&quot;days&quot;,&quot;tsType&quot;:&quot;number&quot;},&quot;showCoverage&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const stale = this.props.staleDays ?? 60;
+    return {
+      foldName: this.props.foldName ?? 'Ridgeway Fold',
+      showCoverage: this.props.showCoverage ?? true,
+      staleLabel: 'No contact in ' + stale + '+ days',
+      needsYou: [
+        { name: 'Dolores Amaya', initials: 'DA', since: '68 days', tag: 'Hospital', context: 'Knee surgery moved up to the 14th. Nobody has been by since the diagnosis.' },
+        { name: 'The Okonkwo family', initials: 'OK', since: '74 days', tag: 'New family', context: 'Joined in March, stopped attending group. Two teenagers.' },
+        { name: 'Ray Whitfield', initials: 'RW', since: '91 days', tag: 'Benevolence', context: 'Rent assistance approved in May. No follow-up logged since.' }
+      ],
+      recent: [
+        { name: 'Marisol Cabrera', since: '3 days' },
+        { name: 'Jon & Kate Diaz', since: '6 days' },
+        { name: 'Ellis Bramlett', since: '9 days' },
+        { name: 'Priya Nandakumar', since: '11 days' }
+      ],
+      thread: [
+        { kind: 'Visit', when: 'Jun 14', who: 'you', locked: false, body: 'Sat with her at Mercy General before the pre-op. She is steady but worried about the recovery weeks alone. Sister flying in from Tulsa on the 12th.' },
+        { kind: 'Benevolence', when: 'May 30', who: 'Tanya Jules', locked: true, body: 'Deacons approved two months of utility help. Reviewed at the June meeting.' },
+        { kind: 'Check-in', when: 'May 2', who: 'you', locked: false, body: 'Called after service. Doctor found something on the knee, scans scheduled.' },
+        { kind: 'Milestone', when: 'Apr 8', who: 'system', locked: false, body: 'Anniversary of Hector\u2019s passing. Marcus sent a note.' }
+      ],
+      milestones: [
+        { day: 'Tue', what: 'Ellis Bramlett turns 71' },
+        { day: 'Thu', what: 'Diaz wedding anniversary · 14 years' },
+        { day: 'Sat', what: 'One year since Hector Amaya passed' }
+      ],
+      wave: ['8px', '14px', '20px', '11px', '18px', '22px', '9px', '16px', '13px', '21px', '17px', '10px', '19px', '12px', '7px', '15px', '20px', '9px'],
+      folds: [
+        { name: 'Ridgeway Fold', initials: 'MR', elder: 'Marcus Reid', count: 18, status: 'Covered', statusColor: '#3FA66B', current: 12, drifting: 3, overdue: 3 },
+        { name: 'Eastside Fold', initials: 'TJ', elder: 'Tanya Jules', count: 22, status: 'Covered', statusColor: '#3FA66B', current: 19, drifting: 2, overdue: 1 },
+        { name: 'Northgate Fold', initials: 'AV', elder: 'Andre Villareal', count: 16, status: 'Thin', statusColor: '#E8A53C', current: 9, drifting: 5, overdue: 2 },
+        { name: 'Lil Ones Families', initials: 'SK', elder: 'Sarah Koenig', count: 31, status: 'Covered', statusColor: '#3FA66B', current: 26, drifting: 4, overdue: 1 },
+        { name: 'Westbrook Fold', initials: 'DL', elder: 'Dean Lowry', count: 19, status: 'Needs help', statusColor: '#D9534F', current: 7, drifting: 5, overdue: 7 },
+        { name: 'Students & Young Adults', initials: 'BM', elder: 'Bex Mwangi', count: 24, status: 'Thin', statusColor: '#E8A53C', current: 15, drifting: 6, overdue: 3 }
+      ],
+      summary: [
+        { n: '27', what: 'care touches logged by you and your co-shepherds' },
+        { n: '2', what: 'hospital journeys, one closed out and one active' },
+        { n: '1', what: 'restoration process ongoing, elders-only notes' },
+        { n: '3', what: 'people still overdue for contact, listed below' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

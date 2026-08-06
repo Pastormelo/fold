@@ -1,0 +1,43 @@
+/* ── One Family Church · Typography tokens ────────────────────
+   Display/heading face mirrors the geometric monoline wordmark.
+   Headings & UI labels are frequently UPPERCASE with positive
+   tracking (as in the logo "ONE FAMILY / CHURCH"). */
+
+:root {
+  /* Families */
+  --font-display: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
+  --font-body:    'Mulish', 'Segoe UI', system-ui, sans-serif;
+  --font-mono:    ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Weights */
+  --fw-regular:  400; /* @kind other */
+  --fw-medium:   500; /* @kind other */
+  --fw-semibold: 600; /* @kind other */
+  --fw-bold:     700; /* @kind other */
+  --fw-extra:    800; /* @kind other */
+
+  /* Fluid display scale */
+  --text-display:  clamp(2.75rem, 1.6rem + 4.6vw, 4.5rem); /* @kind spacing */
+  --text-h1:       clamp(2.25rem, 1.5rem + 2.6vw, 3.25rem); /* @kind spacing */
+  --text-h2:       clamp(1.75rem, 1.3rem + 1.6vw, 2.4rem); /* @kind spacing */
+  --text-h3:       clamp(1.375rem, 1.15rem + 0.8vw, 1.75rem); /* @kind spacing */
+  --text-h4:       1.25rem; /* @kind spacing */
+  --text-lead:     1.25rem; /* @kind spacing */
+  --text-body:     1.0625rem; /* @kind spacing */
+  --text-sm:       0.9375rem; /* @kind spacing */
+  --text-xs:       0.8125rem; /* @kind spacing */
+  --text-overline: 0.75rem; /* @kind spacing */
+
+  /* Line heights */
+  --lh-tight:   1.05; /* @kind other */
+  --lh-snug:    1.2; /* @kind other */
+  --lh-normal:  1.5; /* @kind other */
+  --lh-relaxed: 1.65; /* @kind other */
+
+  /* Letter spacing */
+  --ls-tight:    -0.02em; /* @kind other */
+  --ls-normal:   0; /* @kind other */
+  --ls-wide:     0.04em; /* @kind other */
+  --ls-overline: 0.18em; /* @kind other */
+  --ls-label:    0.08em; /* @kind other */
+}

@@ -1,0 +1,88 @@
+/* ── One Family Church · Color tokens ─────────────────────────
+   Brand palette sourced from "One Family Church - Colors RGB.pdf".
+   Base values are raw brand colors; semantic aliases below map them
+   to roles. Always reach for semantic aliases in components. */
+
+:root {
+  /* ---- Brand core ---- */
+  --ofc-orange:        #FF953E;  /* primary brand */
+  --ofc-orange-light:  #FFB76B;  /* secondary / highlight */
+  --ofc-ink:           #20242A;  /* brand dark / headlines */
+  --ofc-charcoal:      #2B3139;  /* dark surface */
+  --ofc-slate:         #39424C;  /* deep slate */
+  --ofc-slate-gray:    #5E6C7A;  /* muted text, the "CHURCH" mark */
+  --ofc-black:         #090A0D;  /* true black */
+  --ofc-paper:         #F4FBFE;  /* off-white page */
+
+  /* ---- Kids / sub-brand accents ---- */
+  --ofc-blue:          #94D8E9;  /* One Family Kids */
+  --ofc-blue-pale:     #D0ECF6;
+  --ofc-teal:          #5BC2D6;  /* Kids saturated (from slides) */
+
+  /* ---- Derived neutral scale (harmonised w/ slate) ---- */
+  --ofc-white:   #FFFFFF;
+  --ofc-n-50:    #F7F9FB;
+  --ofc-n-100:   #EEF1F5;
+  --ofc-n-200:   #E0E5EB;
+  --ofc-n-300:   #C9D0D9;
+  --ofc-n-400:   #A7B1BD;
+  --ofc-n-500:   #7E8995;
+  --ofc-n-600:   #5E6C7A;
+  --ofc-n-700:   #434E59;
+  --ofc-n-800:   #2B3139;
+  --ofc-n-900:   #20242A;
+  --ofc-n-950:   #090A0D;
+
+  /* ---- Orange tints/shades (oklch-tuned around #FF953E) ---- */
+  --ofc-orange-50:   #FFF4EA;
+  --ofc-orange-100:  #FFE6CF;
+  --ofc-orange-200:  #FFD2A8;
+  --ofc-orange-300:  #FFB76B;
+  --ofc-orange-400:  #FF953E;
+  --ofc-orange-500:  #F47F22;
+  --ofc-orange-600:  #DC6A12;
+  --ofc-orange-700:  #B0530D;
+
+  /* ---- Semantic status (harmonised) ---- */
+  --ofc-success:  #3FA66B;
+  --ofc-warning:  #E8A53C;
+  --ofc-danger:   #D9534F;
+  --ofc-info:     #5BC2D6;
+
+  /* ──────────────── Semantic aliases ──────────────── */
+  /* Text */
+  --text-primary:    var(--ofc-ink);
+  --text-secondary:  var(--ofc-slate);
+  --text-muted:      var(--ofc-slate-gray);
+  --text-inverse:    var(--ofc-paper);
+  --text-brand:      var(--ofc-orange-600);
+  --text-on-brand:   var(--ofc-ink);
+
+  /* Surfaces */
+  --surface-page:    var(--ofc-paper);
+  --surface-card:    var(--ofc-white);
+  --surface-raised:  var(--ofc-white);
+  --surface-sunken:  var(--ofc-n-50);
+  --surface-inverse: var(--ofc-ink);
+  --surface-inverse-2: var(--ofc-charcoal);
+
+  /* Borders */
+  --border-subtle:   var(--ofc-n-100);
+  --border-default:  var(--ofc-n-200);
+  --border-strong:   var(--ofc-n-300);
+  --border-inverse:  rgba(255,255,255,0.14);
+
+  /* Brand roles */
+  --brand:           var(--ofc-orange);
+  --brand-hover:     var(--ofc-orange-500);
+  --brand-active:    var(--ofc-orange-600);
+  --brand-soft:      var(--ofc-orange-50);
+  --brand-soft-border: var(--ofc-orange-200);
+  --on-brand:        var(--ofc-ink);
+
+  --accent-blue:        var(--ofc-blue);
+  --accent-blue-soft:   var(--ofc-blue-pale);
+
+  /* Focus ring */
+  --focus-ring: 0 0 0 3px rgba(255,149,62,0.45);
+}

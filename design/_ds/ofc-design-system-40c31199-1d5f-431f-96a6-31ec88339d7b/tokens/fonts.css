@@ -1,0 +1,7 @@
+/* ── One Family Church · Webfonts ─────────────────────────────
+   SUBSTITUTION NOTICE: No brand font files were provided. The wordmark
+   is a geometric monoline sans; "Montserrat" is the closest free match
+   for display/headings, paired with "Mulish" for body text. Swap these
+   @font-face/@import sources if the real brand fonts are supplied. */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Mulish:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
