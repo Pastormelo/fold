@@ -12,6 +12,16 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    /*
+      The design prototype. `design/` is the authority for what screens should look
+      like — see DESIGN-PARITY.md — but it is a design tool's own export, not source
+      this project writes or maintains, and linting it says nothing useful about
+      Fold. It arrived with 3 errors and 35 warnings on its runtime files.
+
+      Ignored rather than fixed, deliberately: editing it would make it stop matching
+      what Melo designed, which is the one job it has.
+    */
+    "design/**",
   ]),
 ]);
 
