@@ -54,14 +54,14 @@ export type RoleRow = {
   /** The clearance the role carries on its own, before any individual grant. */
   clearanceLabel: string
   reachesCare: boolean
-  permissions: readonly Permission[]
-  permissionCountLabel: string
   holderCount: number
-  holderCountLabel: string
-  /** Set for roles that carry everything by construction rather than by list. */
-  unrestrictedNote: string | null
   /**
-   * The same permissions in church language, for the summary table.
+   * The permissions in church language, for the summary table.
+   *
+   * Nothing exposes the raw `Permission[]` any more, deliberately. It was on this
+   * row only so Setup could print the identifiers, which is the output of a
+   * permission check rather than anything a church administrator needs to read.
+   * Leaving the array here would be leaving the temptation.
    *
    * Derived from the permission set rather than written out per role, so a role
    * gaining a permission changes what the table says about it. A hand-written
@@ -101,25 +101,9 @@ export const getRoleMatrix = cache(async (): Promise<RoleRow[]> => {
       label: ROLE_LABELS[role],
       clearanceLabel: tier ? tierName(tier) : 'No pastoral care access',
       reachesCare: tier !== null,
-      permissions,
-      permissionCountLabel:
-        permissions.length === PERMISSIONS.length
-          ? 'Everything'
-          : `${permissions.length} of ${PERMISSIONS.length}`,
       holderCount,
-      holderCountLabel:
-        holderCount === 0
-          ? 'Nobody holds this'
-          : `${holderCount} ${holderCount === 1 ? 'person' : 'people'}`,
-      // Said out loud, because the reason matters: this role carries every
-      // permission by short-circuit, so a permission added next month is
-      // included without anyone editing a list.
       sees: describeSees(permissions, tier),
       canChange: describeCanChange(permissions),
-      unrestrictedNote:
-        permissions.length === PERMISSIONS.length
-          ? 'Carries every permission by construction, including any added later.'
-          : null,
     }
   })
 })

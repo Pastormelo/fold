@@ -417,12 +417,17 @@ export default async function SetupPage({
           </p>
 
           {/*
-              One table, in church language.
+              One table, in church language, and nothing else.
               This was twelve cards listing raw permission keys — `pathway.edit`,
               `admin.manage_roles` — which is the output of a permission check
-              rather than a description of a job. The exact set is still one click
-              away underneath, because it being *computed* is the property worth
-              keeping; it just is not what somebody comes to this page to read.
+              rather than a description of a job. Those were then moved behind a
+              disclosure, and that was still wrong: a church administrator has no
+              use for `pathway.submit_for_review` at any depth, and a collapsed
+              section is still something on the page to wonder about.
+
+              The property worth keeping is that these columns are *computed* from
+              the same check every gate calls, which the table below still is.
+              Printing the identifiers was never what made that true.
           */}
           <div style={{ overflowX: 'auto' }}>
             <table
@@ -528,53 +533,6 @@ export default async function SetupPage({
               </tbody>
             </table>
           </div>
-
-          <details>
-            <summary
-              className="text-[0.875rem]"
-              style={{ cursor: 'pointer', color: 'var(--text-secondary)' }}
-            >
-              Show the exact permissions behind this
-            </summary>
-            <div className="mt-3 flex flex-col gap-2">
-              {roles.map((role) => (
-                <div
-                  key={role.role}
-                  style={{
-                    background: 'var(--surface-card)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '12px 14px',
-                  }}
-                >
-                  <div className="flex flex-wrap items-baseline gap-x-3">
-                    <span className="font-semibold">{role.label}</span>
-                    <span
-                      className="text-[0.875rem]"
-                      style={{ color: 'var(--text-muted)' }}
-                    >
-                      {role.permissionCountLabel}
-                    </span>
-                  </div>
-                  {role.unrestrictedNote ? (
-                    <p
-                      className="mt-1 text-[0.875rem] italic"
-                      style={{ color: 'var(--text-muted)', textWrap: 'pretty' }}
-                    >
-                      {role.unrestrictedNote}
-                    </p>
-                  ) : (
-                    <p
-                      className="mt-1 font-mono text-[0.75rem]"
-                      style={{ color: 'var(--text-muted)', textWrap: 'pretty' }}
-                    >
-                      {role.permissions.join('  ·  ')}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </details>
         </section>
 
         {/* ── Planning Center ── */}
