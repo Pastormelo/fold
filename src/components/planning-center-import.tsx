@@ -117,7 +117,11 @@ export function PlanningCenterImport({
               <Row
                 key={entry.incoming.planningCenterId}
                 name={`${entry.incoming.firstName} ${entry.incoming.lastName}`}
-                detail={entry.incoming.email ?? entry.incoming.phone ?? 'No contact details'}
+                detail={
+                  entry.incoming.email ??
+                  entry.incoming.phone ??
+                  'No contact details'
+                }
                 aside={entry.list === 'family' ? 'Family' : 'Guest'}
               />
             ))}
@@ -167,6 +171,24 @@ export function PlanningCenterImport({
                 key={entry.incoming.planningCenterId}
                 name={`${entry.incoming.firstName} ${entry.incoming.lastName}`}
                 detail="Already carries this Planning Center id. Nothing to do."
+              />
+            ))}
+          </Group>
+
+          {/* Households, mostly. Shown because ~90 of these were previously
+              mistaken for duplicates and dropped, and because a church looking at
+              an import should be able to see the thing that nearly went wrong. */}
+          <Group
+            title="Share a phone or email with someone else being added"
+            count={plan.sharedContacts.length}
+            tone="plain"
+            empty="None."
+          >
+            {plan.sharedContacts.map((entry) => (
+              <Row
+                key={`${entry.field}:${entry.value}`}
+                name={entry.names.join(', ')}
+                detail={`Same ${entry.field === 'email' ? 'email address' : 'phone number'}. Usually a household — all of them are still added. Fold does not decide that two Planning Center profiles are one person.`}
               />
             ))}
           </Group>

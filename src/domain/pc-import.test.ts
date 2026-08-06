@@ -86,22 +86,71 @@ describe('nobody is ever merged', () => {
     expect(result.creates).toHaveLength(0)
   })
 
-  it('catches a second copy inside the same import batch', () => {
-    // Two Planning Center profiles sharing an email. Matched only against Fold,
-    // both would be planned as creations and the import would manufacture the
-    // duplicate it exists to prevent.
+  it('creates both when two profiles in one batch share contact details', () => {
+    /*
+     * This test previously asserted the opposite, and the assertion was the bug.
+     * Matching within the batch looked like duplicate protection; on a real
+     * directory of 1,473 it turned about ninety spouses and children into "already
+     * in Fold" links pointing at records that did not exist yet, and would have
+     * dropped them from the import. A household shares a phone number.
+     */
     const result = plan({
       incoming: [
-        incoming({ planningCenterId: 'pc-1', email: 'same@example.com', phone: null }),
-        incoming({ planningCenterId: 'pc-2', email: 'same@example.com', phone: null }),
+        incoming({ planningCenterId: 'pc-1', firstName: 'Ada', email: 'home@example.com', phone: null }),
+        incoming({ planningCenterId: 'pc-2', firstName: 'Bert', email: 'home@example.com', phone: null }),
       ],
     })
-    expect(result.creates).toHaveLength(1)
+    expect(result.creates).toHaveLength(2)
+    expect(result.links).toHaveLength(0)
     expect(result.duplicates).toHaveLength(0)
-    // The second one matched the first exactly, so it is a link rather than a
-    // duplicate — one candidate, not two.
+  })
+
+  it('never produces a link to a record that does not exist yet', () => {
+    // The link's personId is written into an `id = ?` update, so a placeholder
+    // here reached Postgres as a non-uuid and rolled the whole import back.
+    const result = plan({
+      incoming: [
+        incoming({ planningCenterId: 'pc-1', phone: '555-000-1111', email: null }),
+        incoming({ planningCenterId: 'pc-2', phone: '555-000-1111', email: null }),
+      ],
+    })
+    for (const link of result.links) {
+      expect(link.personId).not.toMatch(/^pending:/)
+    }
+    expect(result.links).toHaveLength(0)
+  })
+
+  it('reports a shared household phone rather than acting on it', () => {
+    const result = plan({
+      incoming: [
+        incoming({ planningCenterId: 'pc-1', firstName: 'Ada', phone: '555-000-1111', email: null }),
+        incoming({ planningCenterId: 'pc-2', firstName: 'Bert', phone: '(555) 000-1111', email: null }),
+      ],
+    })
+    expect(result.sharedContacts).toHaveLength(1)
+    expect(result.sharedContacts[0]!.field).toBe('phone')
+    expect([...result.sharedContacts[0]!.names]).toEqual([
+      'Ada Whitcomb',
+      'Bert Whitcomb',
+    ])
+    // Still both created.
+    expect(result.creates).toHaveLength(2)
+  })
+
+  it('does not report a contact detail only one person has', () => {
+    const result = plan({ incoming: [incoming()] })
+    expect(result.sharedContacts).toHaveLength(0)
+  })
+
+  it('still links against somebody genuinely already in Fold', () => {
+    // The fix must not stop real links working — that is what keeps a re-run from
+    // adding a second copy of everyone.
+    const result = plan({
+      incoming: [incoming({ email: 'lena@example.com' })],
+      existing: [existing({ personId: 'p-9', email: 'lena@example.com' })],
+    })
     expect(result.links).toHaveLength(1)
-    expect(result.links[0]!.incoming.planningCenterId).toBe('pc-2')
+    expect(result.links[0]!.personId).toBe('p-9')
   })
 })
 

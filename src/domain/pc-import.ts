@@ -22,6 +22,19 @@
  * silently during a first import would quietly replace hand-entered pastoral
  * work with a spreadsheet export.
  *
+ * **Two people may share a phone number.** A household does. So an incoming
+ * profile is matched only against people already in Fold, never against the other
+ * profiles in the same batch. Matching within the batch looked like duplicate
+ * protection and was the opposite: on a real directory of 1,473 it turned about
+ * ninety spouses and children into "already in Fold" links — to records that did
+ * not exist yet — and would have dropped them from the import entirely. Planning
+ * Center is the system of record (§6); if it holds a profile, that profile is a
+ * person, and Fold's job is not to decide two of them are one.
+ *
+ * Where profiles inside one batch do share contact details, that is reported and
+ * everybody is still created. A visible duplicate is recoverable; a person who
+ * silently never arrived is not.
+ *
  * **Membership is not inferred.** §6 keeps Family and Guests apart, and §7 says
  * membership is decided by the church rather than computed. So an imported person
  * arrives as a guest unless the church has mapped its Family list to something in
@@ -91,6 +104,17 @@ export type PlannedSkip = {
   reason: string
 }
 
+/**
+ * Several incoming profiles sharing one email address or phone number.
+ *
+ * Usually a household. Never a reason to skip creating somebody.
+ */
+export type SharedContact = {
+  field: 'email' | 'phone'
+  value: string
+  names: readonly string[]
+}
+
 export type ImportPlan = {
   creates: readonly PlannedCreate[]
   links: readonly PlannedLink[]
@@ -98,6 +122,8 @@ export type ImportPlan = {
   /** Already carrying this Planning Center id. Nothing to do. */
   alreadyLinked: readonly { incoming: IncomingPerson; personId: string }[]
   skipped: readonly PlannedSkip[]
+  /** Households, mostly. Created regardless; shown so nothing is a surprise. */
+  sharedContacts: readonly SharedContact[]
 }
 
 /* ────────────────────────────── The plan ────────────────────────────── */
@@ -113,16 +139,6 @@ export function planImport(input: {
   const duplicates: PlannedDuplicate[] = []
   const alreadyLinked: { incoming: IncomingPerson; personId: string }[] = []
   const skipped: PlannedSkip[] = []
-
-  /**
-   * People this plan would create, accumulated as it goes.
-   *
-   * Without this, two Planning Center profiles sharing an email address would
-   * both be planned as creations and the import would manufacture the duplicate
-   * it exists to prevent. They are matched against the pending creations as well
-   * as against Fold, so the second one becomes a duplicate to resolve.
-   */
-  const pending: ExistingPerson[] = []
 
   for (const person of input.incoming) {
     if (!person.active) {
@@ -143,14 +159,15 @@ export function planImport(input: {
       continue
     }
 
-    const match = matchPerson(person, [...input.existing, ...pending])
+    // Against Fold's own people only. See the note above about households.
+    const match = matchPerson(person, input.existing)
 
     if (match.kind === 'matched') {
       if (match.matchedOn === 'planning_center_id') {
         alreadyLinked.push({ incoming: person, personId: match.personId })
         continue
       }
-      const found = [...input.existing, ...pending].find(
+      const found = input.existing.find(
         (candidate) => candidate.personId === match.personId
       )
       links.push({
@@ -185,19 +202,58 @@ export function planImport(input: {
             ? 'In the Planning Center list mapped to Guests.'
             : 'No mapped list matched, so they arrive as a guest. Membership is the church’s decision, not something an import should conclude.',
     })
-
-    // Visible to the profiles that follow, so a second copy inside the same
-    // import is caught rather than created.
-    pending.push({
-      personId: `pending:${person.planningCenterId}`,
-      planningCenterId: person.planningCenterId,
-      email: person.email,
-      phone: person.phone,
-      fullName: `${person.firstName} ${person.lastName}`,
-    })
   }
 
-  return { creates, links, duplicates, alreadyLinked, skipped }
+  return {
+    creates,
+    links,
+    duplicates,
+    alreadyLinked,
+    skipped,
+    sharedContacts: sharedContactsAmong(creates),
+  }
+}
+
+/**
+ * Profiles being created that share an email or phone with another one.
+ *
+ * Reported, not acted on. Mostly these are households — a shared home phone, a
+ * parent's address on a child's profile — and treating them as duplicates is what
+ * broke this in the first place. Occasionally one really is the same person
+ * entered twice in Planning Center, and that is worth a church knowing about
+ * without Fold deciding it.
+ */
+function sharedContactsAmong(
+  creates: readonly PlannedCreate[]
+): SharedContact[] {
+  const byEmail = new Map<string, PlannedCreate[]>()
+  const byPhone = new Map<string, PlannedCreate[]>()
+
+  for (const entry of creates) {
+    const email = entry.incoming.email?.trim().toLowerCase()
+    if (email) byEmail.set(email, [...(byEmail.get(email) ?? []), entry])
+    const digits = entry.incoming.phone?.replace(/\D/g, '') ?? ''
+    const phone = digits.length > 10 ? digits.slice(-10) : digits
+    if (phone !== '') byPhone.set(phone, [...(byPhone.get(phone) ?? []), entry])
+  }
+
+  const shared: SharedContact[] = []
+  for (const [field, index] of [
+    ['email', byEmail],
+    ['phone', byPhone],
+  ] as const) {
+    for (const [value, group] of index) {
+      if (group.length < 2) continue
+      shared.push({
+        field,
+        value,
+        names: group.map(
+          (entry) => `${entry.incoming.firstName} ${entry.incoming.lastName}`
+        ),
+      })
+    }
+  }
+  return shared
 }
 
 /* ───────────────────────────── Describing it ───────────────────────────── */
