@@ -12,7 +12,6 @@ import {
   FOLD_LISTS,
   FOLD_LIST_LABELS,
   NEVER_SYNC_CONTENT,
-  neverSyncReason,
 } from '@/domain/planning-center'
 import { ROLES, ROLE_LABELS } from '@/domain/roles'
 import { TIER_ORDER, tierName } from '@/domain/tiers'
@@ -1165,37 +1164,26 @@ export default async function SetupPage({
             ))}
           </div>
 
-          <h3 className="mt-2" style={{ fontSize: '1rem' }}>
-            What never crosses
-          </h3>
+          {/*
+              One sentence where a heading, a paragraph and six bordered cards
+              used to be. Each card repeated much the same reason, which is what
+              made the section long rather than informative.
+
+              Not removed altogether, because this is the one place in Fold that
+              tells somebody configuring an integration that what they write in a
+              confidential note stays here — and this is exactly the screen where
+              that question comes up. The list is still mapped from
+              NEVER_SYNC_CONTENT rather than typed out, so adding a kind to the
+              domain adds it here.
+          */}
           <p
-            className="text-[0.9375rem]"
-            style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}
+            className="text-[0.875rem]"
+            style={{ color: 'var(--text-muted)', textWrap: 'pretty' }}
           >
-            Not settings. These are properties of the integration, and there is
-            no switch for them anywhere in Fold.
+            Whatever these categories say, confidential content never leaves
+            Fold — {NEVER_SYNC_CONTENT.map((k) => k.replace(/_/g, ' ')).join(', ')}
+            . There is no switch for it anywhere in Fold.
           </p>
-          <ul className="flex flex-col gap-2">
-            {NEVER_SYNC_CONTENT.map((kind) => (
-              <li
-                key={kind}
-                style={{
-                  borderLeft: '3px solid var(--brand)',
-                  paddingLeft: 14,
-                }}
-              >
-                <p className="text-[0.9375rem] font-semibold">
-                  {kind.replace(/_/g, ' ')}
-                </p>
-                <p
-                  className="text-[0.875rem]"
-                  style={{ color: 'var(--text-muted)', textWrap: 'pretty' }}
-                >
-                  {neverSyncReason(kind)}
-                </p>
-              </li>
-            ))}
-          </ul>
         </section>
 
         {/* ── Lists ── */}
