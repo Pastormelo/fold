@@ -916,7 +916,7 @@ export default async function SetupPage({
                       style={{ color: 'var(--text-muted)' }}
                     >
                       {mapping.state === 'mapped'
-                        ? `maps to “${mapping.externalFieldId}”`
+                        ? `takes ${mapping.externalFieldIds.map((v) => `“${v}”`).join(', ')}`
                         : mapping.state === 'fold_only'
                           ? `kept in Fold — ${mapping.reason}`
                           : 'not mapped yet'}
@@ -925,30 +925,54 @@ export default async function SetupPage({
                   <ActionForm
                     action={mapList}
                     fields={{ list }}
-                    label="Map this list"
+                    label={`Save ${FOLD_LIST_LABELS[list]}`}
                     disabled={!pcView.gate.allowed}
                     disabledReason={
                       pcView.gate.allowed ? null : pcView.gate.note
                     }
                   >
-                    <input
-                      name="externalFieldId"
-                      defaultValue={
-                        mapping.state === 'mapped'
-                          ? mapping.externalFieldId
-                          : ''
-                      }
-                      placeholder="The Planning Center membership value, e.g. Member"
-                      style={{
-                        font: 'inherit',
-                        fontSize: '0.875rem',
-                        maxWidth: 460,
-                        padding: '8px 11px',
-                        borderRadius: 'var(--radius-sm)',
-                        border: '1px solid var(--border-default)',
-                        background: 'var(--surface-card)',
-                      }}
-                    />
+                    {/*
+                        Tick boxes over the values Planning Center actually uses,
+                        not a field to type one into. §6 forbids Fold inventing a
+                        value over there, and a typed value that exists nowhere is
+                        the same mistake in disguise: it looks like a finished
+                        setting and silently sorts nobody. Several may be ticked —
+                        a directory can say "in the family" more than one way.
+                    */}
+                    {pcView.membershipValues.length === 0 ? (
+                      <p
+                        className="text-[0.8125rem]"
+                        style={{
+                          color: 'var(--text-muted)',
+                          textWrap: 'pretty',
+                        }}
+                      >
+                        Press &ldquo;See what would change&rdquo; above once,
+                        and the values your Planning Center uses appear here to
+                        tick.
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-x-4 gap-y-2">
+                        {pcView.membershipValues.map((value) => (
+                          <label
+                            key={value}
+                            className="flex items-center gap-2 text-[0.875rem]"
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <input
+                              type="checkbox"
+                              name="value"
+                              value={value}
+                              defaultChecked={
+                                mapping.state === 'mapped' &&
+                                mapping.externalFieldIds.includes(value)
+                              }
+                            />
+                            {value}
+                          </label>
+                        ))}
+                      </div>
+                    )}
                   </ActionForm>
                 </div>
               )

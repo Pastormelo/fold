@@ -1,0 +1,1 @@
+ALTER TABLE "fold_list_mappings" DROP COLUMN "external_field_id";

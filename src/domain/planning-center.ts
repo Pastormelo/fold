@@ -390,7 +390,16 @@ export const FOLD_LIST_DEFINITIONS: Record<FoldList, string> = {
 }
 
 export type ListMapping =
-  | { state: 'mapped'; externalFieldId: string }
+  /**
+   * One or more Planning Center values, because one is not enough.
+   *
+   * A real directory turned out to carry several values that all mean "in the
+   * family" — "Member", "Partners", "Children of Members" — alongside several that
+   * mean guest. A single-value mapping forced a church to pick one and quietly
+   * treat the rest as guests, which is the app deciding who belongs rather than
+   * the church saying so.
+   */
+  | { state: 'mapped'; externalFieldIds: readonly string[] }
   | { state: 'fold_only'; reason: string }
   | { state: 'unmapped' }
 
@@ -417,7 +426,10 @@ export function mapFoldList({
       refusal: `“${field.label}” is not a list or a membership type, so people cannot be placed in it.`,
     }
   }
-  return { ok: true, mapping: { state: 'mapped', externalFieldId: field.id } }
+  return {
+    ok: true,
+    mapping: { state: 'mapped', externalFieldIds: [field.id] },
+  }
 }
 
 /* ──────────────────────────── Matching people ──────────────────────────── */
@@ -536,6 +548,12 @@ export function matchPerson(
  * §6: sorted into Family or Guest "by the same mapping read in reverse". Returns
  * `null` when neither list is mapped, which is a real answer rather than a
  * failure — a church may keep both lists Fold-only.
+ *
+ * `FOLD_LISTS` order decides ties: a profile whose value appears in both mappings
+ * lands in Family. A church that has mapped the same value to both has said
+ * something contradictory, and the safer reading of a contradiction is the more
+ * generous one — a member wrongly filed as a guest disappears from the coverage
+ * reports that exist to stop people disappearing.
  */
 export function foldListForIncoming(
   externalFieldIds: readonly string[],
@@ -545,7 +563,9 @@ export function foldListForIncoming(
     const mapping = mappings[list]
     if (
       mapping.state === 'mapped' &&
-      externalFieldIds.includes(mapping.externalFieldId)
+      mapping.externalFieldIds.some((wanted) =>
+        externalFieldIds.includes(wanted)
+      )
     ) {
       return list
     }

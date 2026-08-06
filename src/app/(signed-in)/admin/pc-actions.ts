@@ -51,7 +51,13 @@ export type ActionOutcome =
   { ok: true; message: string } | { ok: false; message: string }
 
 export type PreviewOutcome =
-  | { ok: true; message: string; plan: ImportPlan }
+  | {
+      ok: true
+      message: string
+      plan: ImportPlan
+      /** Every membership value seen, for the mapping boxes to offer. */
+      membershipValues: readonly string[]
+    }
   | { ok: false; message: string }
 
 /** The gate and the credentials check, in the order the reader needs them. */
@@ -118,6 +124,18 @@ export async function previewImport(): Promise<PreviewOutcome> {
     listMappings,
   })
 
+  /*
+   * Remember what Planning Center is using, so the mapping boxes can offer it.
+   *
+   * Written here rather than on import, because the mapping has to be settable
+   * *before* anybody imports — otherwise the first import sorts everyone as a
+   * guest and the church corrects hundreds of records by hand.
+   */
+  await db
+    .update(schema.churches)
+    .set({ pcMembershipValues: fetched.value.membershipValues })
+    .where(eq(schema.churches.id, viewer.churchId))
+
   const membership =
     fetched.value.membershipValues.length > 0
       ? ` Planning Center is using these membership values: ${fetched.value.membershipValues.join(', ')}.`
@@ -126,6 +144,7 @@ export async function previewImport(): Promise<PreviewOutcome> {
   return {
     ok: true,
     plan,
+    membershipValues: fetched.value.membershipValues,
     message: `Read ${fetched.value.people.length} ${fetched.value.people.length === 1 ? 'profile' : 'profiles'} from Planning Center. ${describePlan(plan)}${membership}`,
   }
 }
@@ -164,7 +183,10 @@ export async function runImport(): Promise<ActionOutcome> {
 
   if (!planWouldChangeAnything(plan)) {
     // §8.5: an action reporting success must have done something.
-    return { ok: false, message: nothingToDoReason(plan) ?? 'Nothing to import.' }
+    return {
+      ok: false,
+      message: nothingToDoReason(plan) ?? 'Nothing to import.',
+    }
   }
 
   let created = 0
@@ -262,9 +284,25 @@ export async function runImport(): Promise<ActionOutcome> {
  */
 export async function mapList(formData: FormData): Promise<ActionOutcome> {
   const list = String(formData.get('list') ?? '')
-  const value = String(formData.get('externalFieldId') ?? '').trim()
   const reason = String(formData.get('reason') ?? '').trim()
   const keepInFold = formData.get('foldOnly') === '1'
+
+  /*
+   * Several values, from checkboxes named `value`.
+   *
+   * A directory turned out to say "in the family" three ways — Member, Partners,
+   * Children of Members — and one value per list made the church pick one and let
+   * the rest become guests. Deduplicated and trimmed here so a stray blank or a
+   * double-submitted box cannot produce an empty entry that matches nobody.
+   */
+  const values = [
+    ...new Set(
+      formData
+        .getAll('value')
+        .map((entry) => String(entry).trim())
+        .filter((entry) => entry !== '')
+    ),
+  ]
 
   if (!isFoldList(list)) return { ok: false, message: 'Say which list.' }
 
@@ -279,11 +317,11 @@ export async function mapList(formData: FormData): Promise<ActionOutcome> {
         'Keeping a list in Fold is a decision, so it needs a reason. Without one it is indistinguishable from nobody having looked at it yet.',
     }
   }
-  if (!keepInFold && value === '') {
+  if (!keepInFold && values.length === 0) {
     return {
       ok: false,
       message:
-        'Name the Planning Center membership value this list maps to, or choose to keep the list in Fold.',
+        'Tick at least one Planning Center value for this list, or choose to keep the list in Fold.',
     }
   }
 
@@ -293,14 +331,14 @@ export async function mapList(formData: FormData): Promise<ActionOutcome> {
       churchId: viewer.churchId,
       list,
       state: keepInFold ? 'fold_only' : 'mapped',
-      externalFieldId: keepInFold ? null : value,
+      externalFieldIds: keepInFold ? null : values,
       foldOnlyReason: keepInFold ? reason : null,
     })
     .onConflictDoUpdate({
       target: [schema.foldListMappings.churchId, schema.foldListMappings.list],
       set: {
         state: keepInFold ? 'fold_only' : 'mapped',
-        externalFieldId: keepInFold ? null : value,
+        externalFieldIds: keepInFold ? null : values,
         foldOnlyReason: keepInFold ? reason : null,
       },
     })
@@ -310,7 +348,7 @@ export async function mapList(formData: FormData): Promise<ActionOutcome> {
     ok: true,
     message: keepInFold
       ? `${label(list)} stays in Fold, with your reason on the record.`
-      : `${label(list)} now maps to “${value}”. People carrying that value arrive in ${label(list)}.`,
+      : `${label(list)} now takes ${values.map((entry) => `“${entry}”`).join(', ')}. Anyone carrying ${values.length === 1 ? 'that value' : 'any of those values'} arrives in ${label(list)}.`,
   }
 }
 

@@ -102,6 +102,18 @@ export const discoverySection = pgEnum('discovery_section', DISCOVERY_SECTIONS)
 export const churches = pgTable('churches', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
+  /**
+   * The membership values seen the last time Planning Center was read. A cache,
+   * not a record.
+   *
+   * It exists so the Family/Guests mapping can offer tick boxes of values that
+   * actually exist over there rather than a box to type one into. §6 forbids Fold
+   * inventing a value in Planning Center, and a typed value that matches nothing
+   * is the same mistake wearing a different hat: it looks like a completed setting
+   * and silently sorts nobody. Refreshed by every preview; stale is harmless
+   * because the import reads live data regardless.
+   */
+  pcMembershipValues: text('pc_membership_values').array(),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -828,14 +840,30 @@ export const foldListMappings = pgTable(
       .references(() => churches.id, { onDelete: 'restrict' }),
     list: foldList('list').notNull(),
     state: mappingState('state').notNull(),
-    externalFieldId: text('external_field_id'),
+    /**
+     * The Planning Center values that land in this list. Plural.
+     *
+     * A real directory carried "Member", "Partners" and "Children of Members" as
+     * three ways of saying the same thing, plus several kinds of guest. A single
+     * column made a church choose one and let the rest silently become guests.
+     */
+    externalFieldIds: text('external_field_ids').array(),
     foldOnlyReason: text('fold_only_reason'),
   },
   (table) => [
     uniqueIndex('fold_list_mappings_list_idx').on(table.churchId, table.list),
     check(
       'list_mapped_has_a_target',
-      sql`${table.state} <> 'mapped' or ${table.externalFieldId} is not null`
+      /*
+       * `coalesce(..., 0)`, and the coalesce is the whole point.
+       *
+       * `cardinality(NULL)` is NULL and a CHECK passes on NULL, so the obvious
+       * `cardinality(x) >= 1` accepts a null column — exactly the trap that made
+       * `array_length(x, 1) >= 1` decorative on `ai_recommendations` earlier, met
+       * again in a different function. A constraint on an array column has to say
+       * what it means about null.
+       */
+      sql`${table.state} <> 'mapped' or coalesce(cardinality(${table.externalFieldIds}), 0) >= 1`
     ),
     check(
       'list_fold_only_has_a_reason',
@@ -984,7 +1012,10 @@ export const aiRecommendations = pgTable(
      * until a script tried to insert past them. `cardinality` returns 0 for an
      * empty array, so the comparison is a comparison.
      */
-    check('recommendation_offers_an_option', sql`cardinality(${table.options}) >= 1`),
+    check(
+      'recommendation_offers_an_option',
+      sql`cardinality(${table.options}) >= 1`
+    ),
     check(
       'recommendation_cites_the_church',
       sql`cardinality(${table.citedAnswerIds}) >= 1`

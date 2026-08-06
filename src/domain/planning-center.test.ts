@@ -328,11 +328,47 @@ describe('the Family and Guest lists', () => {
 
   it('sorts an incoming profile by the mapping read in reverse', () => {
     const mappings: Record<'family' | 'guest', ListMapping> = {
-      family: { state: 'mapped', externalFieldId: 'pc-list-members' },
-      guest: { state: 'mapped', externalFieldId: 'pc-list-newcomers' },
+      family: { state: 'mapped', externalFieldIds: ['pc-list-members'] },
+      guest: { state: 'mapped', externalFieldIds: ['pc-list-newcomers'] },
     }
     expect(foldListForIncoming(['pc-list-members'], mappings)).toBe('family')
     expect(foldListForIncoming(['pc-list-newcomers'], mappings)).toBe('guest')
+  })
+
+  it('sorts on any of several values, because a directory says it several ways', () => {
+    /*
+     * The reason this is a list. A real Planning Center held "Member",
+     * "Partners" and "Children of Members" as three ways of saying the same
+     * thing; one value per list forced a church to pick one and let the rest
+     * become guests, which is the app deciding who belongs.
+     */
+    const mappings: Record<'family' | 'guest', ListMapping> = {
+      family: {
+        state: 'mapped',
+        externalFieldIds: ['Member', 'Partners', 'Children of Members'],
+      },
+      guest: {
+        state: 'mapped',
+        externalFieldIds: ['First Time Guest', '2nd Time Guest'],
+      },
+    }
+    expect(foldListForIncoming(['Partners'], mappings)).toBe('family')
+    expect(foldListForIncoming(['Children of Members'], mappings)).toBe('family')
+    expect(foldListForIncoming(['2nd Time Guest'], mappings)).toBe('guest')
+    // A value in neither list is neither, which the caller reads as "a guest,
+    // and membership is still the church's to decide".
+    expect(foldListForIncoming(['Regular Attender'], mappings)).toBeNull()
+  })
+
+  it('puts a value mapped to both lists in Family', () => {
+    // A contradiction the church typed. The generous reading is the safer one: a
+    // member wrongly filed as a guest vanishes from the coverage reports that
+    // exist to stop people vanishing.
+    const both: Record<'family' | 'guest', ListMapping> = {
+      family: { state: 'mapped', externalFieldIds: ['Member'] },
+      guest: { state: 'mapped', externalFieldIds: ['Member'] },
+    }
+    expect(foldListForIncoming(['Member'], both)).toBe('family')
   })
 
   it('returns null when neither list is mapped, which is a real answer', () => {

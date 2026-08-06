@@ -78,6 +78,34 @@
       "when": 1785712928189,
       "tag": "0014_planning_center_oauth",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1785995121792,
+      "tag": "0015_fold_list_many_values",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1785995134908,
+      "tag": "0016_drop_single_fold_list_value",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1785995210276,
+      "tag": "0017_cache_membership_values",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1785995362183,
+      "tag": "0018_array_check_null_trap",
+      "breakpoints": true
     }
   ]
 }

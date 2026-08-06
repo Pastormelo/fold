@@ -216,7 +216,7 @@ describe('membership is not inferred', () => {
     const result = plan({
       incoming: [incoming({ listIds: ['pc-list-members'] })],
       listMappings: {
-        family: { state: 'mapped', externalFieldId: 'pc-list-members' },
+        family: { state: 'mapped', externalFieldIds: ['pc-list-members'] },
         guest: { state: 'unmapped' },
       },
     })
@@ -228,7 +228,7 @@ describe('membership is not inferred', () => {
     const result = plan({
       incoming: [incoming({ listIds: ['pc-list-visitors'] })],
       listMappings: {
-        family: { state: 'mapped', externalFieldId: 'pc-list-members' },
+        family: { state: 'mapped', externalFieldIds: ['pc-list-members'] },
         guest: { state: 'unmapped' },
       },
     })

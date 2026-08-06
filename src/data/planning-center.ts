@@ -62,15 +62,25 @@ export type IntegrationView = {
   peopleCount: number
   /** Unresolved near-matches somebody still has to decide about. */
   openDuplicates: readonly DuplicateRow[]
+  /**
+   * The Planning Center membership values seen on the last preview, for the
+   * mapping boxes. Empty until somebody has previewed once.
+   */
+  membershipValues: readonly string[]
 }
 
 export const getIntegrationView = cache(async (): Promise<IntegrationView> => {
   const viewer = await getViewer()
   const gate = permissionCheck(viewer, 'admin.manage_integrations')
 
-  const [credential, people, mappingRows, settingRows, duplicateRows] =
+  const [credential, church, people, mappingRows, settingRows, duplicateRows] =
     await Promise.all([
       credentialStatus(viewer.churchId),
+      db
+        .select({ values: schema.churches.pcMembershipValues })
+        .from(schema.churches)
+        .where(eq(schema.churches.id, viewer.churchId))
+        .limit(1),
       db
         .select({
           id: schema.people.id,
@@ -149,6 +159,7 @@ export const getIntegrationView = cache(async (): Promise<IntegrationView> => {
     peopleSyncEnabled: peopleSetting?.enabled ?? true,
     linkedCount: people.filter((row) => row.planningCenterId !== null).length,
     peopleCount: people.length,
+    membershipValues: church[0]?.values ?? [],
     openDuplicates: open.map((row) => ({
       id: row.id,
       personName: names.get(row.personId) ?? 'Someone',
@@ -207,7 +218,7 @@ export function readListMappings(
     } else {
       mappings[list] = {
         state: 'mapped',
-        externalFieldId: row.externalFieldId ?? '',
+        externalFieldIds: row.externalFieldIds ?? [],
       }
     }
   }

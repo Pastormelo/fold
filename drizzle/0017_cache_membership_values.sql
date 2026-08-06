@@ -1,0 +1,1 @@
+ALTER TABLE "churches" ADD COLUMN "pc_membership_values" text[];
