@@ -70,8 +70,22 @@ export type CredentialStatus =
       /** True once the refresh has failed — they need to sign in again. */
       needsReauthorising: boolean
     }
-  /** Stored but unreadable — almost always a rotated database password. */
-  | { state: 'unreadable'; appId: string; connectedAt: Date }
+  /**
+   * Stored but undecryptable — the encryption key changed under it.
+   *
+   * `kind` is carried because the remedy differs and the screen has to offer the
+   * right one. An OAuth connection is repaired by signing in again; there is no
+   * Application ID to re-enter, and asking for one sends somebody hunting for a
+   * credential they have never held. Without this field the screen showed the
+   * paste form to everybody.
+   */
+  | {
+      state: 'unreadable'
+      kind: 'oauth' | 'token'
+      appId: string
+      connectedAt: Date
+      oauthAvailable: boolean
+    }
 
 export async function resolveCredentials(
   churchId: string
@@ -223,8 +237,10 @@ export async function credentialStatus(
   if (decryptSecret(row.secretEncrypted) === null) {
     return {
       state: 'unreadable',
+      kind: row.kind === 'oauth' ? 'oauth' : 'token',
       appId: row.appId,
       connectedAt: row.connectedAt,
+      oauthAvailable: isOAuthConfigured(),
     }
   }
 

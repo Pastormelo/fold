@@ -4,7 +4,11 @@ import { cache } from 'react'
 
 import { asc, eq, inArray } from 'drizzle-orm'
 
-import { type FoldList, type ListMapping, FOLD_LISTS } from '@/domain/planning-center'
+import {
+  type FoldList,
+  type ListMapping,
+  FOLD_LISTS,
+} from '@/domain/planning-center'
 import type { ExistingPerson } from '@/domain/pc-import'
 import { type PermissionCheck, permissionCheck } from '@/domain/roles'
 import { db, schema } from '@/db/client'
@@ -249,7 +253,9 @@ function unavailableNote(credential: CredentialStatus): string {
     case 'oauth':
       return 'Planning Center access has lapsed and could not be renewed, which usually means Fold’s access was revoked over there. Sign in again above.'
     case 'unreadable':
-      return 'A Planning Center credential is stored but cannot be read — almost always a rotated database password. Connect again above.'
+      return credential.kind === 'oauth'
+        ? 'Planning Center is connected but the stored access token can no longer be read, because the key that encrypts it changed. Sign in to Planning Center again above — it takes a few seconds and nothing else is affected.'
+        : 'A Planning Center token is stored but can no longer be read, because the key that encrypts it changed. Paste the token again above.'
     case 'none':
       return credential.oauthAvailable
         ? 'Planning Center is not connected yet. Press “Sign in with Planning Center” above; there is nothing to copy or paste.'

@@ -578,22 +578,65 @@ export default async function SetupPage({
               </>
             )}
 
-            {pcView.credential.state === 'unreadable' && (
-              <p
-                className="max-w-[680px] text-[0.9375rem]"
-                style={{
-                  borderLeft: '3px solid var(--ofc-warning)',
-                  paddingLeft: 12,
-                  textWrap: 'pretty',
-                }}
-              >
-                A token is stored for Application ID{' '}
-                <strong>{pcView.credential.appId}</strong>, but it cannot be
-                decrypted. That almost always means the database password was
-                rotated — the key is derived from it. Enter the token again
-                below and it will work.
-              </p>
-            )}
+            {pcView.credential.state === 'unreadable' &&
+              pcView.credential.kind === 'oauth' && (
+                <>
+                  <p
+                    className="max-w-[680px] text-[0.9375rem]"
+                    style={{
+                      borderLeft: '3px solid var(--ofc-warning)',
+                      paddingLeft: 12,
+                      textWrap: 'pretty',
+                    }}
+                  >
+                    Planning Center is connected, but the stored access token
+                    can no longer be read — the key that encrypts it changed.
+                    Nothing is lost and no data was affected. Sign in again and
+                    it is fixed.
+                  </p>
+                  {/* The sign-in button, not the paste form. There is no
+                      Application ID to re-enter for a connection made by
+                      pressing a button, and offering that form sent somebody
+                      looking for a credential they have never held. */}
+                  <div>
+                    <a
+                      href="/auth/planning-center/start"
+                      style={{
+                        ...PC_BUTTON,
+                        opacity: pcView.gate.allowed ? 1 : 0.55,
+                      }}
+                      aria-disabled={!pcView.gate.allowed}
+                    >
+                      Sign in with Planning Center again
+                    </a>
+                  </div>
+                  {!pcView.gate.allowed && (
+                    <p
+                      className="text-[0.8125rem]"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      {pcView.gate.note}
+                    </p>
+                  )}
+                </>
+              )}
+
+            {pcView.credential.state === 'unreadable' &&
+              pcView.credential.kind === 'token' && (
+                <p
+                  className="max-w-[680px] text-[0.9375rem]"
+                  style={{
+                    borderLeft: '3px solid var(--ofc-warning)',
+                    paddingLeft: 12,
+                    textWrap: 'pretty',
+                  }}
+                >
+                  A token is stored for Application ID{' '}
+                  <strong>{pcView.credential.appId}</strong>, but it can no
+                  longer be decrypted, because the key that encrypts it changed.
+                  Enter the token again below and it will work.
+                </p>
+              )}
 
             {/* ── Connected by signing in ── */}
             {pcView.credential.state === 'oauth' && (
@@ -707,7 +750,11 @@ export default async function SetupPage({
                 testing the API.
             */}
             {pcView.credential.state !== 'environment' &&
-              pcView.credential.state !== 'oauth' && (
+              pcView.credential.state !== 'oauth' &&
+              !(
+                pcView.credential.state === 'unreadable' &&
+                pcView.credential.kind === 'oauth'
+              ) && (
                 <details
                   open={
                     pcView.credential.state !== 'none' ||
