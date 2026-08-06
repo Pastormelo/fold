@@ -136,9 +136,21 @@ export async function previewImport(): Promise<PreviewOutcome> {
     .set({ pcMembershipValues: fetched.value.membershipValues })
     .where(eq(schema.churches.id, viewer.churchId))
 
+  /*
+   * A read-only action that revalidates, which looks contradictory and is not.
+   *
+   * The preview writes nothing to the church's records, but it does refresh the
+   * cached membership values above, and the Family/Guests tick boxes are rendered
+   * by the server component around this. Without this line that section keeps the
+   * markup it had before the preview ran, so the values arrive in the database and
+   * the boxes stay empty until somebody reloads the page by hand — which also
+   * throws away the preview they were reading.
+   */
+  revalidatePath('/admin')
+
   const membership =
     fetched.value.membershipValues.length > 0
-      ? ` Planning Center is using these membership values: ${fetched.value.membershipValues.join(', ')}.`
+      ? ` Planning Center is using these membership values: ${fetched.value.membershipValues.join(', ')}. Tick the ones that mean Family in the box below.`
       : ''
 
   return {
