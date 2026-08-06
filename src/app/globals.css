@@ -189,12 +189,37 @@ h4 {
  * to go. The current item is marked with `aria-current="page"`, so the selector
  * follows the accessibility attribute rather than a duplicate class.
  */
-[aria-label='Sections'] a {
+/*
+ * The rail item, entirely here.
+ *
+ * It used to be styled inline in the component, which is why it had no working
+ * hover state through two attempts to give it one: an inline `background`
+ * outranks every selector in this file, so the `:hover` rule below was written,
+ * shipped, and silently overridden. Nothing about the appearance is inline now.
+ */
+.fold-rail-link {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--ofc-n-400);
+  background-color: transparent;
   transition:
     background-color var(--dur-fast) var(--ease-out),
     color var(--dur-fast) var(--ease-out),
     transform var(--dur-fast) var(--ease-out);
+}
+
+.fold-rail-link[aria-current='page'] {
+  font-weight: 700;
+  color: var(--ofc-paper);
+  background-color: var(--surface-inverse-2);
 }
 
 /*
@@ -203,18 +228,18 @@ h4 {
  * plus the paper text colour reads as a hover at a glance, which is the entire
  * job of a hover.
  */
-[aria-label='Sections'] a:hover:not([aria-current='page']) {
+.fold-rail-link:hover:not([aria-current='page']) {
   background-color: rgba(255, 255, 255, 0.14);
   color: var(--ofc-paper);
 }
 
 /* Pressed. Feedback in the moment between mousedown and the server answering. */
-[aria-label='Sections'] a:active {
+.fold-rail-link:active {
   background-color: rgba(255, 255, 255, 0.2);
   transform: translateY(0.5px);
 }
 
-[aria-label='Sections'] a:focus-visible {
+.fold-rail-link:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
@@ -230,12 +255,12 @@ h4 {
  */
 /* `:has()` because `useLinkStatus` can only be read from inside the Link, so the
  * marker is a hidden child and the styling has to reach up to the anchor. */
-[aria-label='Sections'] a:has([data-rail-pending]) {
+.fold-rail-link:has([data-rail-pending]) {
   background-color: rgba(255, 255, 255, 0.1);
   color: var(--ofc-paper);
 }
 
-[aria-label='Sections'] a:has([data-rail-pending])::after {
+.fold-rail-link:has([data-rail-pending])::after {
   content: '';
   position: absolute;
   left: 12px;

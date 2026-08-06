@@ -87,25 +87,19 @@ export function Rail({
             const isCurrent = section === current
             const badge = badgeFor(section)
             return (
+              /*
+                No inline styling, and that is the fix rather than a preference.
+                This carried `background: 'transparent'` inline, and an inline
+                style beats every selector in the stylesheet — so the `:hover`
+                rule written to give the rail a hover state could never apply.
+                Twice. The appearance lives entirely in `globals.css` now, keyed
+                off `aria-current`, so there is nothing left to override it.
+              */
               <Link
                 key={section}
                 href={pathForSection(section)}
+                className="fold-rail-link"
                 aria-current={isCurrent ? 'page' : undefined}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 8,
-                  padding: '9px 12px',
-                  borderRadius: 'var(--radius-sm)',
-                  textDecoration: 'none',
-                  fontSize: '0.9375rem',
-                  fontWeight: isCurrent ? 700 : 500,
-                  background: isCurrent
-                    ? 'var(--surface-inverse-2)'
-                    : 'transparent',
-                  color: isCurrent ? 'var(--ofc-paper)' : 'var(--ofc-n-400)',
-                }}
               >
                 <span>{RAIL_LABELS[section]}</span>
                 {/* Never a zero — a badge reading 0 is noise pretending to be

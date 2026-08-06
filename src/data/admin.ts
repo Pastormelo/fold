@@ -60,6 +60,16 @@ export type RoleRow = {
   holderCountLabel: string
   /** Set for roles that carry everything by construction rather than by list. */
   unrestrictedNote: string | null
+  /**
+   * The same permissions in church language, for the summary table.
+   *
+   * Derived from the permission set rather than written out per role, so a role
+   * gaining a permission changes what the table says about it. A hand-written
+   * column is the thing this whole section exists not to be — §8.2, a claim has to
+   * match what it was computed from.
+   */
+  sees: string
+  canChange: string
 }
 
 export const getRoleMatrix = cache(async (): Promise<RoleRow[]> => {
@@ -104,6 +114,8 @@ export const getRoleMatrix = cache(async (): Promise<RoleRow[]> => {
       // Said out loud, because the reason matters: this role carries every
       // permission by short-circuit, so a permission added next month is
       // included without anyone editing a list.
+      sees: describeSees(permissions, tier),
+      canChange: describeCanChange(permissions),
       unrestrictedNote:
         permissions.length === PERMISSIONS.length
           ? 'Carries every permission by construction, including any added later.'
@@ -113,6 +125,44 @@ export const getRoleMatrix = cache(async (): Promise<RoleRow[]> => {
 })
 
 /* ───────────────────────────── People and roles ───────────────────────────── */
+
+/**
+ * What a role can look at, in a phrase.
+ *
+ * Ordered most-to-least significant and capped, because the point of the summary
+ * table is to be readable at a glance; anyone who needs the exact set opens the
+ * full list beneath it.
+ */
+function describeSees(
+  permissions: readonly Permission[],
+  tier: ConfidentialityTier | null
+): string {
+  const parts: string[] = []
+  if (permissions.includes('care.view_people')) {
+    parts.push(
+      tier === 'elders_only'
+        ? 'Everyone, every note'
+        : 'People assigned to them'
+    )
+  }
+  if (permissions.includes('reporting.view')) parts.push('Reports')
+  if (permissions.includes('pathway.view')) parts.push('The pathway')
+  if (parts.length === 0) return 'Nothing pastoral'
+  return parts.join(' · ')
+}
+
+/** What a role can alter. Same derivation, same reason. */
+function describeCanChange(permissions: readonly Permission[]): string {
+  const parts: string[] = []
+  if (permissions.includes('admin.manage_roles')) parts.push('Roles and access')
+  if (permissions.includes('pathway.publish')) parts.push('Publish the pathway')
+  else if (permissions.includes('pathway.edit')) parts.push('Edit the pathway')
+  if (permissions.includes('admin.manage_integrations'))
+    parts.push('Integrations')
+  if (permissions.includes('care.log_note')) parts.push('Log care')
+  if (parts.length === 0) return 'Nothing'
+  return parts.join(' · ')
+}
 
 export type LeaderRow = {
   personId: string

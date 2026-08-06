@@ -408,65 +408,173 @@ export default async function SetupPage({
         <section className="flex flex-col gap-3">
           <h2 style={{ fontSize: '1.125rem' }}>What each role carries</h2>
           <p
-            className="text-[0.9375rem]"
+            className="max-w-[680px] text-[0.9375rem]"
             style={{ color: 'var(--text-secondary)', textWrap: 'pretty' }}
           >
             Computed by asking the same permission check every gate in Fold
-            calls, about a person holding only that role. It is not a table
-            written out by hand, so it cannot claim a role carries something it
-            does not.
+            calls, about a person holding only that role — so it cannot claim a
+            role carries something it does not.
           </p>
-          <div className="flex flex-col gap-2">
-            {roles.map((role) => (
-              <details
-                key={role.role}
-                style={{
-                  background: 'var(--surface-card)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '12px 14px',
-                }}
-              >
-                <summary className="flex cursor-pointer flex-wrap items-baseline gap-x-3">
-                  <span className="font-semibold">{role.label}</span>
-                  <span
-                    className="text-[0.875rem]"
-                    style={{
-                      color: role.reachesCare
-                        ? 'var(--text-secondary)'
-                        : 'var(--text-muted)',
-                    }}
-                  >
-                    {role.clearanceLabel}
-                  </span>
-                  <span
-                    className="text-[0.875rem]"
-                    style={{ color: 'var(--text-muted)' }}
-                  >
-                    {role.permissionCountLabel} · {role.holderCountLabel}
-                  </span>
-                </summary>
-                {role.unrestrictedNote && (
-                  <p
-                    className="mt-2 text-[0.875rem] italic"
-                    style={{ color: 'var(--text-muted)', textWrap: 'pretty' }}
-                  >
-                    {role.unrestrictedNote}
-                  </p>
-                )}
-                <ul className="mt-2 columns-2 text-[0.875rem]">
-                  {role.permissions.map((permission) => (
-                    <li
-                      key={permission}
-                      style={{ color: 'var(--text-secondary)' }}
+
+          {/*
+              One table, in church language.
+              This was twelve cards listing raw permission keys — `pathway.edit`,
+              `admin.manage_roles` — which is the output of a permission check
+              rather than a description of a job. The exact set is still one click
+              away underneath, because it being *computed* is the property worth
+              keeping; it just is not what somebody comes to this page to read.
+          */}
+          <div style={{ overflowX: 'auto' }}>
+            <table
+              style={{
+                width: '100%',
+                minWidth: 620,
+                borderCollapse: 'collapse',
+                background: 'var(--surface-card)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-md)',
+              }}
+            >
+              <thead>
+                <tr>
+                  {[
+                    'Role',
+                    'Sees',
+                    'Confidential notes',
+                    'Can change',
+                    'Held by',
+                  ].map((heading) => (
+                    <th
+                      key={heading}
+                      className="eyebrow"
+                      style={{
+                        fontSize: '0.5625rem',
+                        textAlign: 'left',
+                        padding: '12px 16px',
+                        borderBottom: '1px solid var(--border-subtle)',
+                        whiteSpace: 'nowrap',
+                      }}
                     >
-                      {permission}
-                    </li>
+                      {heading}
+                    </th>
                   ))}
-                </ul>
-              </details>
-            ))}
+                </tr>
+              </thead>
+              <tbody>
+                {roles.map((role) => (
+                  <tr key={role.role}>
+                    <td
+                      className="font-semibold"
+                      style={{
+                        padding: '12px 16px',
+                        borderBottom: '1px solid var(--border-subtle)',
+                      }}
+                    >
+                      {role.label}
+                    </td>
+                    <td
+                      className="text-[0.875rem]"
+                      style={{
+                        padding: '12px 16px',
+                        borderBottom: '1px solid var(--border-subtle)',
+                        color: 'var(--text-secondary)',
+                      }}
+                    >
+                      {role.sees}
+                    </td>
+                    {/* The tier, in the same words §3 uses everywhere else. Not
+                        the mock's four levels — this app enforces three, and
+                        writing four here would describe a model that does not
+                        exist. */}
+                    <td
+                      className="text-[0.875rem]"
+                      style={{
+                        padding: '12px 16px',
+                        borderBottom: '1px solid var(--border-subtle)',
+                        color: role.reachesCare
+                          ? 'var(--text-primary)'
+                          : 'var(--text-muted)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {role.reachesCare ? role.clearanceLabel : 'None'}
+                    </td>
+                    <td
+                      className="text-[0.875rem]"
+                      style={{
+                        padding: '12px 16px',
+                        borderBottom: '1px solid var(--border-subtle)',
+                        color: 'var(--text-secondary)',
+                      }}
+                    >
+                      {role.canChange}
+                    </td>
+                    <td
+                      className="text-[0.875rem]"
+                      style={{
+                        padding: '12px 16px',
+                        borderBottom: '1px solid var(--border-subtle)',
+                        color:
+                          role.holderCount === 0
+                            ? 'var(--text-muted)'
+                            : 'var(--text-primary)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {role.holderCount === 0 ? '—' : role.holderCount}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+
+          <details>
+            <summary
+              className="text-[0.875rem]"
+              style={{ cursor: 'pointer', color: 'var(--text-secondary)' }}
+            >
+              Show the exact permissions behind this
+            </summary>
+            <div className="mt-3 flex flex-col gap-2">
+              {roles.map((role) => (
+                <div
+                  key={role.role}
+                  style={{
+                    background: 'var(--surface-card)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '12px 14px',
+                  }}
+                >
+                  <div className="flex flex-wrap items-baseline gap-x-3">
+                    <span className="font-semibold">{role.label}</span>
+                    <span
+                      className="text-[0.875rem]"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      {role.permissionCountLabel}
+                    </span>
+                  </div>
+                  {role.unrestrictedNote ? (
+                    <p
+                      className="mt-1 text-[0.875rem] italic"
+                      style={{ color: 'var(--text-muted)', textWrap: 'pretty' }}
+                    >
+                      {role.unrestrictedNote}
+                    </p>
+                  ) : (
+                    <p
+                      className="mt-1 font-mono text-[0.75rem]"
+                      style={{ color: 'var(--text-muted)', textWrap: 'pretty' }}
+                    >
+                      {role.permissions.join('  ·  ')}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </details>
         </section>
 
         {/* ── Planning Center ── */}
