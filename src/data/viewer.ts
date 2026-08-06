@@ -3,7 +3,7 @@ import 'server-only'
 import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 
 import type { Viewer } from '@/domain/access'
 import { isRole, type Role } from '@/domain/roles'
@@ -112,50 +112,78 @@ async function resolveViewerForAccount(account: {
   // database connection it has no use for.
   const { db, schema } = await import('@/db/client')
 
-  const [person] = await db
-    .select({
-      id: schema.people.id,
-      churchId: schema.people.churchId,
-      firstName: schema.people.firstName,
-      lastName: schema.people.lastName,
-    })
+  /*
+   * All four reads at once, and the reason is latency rather than tidiness.
+   *
+   * This ran as three steps — person, then roles, then the two grant tables —
+   * because roles and grants key on `person.id`, which the first query returns.
+   * The dependency is real but not worth a round trip: every page in Fold
+   * resolves the viewer before it can read anything of its own, so those waits
+   * were paid on every navigation, ahead of the page's own queries.
+   *
+   * Keying the last three off a subselect on `auth_user_id` gives one pipelined
+   * round trip instead of three sequential ones. `people.auth_user_id` is unique,
+   * so the subselect yields at most one id — the same id the first query returns,
+   * not a second opinion about who the viewer is.
+   */
+  const personIdForAccount = db
+    .select({ id: schema.people.id })
     .from(schema.people)
     .where(eq(schema.people.authUserId, account.id))
-    .limit(1)
 
+  const [personRows, roleRows, permissionGrantRows, clearanceGrantRows] =
+    await Promise.all([
+      db
+        .select({
+          id: schema.people.id,
+          churchId: schema.people.churchId,
+          firstName: schema.people.firstName,
+          lastName: schema.people.lastName,
+        })
+        .from(schema.people)
+        .where(eq(schema.people.authUserId, account.id))
+        .limit(1),
+      db
+        .select({ role: schema.leaderRoles.role })
+        .from(schema.leaderRoles)
+        .where(inArray(schema.leaderRoles.personId, personIdForAccount)),
+      db
+        .select()
+        .from(schema.permissionGrants)
+        .where(
+          and(
+            inArray(schema.permissionGrants.personId, personIdForAccount),
+            isNull(schema.permissionGrants.revokedAt)
+          )
+        ),
+      db
+        .select()
+        .from(schema.clearanceGrants)
+        .where(
+          and(
+            inArray(schema.clearanceGrants.personId, personIdForAccount),
+            isNull(schema.clearanceGrants.revokedAt)
+          )
+        ),
+    ])
+
+  const [person] = personRows
+
+  /*
+   * Refused after the batch rather than before it, which is the one thing this
+   * shape changes. The role and grant queries now run without knowing whether a
+   * person exists; with no person they match nothing and return nothing, and this
+   * still refuses. No viewer is ever built from those rows without a person — a
+   * signed-in account Fold cannot place is an administrative gap, and the answer
+   * is to link it, never to assume.
+   */
   if (!person) throw new NoPersonForAccountError(account.email)
-
-  const roleRows = await db
-    .select({ role: schema.leaderRoles.role })
-    .from(schema.leaderRoles)
-    .where(eq(schema.leaderRoles.personId, person.id))
 
   // Anything the database holds that this build does not recognise is dropped
   // rather than trusted. A role name Fold cannot evaluate must not become access.
   const roles = roleRows
     .map((row) => row.role)
     .filter((role): role is Role => isRole(role))
-
-  const [permissionGrantRows, clearanceGrantRows] = await Promise.all([
-    db
-      .select()
-      .from(schema.permissionGrants)
-      .where(
-        and(
-          eq(schema.permissionGrants.personId, person.id),
-          isNull(schema.permissionGrants.revokedAt)
-        )
-      ),
-    db
-      .select()
-      .from(schema.clearanceGrants)
-      .where(
-        and(
-          eq(schema.clearanceGrants.personId, person.id),
-          isNull(schema.clearanceGrants.revokedAt)
-        )
-      ),
-  ])
 
   return {
     personId: person.id,

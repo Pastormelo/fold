@@ -25,7 +25,7 @@ page works, without Planning Center credentials the integration says so. Nothing
 pretends.
 
 ```bash
-npm test          # 572 tests, no database required
+npm test          # 584 tests, no database required
 npm run lint
 npm run build     # works without a database; the connection is lazy on purpose
 ```
@@ -83,13 +83,27 @@ not have: `0006_enable_rls`, `0007_app_role_and_policies`,
 `0007a_let_fold_app_migrate`, `0012_discovery_rls`, and
 `0012a_hand_over_table_ownership`. Each says at the top why it is hand-applied.
 
-**`0012a_hand_over_table_ownership.sql` has not been run.** 22 of 32 tables are
-owned by `postgres` rather than by the app role, because migrations 0000–0007 were
-pasted into the SQL editor. `ALTER TABLE` needs ownership, not privileges, so a
-migration touching any of those 22 fails with `42501` — and drizzle-kit swallows
-that error, printing nothing and exiting 1. **A migration appears to run and
-silently does not.** Either run that file as `postgres`, or set
+**`0012a_hand_over_table_ownership.sql` has been run, and the trap it fixed is
+worth knowing anyway.** 22 of 32 tables were owned by `postgres` rather than by the
+app role, because migrations 0000–0007 were pasted into the SQL editor. `ALTER
+TABLE` needs ownership, not privileges, so a migration touching any of those 22
+failed with `42501` — and drizzle-kit swallows that error, printing nothing and
+exiting 1. **A migration appears to run and silently does not.** If that ever
+happens again, either run the offending file as `postgres` or set
 `MIGRATION_DATABASE_URL` to a connection string for a role that owns the tables.
+
+**Which pooler the `DATABASE_URL` points at changes how fast the whole app is.**
+`src/db/client.ts` turns prepared statements on unless the port is 6543. That is
+not a micro-optimisation: without a prepared statement postgres.js cannot pipeline,
+so each parameterised query needs its own round trip before its parameters can be
+sent, and a page's queries run one after another even inside a `Promise.all`.
+Measured against this project's database, one round trip being 105ms — a single
+query 213ms versus 108ms, and six queries on one page **1535ms versus 118ms**. The
+pool size matters for the same reason: `max: 1` pipelines, `max: 10` spreads six
+queries over ten connections and takes twice as long. Both directions were measured
+rather than assumed, and turning prepared statements on against the transaction
+pooler was tested too — it hangs until `57014 canceling statement due to statement
+timeout`, which is why the flag is derived from the port and not simply enabled.
 
 **Row-level security is on every table, with one `fold_app` policy each.** It is a
 second lock: confidentiality in Fold is enforced by the tier model, the permission
